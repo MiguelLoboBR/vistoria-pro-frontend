@@ -60,25 +60,57 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
     setShowResendConfirmation(false);
     
     try {
+      console.log("Tentando fazer login com:", values.email);
       await signIn(values.email, values.password);
       
+      console.log("Login bem-sucedido, redirecionando...");
       toast.success("Login bem-sucedido!");
       
-      // Navigate after successful authentication
-      setTimeout(() => {
-        // The AuthGuard will redirect to the appropriate dashboard
-        // based on the user's role and company
+      // Verificar se temos uma sessão válida antes de redirecionar
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log("Sessão após login:", sessionData.session);
+      
+      if (!sessionData.session) {
+        console.error("Sessão não encontrada após login bem-sucedido");
+        toast.error("Erro ao iniciar sessão. Por favor, tente novamente.");
+        setIsLoading(false);
+        return;
+      }
+      
+      // Verificar o perfil do usuário para determinar o redirecionamento
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, company_id')
+        .eq('id', sessionData.session.user.id)
+        .single();
+      
+      console.log("Dados do perfil:", profileData, "Erro:", profileError);
+      
+      if (profileError) {
+        console.error("Erro ao buscar perfil:", profileError);
+      }
+      
+      // Redirecionar com base no papel do usuário
+      if (profileData?.role === 'admin') {
+        console.log("Redirecionando admin para dashboard");
+        navigate("/admin/tenant/dashboard");
+      } else if (profileData?.role === 'inspector') {
+        console.log("Redirecionando inspetor para dashboard");
+        navigate("/app/inspector/dashboard");
+      } else {
+        // Fallback baseado no tipo de formulário
+        console.log("Fallback de redirecionamento baseado no userType:", userType);
         if (userType === "admin") {
           navigate("/admin/tenant/dashboard");
         } else {
           navigate("/app/inspector/dashboard");
         }
-      }, 1000);
+      }
       
     } catch (error: any) {
-      console.error("Login error:", error);
+      console.error("Erro de login:", error);
       
-      // Check if it's an email confirmation error
+      // Verificar se é um erro de email não confirmado
       if (error.message.includes("Email não confirmado") || 
           error.message.includes("Email not confirmed")) {
         setShowResendConfirmation(true);

@@ -1,9 +1,35 @@
 
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Logo from "@/components/Logo";
 import LoginForm from "@/components/auth/LoginForm";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const InspectorLogin = () => {
+  const { session, isLoading, user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Redirecionar se já estiver autenticado
+    if (session && user && !isLoading) {
+      console.log("InspectorLogin: Usuário já autenticado, redirecionando...");
+      
+      if (user.role === "admin") {
+        navigate("/admin/tenant/dashboard");
+      } else {
+        navigate("/app/inspector/dashboard");
+      }
+    }
+  }, [session, user, isLoading, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-vistoria-blue"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Top Banner */}

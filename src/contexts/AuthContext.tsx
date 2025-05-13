@@ -27,48 +27,86 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("AuthContext initializing...");
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
+      async (event, currentSession) => {
+        console.log("Auth state changed:", event, "Has session:", !!currentSession);
+        setSession(currentSession);
         
         // Fetch user profile when session changes
-        if (session) {
-          setTimeout(() => {
-            fetchUserProfile();
-          }, 0);
+        if (currentSession) {
+          console.log("Session exists, fetching user profile...");
+          try {
+            const profile = await authService.getUserProfile();
+            console.log("Profile fetched:", profile);
+            setUser(profile);
+
+            if (profile?.company_id) {
+              console.log("Fetching company data...");
+              const companyData = await authService.getCompany(profile.company_id);
+              console.log("Company data fetched:", companyData);
+              setCompany(companyData);
+            } else {
+              console.log("User has no company_id");
+              setCompany(null);
+            }
+          } catch (error) {
+            console.error("Error fetching user data:", error);
+          }
         } else {
+          console.log("No active session, clearing user and company data");
           setUser(null);
           setCompany(null);
         }
+        
+        setIsLoading(false);
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      
-      if (session) {
-        fetchUserProfile();
-      } else {
+    const checkExistingSession = async () => {
+      try {
+        console.log("Checking for existing session...");
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        console.log("Existing session check result:", existingSession ? "Session found" : "No session");
+        
+        if (existingSession) {
+          setSession(existingSession);
+          await fetchUserProfile();
+        } else {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Error checking existing session:", error);
         setIsLoading(false);
       }
-    });
+    };
+    
+    checkExistingSession();
 
     return () => {
+      console.log("Cleaning up auth subscription");
       subscription.unsubscribe();
     };
   }, []);
 
   const fetchUserProfile = async () => {
     setIsLoading(true);
+    console.log("Fetching user profile manually...");
     try {
       const profile = await authService.getUserProfile();
+      console.log("User profile fetched:", profile);
       setUser(profile);
 
       if (profile?.company_id) {
         const companyData = await authService.getCompany(profile.company_id);
+        console.log("Company data fetched:", companyData);
         setCompany(companyData);
+      } else {
+        console.log("User has no company_id");
+        setCompany(null);
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -78,10 +116,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
+    console.log("Iniciando login para:", email);
     try {
-      await authService.signIn(email, password);
-      // onAuthStateChange will update the session
+      const result = await authService.signIn(email, password);
+      console.log("Resultado do login:", result);
+      // A sessão será atualizada pelo onAuthStateChange
     } catch (error) {
+      console.error("Erro no login:", error);
       throw error;
     }
   };
@@ -89,7 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       await authService.signUp(email, password, fullName);
-      // onAuthStateChange will update the session
+      // A sessão será atualizada pelo onAuthStateChange
     } catch (error) {
       throw error;
     }
