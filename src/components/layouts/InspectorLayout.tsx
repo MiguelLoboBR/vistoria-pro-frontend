@@ -6,6 +6,7 @@ import Logo from "../Logo";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface InspectorLayoutProps {
   children: ReactNode;
@@ -20,6 +21,7 @@ interface NavItem {
 
 export const InspectorLayout = ({ children }: InspectorLayoutProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
   
   const navItems: NavItem[] = [
     { title: "Início", icon: <Home size={20} />, path: "/app/inspector/dashboard", active: true },
@@ -27,6 +29,15 @@ export const InspectorLayout = ({ children }: InspectorLayoutProps) => {
     { title: "Histórico", icon: <FileText size={20} />, path: "/app/inspector/history" },
     { title: "Perfil", icon: <Settings size={20} />, path: "/app/inspector/profile" },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      // signOut will handle the navigation
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -46,8 +57,10 @@ export const InspectorLayout = ({ children }: InspectorLayoutProps) => {
         
         {/* User Avatar */}
         <Avatar className="h-8 w-8">
-          <AvatarImage src="" />
-          <AvatarFallback className="bg-vistoria-blue text-white">VI</AvatarFallback>
+          <AvatarImage src={user?.avatar_url || ""} />
+          <AvatarFallback className="bg-vistoria-blue text-white">
+            {user?.full_name?.charAt(0) || "V"}
+          </AvatarFallback>
         </Avatar>
       </header>
       
@@ -73,12 +86,14 @@ export const InspectorLayout = ({ children }: InspectorLayoutProps) => {
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src="" />
-                  <AvatarFallback className="bg-vistoria-blue text-white">VI</AvatarFallback>
+                  <AvatarImage src={user?.avatar_url || ""} />
+                  <AvatarFallback className="bg-vistoria-blue text-white">
+                    {user?.full_name?.charAt(0) || "V"}
+                  </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium">João Silva</p>
-                  <p className="text-sm text-gray-500">Vistoriador</p>
+                  <p className="font-medium">{user?.full_name || "Vistoriador"}</p>
+                  <p className="text-sm text-gray-500">{user?.role || "Vistoriador"}</p>
                 </div>
               </div>
             </div>
@@ -103,6 +118,7 @@ export const InspectorLayout = ({ children }: InspectorLayoutProps) => {
                 <Button 
                   variant="ghost" 
                   className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 px-3"
+                  onClick={handleLogout}
                 >
                   <LogOut className="mr-3 h-5 w-5" />
                   <span>Sair</span>

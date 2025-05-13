@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -34,6 +35,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, signOut } = useAuth();
   
   const sidebarItems: SidebarItem[] = [
     { title: "Dashboard", icon: <Home size={20} />, path: "/admin/tenant/dashboard" },
@@ -43,6 +45,15 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     { title: "Relatórios", icon: <FileText size={20} />, path: "/admin/tenant/relatorios" },
     { title: "Configurações", icon: <Settings size={20} />, path: "/admin/tenant/configuracoes" },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      // signOut will handle the navigation
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -129,26 +140,37 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
               onClick={() => setUserMenuOpen(!userMenuOpen)}
             >
               <Avatar className="h-8 w-8">
-                <AvatarImage src="" />
-                <AvatarFallback className="bg-vistoria-blue text-white">AI</AvatarFallback>
+                <AvatarImage src={user?.avatar_url || ""} />
+                <AvatarFallback className="bg-vistoria-blue text-white">
+                  {user?.full_name?.charAt(0) || "U"}
+                </AvatarFallback>
               </Avatar>
-              <span className="hidden md:inline text-sm font-medium">Admin Imobiliária</span>
+              <span className="hidden md:inline text-sm font-medium">
+                {user?.full_name || "Usuário"}
+              </span>
               <ChevronDown className="h-4 w-4 text-gray-500" />
             </div>
             
             {userMenuOpen && (
               <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-50 animate-fade-in">
                 <div className="p-3 border-b border-gray-200">
-                  <p className="text-sm font-medium">Admin Imobiliária</p>
-                  <p className="text-xs text-gray-500">admin@imobiliaria.com.br</p>
+                  <p className="text-sm font-medium">{user?.full_name || "Usuário"}</p>
+                  <p className="text-xs text-gray-500">{user?.email || ""}</p>
                 </div>
                 <div className="p-2">
-                  <Link to="/admin/tenant/perfil" className="flex items-center gap-2 p-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                  <Link 
+                    to="/admin/tenant/perfil" 
+                    className="flex items-center gap-2 p-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                    onClick={() => setUserMenuOpen(false)}
+                  >
                     <Settings className="h-4 w-4" />
                     <span>Perfil da Empresa</span>
                   </Link>
                   <Separator className="my-1" />
-                  <button className="w-full flex items-center gap-2 p-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 p-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                  >
                     <LogOut className="h-4 w-4" />
                     <span>Sair</span>
                   </button>
@@ -195,6 +217,17 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
                     </Link>
                   );
                 })}
+                
+                <div className="px-4 pt-4 mt-4 border-t border-gray-200">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 px-3"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-3 h-5 w-5" />
+                    <span>Sair</span>
+                  </Button>
+                </div>
               </nav>
             </div>
           </>
