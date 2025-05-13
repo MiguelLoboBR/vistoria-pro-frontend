@@ -41,6 +41,7 @@ export const authService = {
       options: {
         data: {
           full_name: fullName,
+          role: "admin", // Explicitly set role to admin for new users during registration
         },
       },
     });

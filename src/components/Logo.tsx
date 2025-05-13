@@ -26,7 +26,7 @@ export const Logo = ({ className, size = 'md', showText = true }: LogoProps) => 
         <img 
           src="/lovable-uploads/5f177951-9411-4feb-ab50-3e454df28a29.png" 
           alt="VistoriaPro Logo" 
-          className={`${sizes[size]} h-auto w-auto`}
+          className="h-auto w-auto object-contain max-h-full"
         />
       </div>
       

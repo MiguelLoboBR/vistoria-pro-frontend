@@ -25,7 +25,7 @@ const RegisterLogo: React.FC<RegisterLogoProps> = ({
       <img 
         src="/lovable-uploads/5f177951-9411-4feb-ab50-3e454df28a29.png" 
         alt="VistoriaPro Logo" 
-        className={`${getSizeClass()} w-auto`}
+        className={`${getSizeClass()} w-auto object-contain`}
       />
       {showText && (
         <div className="mt-2 text-center font-semibold">

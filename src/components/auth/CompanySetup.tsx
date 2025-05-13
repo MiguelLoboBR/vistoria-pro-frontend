@@ -29,6 +29,25 @@ const CompanySetup = () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         setUserId(data.session.user.id);
+        
+        // Check if the user has the correct role
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.session.user.id)
+          .single();
+        
+        if (profile && profile.role === 'inspector') {
+          // Update the role to admin
+          const { error: updateError } = await supabase
+            .from("profiles")
+            .update({ role: 'admin' })
+            .eq("id", data.session.user.id);
+            
+          if (updateError) {
+            console.error("Error updating role:", updateError);
+          }
+        }
       }
     };
     
@@ -48,12 +67,26 @@ const CompanySetup = () => {
     
     try {
       if (!userId) {
-        toast.error("Você precisa estar logado para criar uma empresa");
         // Se não tiver ID, tente buscar novamente a sessão
         const { data } = await supabase.auth.getSession();
         if (data.session?.user) {
           setUserId(data.session.user.id);
-          // Tente novamente com o ID atualizado
+          
+          // Update the role to admin if needed
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", data.session.user.id)
+            .single();
+          
+          if (profile && profile.role === 'inspector') {
+            await supabase
+              .from("profiles")
+              .update({ role: 'admin' })
+              .eq("id", data.session.user.id);
+          }
+          
+          // Tente criar a empresa com o ID atualizado
           if (data.session.user.id) {
             const result = await supabase.rpc(
               "create_company_with_admin", 
@@ -72,6 +105,8 @@ const CompanySetup = () => {
             navigate("/admin/tenant/dashboard");
             return;
           }
+        } else {
+          toast.error("Você precisa estar logado para criar uma empresa");
         }
         setIsSubmitting(false);
         return;

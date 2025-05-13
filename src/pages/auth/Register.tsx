@@ -49,7 +49,7 @@ export const Register = () => {
     setIsSubmitting(true);
     
     try {
-      // Register the user first
+      // Register the user with admin role
       await signUp(values.email, values.password, values.responsibleName);
       
       toast.success("Cadastro enviado com sucesso! Redirecionando para configuração da empresa.");
