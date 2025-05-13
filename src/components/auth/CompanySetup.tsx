@@ -22,27 +22,49 @@ const CompanySetup = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   const navigate = useNavigate();
+
+  // Check for stored company details from registration
+  useEffect(() => {
+    const storedCompanyDetails = localStorage.getItem('pendingCompanySetup');
+    if (storedCompanyDetails) {
+      try {
+        const { name, cnpj } = JSON.parse(storedCompanyDetails);
+        form.setValue('companyName', name || '');
+        form.setValue('cnpj', cnpj || '');
+      } catch (e) {
+        console.error("Error parsing stored company details:", e);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     // Retrieve the user ID from the current session
     const fetchSession = async () => {
       try {
         setLoading(true);
+        console.log("Checking authentication status...");
+        
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
           throw error;
         }
         
+        console.log("Session data:", data);
+        
         if (!data.session) {
+          console.log("No active session found.");
           // Redirect to login if no session
           toast.error("Sessão expirada. Por favor, faça login novamente.");
           navigate("/login");
           return;
         }
         
+        console.log("User authenticated:", data.session.user.id);
         setUserId(data.session.user.id);
+        setAuthChecked(true);
         
         // Check if the user has the correct role
         const { data: profile, error: profileError } = await supabase
@@ -55,8 +77,10 @@ const CompanySetup = () => {
           console.error("Erro ao buscar perfil:", profileError);
         }
         
+        console.log("User profile:", profile);
+        
         if (profile && profile.role === 'inspector') {
-          console.log("Atualizando papel de inspector para admin");
+          console.log("Updating role from inspector to admin");
           // Update the role to admin
           const { error: updateError } = await supabase
             .from("profiles")
@@ -65,6 +89,8 @@ const CompanySetup = () => {
             
           if (updateError) {
             console.error("Erro ao atualizar função:", updateError);
+          } else {
+            console.log("Role updated successfully to admin");
           }
         }
       } catch (error: any) {
@@ -90,75 +116,59 @@ const CompanySetup = () => {
     setIsSubmitting(true);
     
     try {
-      if (!userId) {
-        // Tenta buscar a sessão novamente se não houver ID do usuário
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          throw new Error("Erro ao recuperar a sessão do usuário: " + error.message);
-        }
-        
-        if (!data.session) {
-          toast.error("Sessão expirada. Por favor, faça login novamente.");
-          navigate("/login");
-          setIsSubmitting(false);
-          return;
-        }
-        
-        // Atualiza o ID do usuário
-        setUserId(data.session.user.id);
-        
-        // Garante que o usuário é um admin
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", data.session.user.id)
-          .single();
-        
-        if (profile && profile.role === 'inspector') {
-          const { error: updateError } = await supabase
-            .from("profiles")
-            .update({ role: 'admin' })
-            .eq("id", data.session.user.id);
-            
-          if (updateError) {
-            console.error("Erro ao atualizar função:", updateError);
-          }
-        }
-        
-        // Cria a empresa com o ID do usuário
-        const result = await supabase.rpc(
-          "create_company_with_admin", 
-          { 
-            company_name: values.companyName, 
-            company_cnpj: values.cnpj, 
-            admin_id: data.session.user.id 
-          }
-        );
-        
-        if (result.error) {
-          throw new Error(result.error.message);
-        }
-        
-        toast.success("Empresa criada com sucesso!");
-        navigate("/admin/tenant/dashboard");
+      // Double-check authentication status before proceeding
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        toast.error("Sessão expirada. Por favor, faça login novamente.");
+        navigate("/login");
+        setIsSubmitting(false);
         return;
       }
       
-      // Call RPC function with user ID
-      console.log("Criando empresa para o usuário:", userId);
+      const actualUserId = sessionData.session.user.id;
+      console.log("Authenticated user ID for company creation:", actualUserId);
+      
+      // Ensure the user is an admin
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", actualUserId)
+        .single();
+      
+      if (profile && profile.role === 'inspector') {
+        console.log("User has inspector role, updating to admin");
+        await supabase
+          .from("profiles")
+          .update({ role: 'admin' })
+          .eq("id", actualUserId);
+      }
+      
+      console.log("Creating company with details:", {
+        name: values.companyName,
+        cnpj: values.cnpj,
+        userId: actualUserId
+      });
+      
+      // Call the RPC function directly
       const { data, error } = await supabase.rpc(
         "create_company_with_admin", 
         { 
           company_name: values.companyName, 
           company_cnpj: values.cnpj, 
-          admin_id: userId 
+          admin_id: actualUserId 
         }
       );
       
       if (error) {
+        console.error("Error details:", error);
         throw new Error(error.message);
       }
+      
+      console.log("Company creation response:", data);
+      
+      // Clear the stored company details
+      localStorage.removeItem('pendingCompanySetup');
       
       toast.success("Empresa criada com sucesso!");
       navigate("/admin/tenant/dashboard");
@@ -176,6 +186,24 @@ const CompanySetup = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-vistoria-blue mx-auto mb-4"></div>
           <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authChecked || !userId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6 text-center">
+          <Logo className="mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-red-600 mb-2">Não autenticado</h2>
+          <p className="mb-4">Você precisa estar logado para configurar sua empresa.</p>
+          <Button 
+            onClick={() => navigate('/login')}
+            className="bg-vistoria-blue hover:bg-vistoria-darkBlue"
+          >
+            Ir para o Login
+          </Button>
         </div>
       </div>
     );

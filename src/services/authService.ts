@@ -28,6 +28,15 @@ export const authService = {
     });
 
     if (error) {
+      // Check specifically for the email not confirmed error
+      if (error.message.includes("Email not confirmed")) {
+        // Send another confirmation email if needed
+        await supabase.auth.resend({
+          type: 'signup',
+          email: email,
+        });
+        throw new Error("Email não confirmado. Um novo link de confirmação foi enviado para seu e-mail.");
+      }
       throw new Error(error.message);
     }
 
@@ -43,7 +52,7 @@ export const authService = {
           full_name: fullName,
           role: "admin", // Explicitly set role to admin for new users during registration
         },
-        emailRedirectTo: window.location.origin + "/company-setup",
+        // Removed the emailRedirectTo since it might be causing issues
       },
     });
 
@@ -51,7 +60,13 @@ export const authService = {
       throw new Error(error.message);
     }
 
-    return data.session;
+    // If successful but confirmation is required, inform the user
+    if (data.session === null && data.user !== null) {
+      // This means email confirmation is required
+      return { requiresEmailConfirmation: true, user: data.user };
+    }
+
+    return { session: data.session, user: data.user };
   },
 
   async signOut() {
@@ -104,6 +119,9 @@ export const authService = {
       return null;
     }
 
+    console.log("Creating company for user ID:", session.session.user.id);
+    console.log("Company details:", { name, cnpj });
+
     const { data, error } = await supabase.rpc(
       "create_company_with_admin", 
       { 
@@ -118,6 +136,7 @@ export const authService = {
       throw new Error(error.message);
     }
 
+    console.log("Company creation successful, returned data:", data);
     return data;
   },
 

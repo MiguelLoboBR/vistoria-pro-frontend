@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -11,6 +10,8 @@ import { toast } from "sonner";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import RegisterLogo from "@/components/auth/RegisterLogo";
 import { useAuth } from "@/contexts/AuthContext";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 const formSchema = z.object({
   companyName: z.string().min(2, "Nome da empresa deve ter no mínimo 2 caracteres"),
@@ -29,6 +30,8 @@ export const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [registrationComplete, setRegistrationComplete] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
   const navigate = useNavigate();
   const { signUp } = useAuth();
 
@@ -50,14 +53,20 @@ export const Register = () => {
     
     try {
       // Register the user with admin role
-      await signUp(values.email, values.password, values.responsibleName);
+      const result = await signUp(values.email, values.password, values.responsibleName);
       
-      toast.success("Cadastro enviado com sucesso! Redirecionando para configuração da empresa.");
+      console.log("Registration result:", result);
+      setRegisteredEmail(values.email);
+      setRegistrationComplete(true);
       
-      // Wait a bit before redirecting to company setup
-      setTimeout(() => {
-        navigate("/company-setup");
-      }, 1500);
+      toast.success("Cadastro enviado com sucesso! Verifique seu email para confirmar sua conta.");
+      
+      // Store company details in localStorage for later use
+      localStorage.setItem('pendingCompanySetup', JSON.stringify({
+        name: values.companyName,
+        cnpj: values.cnpj,
+        email: values.email,
+      }));
       
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -66,6 +75,46 @@ export const Register = () => {
       setIsSubmitting(false);
     }
   };
+
+  if (registrationComplete) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+          <div className="text-center mb-8">
+            <RegisterLogo className="mx-auto mb-6" />
+            <h1 className="text-2xl font-bold">Cadastro Realizado!</h1>
+            <p className="text-gray-600 mt-3">
+              Enviamos um email de confirmação para:
+            </p>
+            <p className="font-medium text-vistoria-blue mt-1">{registeredEmail}</p>
+          </div>
+          
+          <Alert className="mb-6 bg-blue-50 border-blue-200">
+            <InfoIcon className="h-5 w-5 text-blue-500" />
+            <AlertTitle className="text-blue-700">Por favor, confirme seu email</AlertTitle>
+            <AlertDescription className="text-blue-600">
+              Você precisa confirmar seu email antes de poder fazer login. Por favor, verifique sua caixa de entrada e clique no link de confirmação.
+            </AlertDescription>
+          </Alert>
+          
+          <div className="space-y-4">
+            <Button 
+              className="w-full bg-vistoria-blue hover:bg-vistoria-darkBlue"
+              onClick={() => navigate('/login')}
+            >
+              Ir para o Login
+            </Button>
+            
+            <div className="text-center">
+              <p className="text-gray-500 text-sm">
+                Não recebeu o email? Verifique sua caixa de spam ou entre em contato conosco.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">

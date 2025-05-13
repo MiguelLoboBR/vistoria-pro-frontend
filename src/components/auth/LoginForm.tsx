@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/services/authService";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   email: z.string().email("Digite um e-mail válido"),
@@ -24,6 +25,8 @@ interface LoginFormProps {
 export const LoginForm = ({ userType }: LoginFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showResendConfirmation, setShowResendConfirmation] = useState(false);
+  const [emailForConfirmation, setEmailForConfirmation] = useState("");
   const navigate = useNavigate();
   const { signIn, user } = useAuth();
 
@@ -35,8 +38,26 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
     },
   });
 
+  const handleResendConfirmation = async () => {
+    if (!emailForConfirmation) return;
+    
+    setIsLoading(true);
+    try {
+      await supabase.auth.resend({
+        type: 'signup',
+        email: emailForConfirmation,
+      });
+      toast.success("Link de confirmação reenviado para seu e-mail!");
+    } catch (error: any) {
+      toast.error(`Erro ao reenviar o e-mail de confirmação: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
+    setShowResendConfirmation(false);
     
     try {
       await signIn(values.email, values.password);
@@ -55,7 +76,19 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
       }, 1000);
       
     } catch (error: any) {
-      toast.error(`Erro ao fazer login: ${error.message}`);
+      console.error("Login error:", error);
+      
+      // Check if it's an email confirmation error
+      if (error.message.includes("Email não confirmado") || 
+          error.message.includes("Email not confirmed")) {
+        setShowResendConfirmation(true);
+        setEmailForConfirmation(values.email);
+        toast.error(
+          "Email não confirmado. Por favor, verifique sua caixa de entrada para o link de confirmação."
+        );
+      } else {
+        toast.error(`Erro ao fazer login: ${error.message}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +104,13 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
             <FormItem>
               <FormLabel>E-mail</FormLabel>
               <FormControl>
-                <Input placeholder="seu@email.com" type="email" {...field} disabled={isLoading} />
+                <Input 
+                  placeholder="seu@email.com" 
+                  type="email" 
+                  {...field} 
+                  disabled={isLoading} 
+                  autoComplete="email"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -91,6 +130,7 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
                     type={showPassword ? "text" : "password"} 
                     {...field} 
                     disabled={isLoading}
+                    autoComplete="current-password"
                   />
                   <Button
                     type="button"
@@ -120,6 +160,23 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
         >
           {isLoading ? "Entrando..." : "Entrar"}
         </Button>
+        
+        {showResendConfirmation && (
+          <div className="text-center p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-sm text-yellow-800 mb-2">
+              Seu email ainda não foi confirmado. Verifique sua caixa de entrada ou reenvie o email de confirmação.
+            </p>
+            <Button 
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleResendConfirmation}
+              disabled={isLoading}
+            >
+              Reenviar email de confirmação
+            </Button>
+          </div>
+        )}
         
         <div className="text-center">
           <Button variant="link" className="text-sm text-vistoria-blue" disabled={isLoading}>
