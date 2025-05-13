@@ -9,6 +9,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/landing/Landing";
 import AdminLogin from "./pages/auth/AdminLogin";
 import InspectorLogin from "./pages/auth/InspectorLogin";
+import Register from "./pages/auth/Register";
 import Dashboard from "./pages/admin/Dashboard";
 import CompanyProfile from "./pages/admin/CompanyProfile";
 import InspectorList from "./pages/admin/InspectorList";
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<AdminLogin />} />
           <Route path="/login/inspector" element={<InspectorLogin />} />
+          <Route path="/register" element={<Register />} />
           
           {/* Admin Routes */}
           <Route path="/admin/tenant/dashboard" element={<Dashboard />} />

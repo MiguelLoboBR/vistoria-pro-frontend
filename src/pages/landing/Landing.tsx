@@ -26,7 +26,7 @@ export const Landing = () => {
             </Link>
             <Link to="/register" className="hidden md:block">
               <Button className="bg-vistoria-blue hover:bg-vistoria-darkBlue text-white">
-                Registrar
+                Cadastre-se
               </Button>
             </Link>
           </div>
@@ -191,9 +191,11 @@ export const Landing = () => {
             Junte-se a centenas de empresas imobiliárias que já estão usando o VistoriaPro para melhorar seus processos.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button className="bg-white text-vistoria-blue hover:bg-gray-100 font-medium text-lg px-8 py-6">
-              Teste Grátis por 14 Dias
-            </Button>
+            <Link to="/register">
+              <Button className="bg-white text-vistoria-blue hover:bg-gray-100 font-medium text-lg px-8 py-6">
+                Cadastre-se Grátis
+              </Button>
+            </Link>
             <Button variant="outline" className="border-white text-white hover:bg-white/10 font-medium text-lg px-8 py-6">
               Fale com um Consultor
             </Button>
