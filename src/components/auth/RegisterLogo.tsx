@@ -23,7 +23,7 @@ const RegisterLogo: React.FC<RegisterLogoProps> = ({
   return (
     <div className={`flex flex-col items-center ${className}`}>
       <img 
-        src="/lovable-uploads/723b248a-59de-4007-9e41-5fb830c428d3.png" 
+        src="/lovable-uploads/5f177951-9411-4feb-ab50-3e454df28a29.png" 
         alt="VistoriaPro Logo" 
         className={`${getSizeClass()} w-auto`}
       />

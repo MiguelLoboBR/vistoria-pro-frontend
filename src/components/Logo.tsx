@@ -1,5 +1,5 @@
 
-import { Search, Home } from "lucide-react";
+import { Home, Search } from "lucide-react";
 
 interface LogoProps {
   className?: string;
@@ -22,16 +22,12 @@ export const Logo = ({ className, size = 'md', showText = true }: LogoProps) => 
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <div className={`relative ${sizes[size]}`}>
-        {/* House icon */}
-        <div className="text-vistoria-blue">
-          <Home className={sizes[size]} strokeWidth={2.5} />
-        </div>
-        
-        {/* Magnifying glass icon */}
-        <div className="absolute -right-3 -bottom-1 text-vistoria-green">
-          <Search className={`${size === 'sm' ? 'h-5' : size === 'md' ? 'h-6' : 'h-8'}`} strokeWidth={2.5} />
-        </div>
+      <div className={`${sizes[size]}`}>
+        <img 
+          src="/lovable-uploads/5f177951-9411-4feb-ab50-3e454df28a29.png" 
+          alt="VistoriaPro Logo" 
+          className={`${sizes[size]} h-auto w-auto`}
+        />
       </div>
       
       {showText && (

@@ -49,11 +49,35 @@ const CompanySetup = () => {
     try {
       if (!userId) {
         toast.error("Você precisa estar logado para criar uma empresa");
+        // Se não tiver ID, tente buscar novamente a sessão
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.user) {
+          setUserId(data.session.user.id);
+          // Tente novamente com o ID atualizado
+          if (data.session.user.id) {
+            const result = await supabase.rpc(
+              "create_company_with_admin", 
+              { 
+                company_name: values.companyName, 
+                company_cnpj: values.cnpj, 
+                admin_id: data.session.user.id 
+              }
+            );
+            
+            if (result.error) {
+              throw new Error(result.error.message);
+            }
+            
+            toast.success("Empresa criada com sucesso!");
+            navigate("/admin/tenant/dashboard");
+            return;
+          }
+        }
         setIsSubmitting(false);
         return;
       }
       
-      // Call RPC function directly with user ID since context might not be fully loaded yet
+      // Call RPC function directly with user ID
       const { data, error } = await supabase.rpc(
         "create_company_with_admin", 
         { 
