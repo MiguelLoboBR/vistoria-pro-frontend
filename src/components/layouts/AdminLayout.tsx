@@ -12,7 +12,7 @@ import {
   ChevronDown, 
   LogOut 
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import Logo from "../Logo";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,16 +27,16 @@ interface SidebarItem {
   title: string;
   icon: ReactNode;
   path: string;
-  active?: boolean;
 }
 
 export const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const location = useLocation();
   
   const sidebarItems: SidebarItem[] = [
-    { title: "Dashboard", icon: <Home size={20} />, path: "/admin/tenant/dashboard", active: true },
+    { title: "Dashboard", icon: <Home size={20} />, path: "/admin/tenant/dashboard" },
     { title: "Vistorias", icon: <Calendar size={20} />, path: "/admin/tenant/vistorias" },
     { title: "Vistoriadores", icon: <Users size={20} />, path: "/admin/tenant/vistoriadores" },
     { title: "Financeiro", icon: <CreditCard size={20} />, path: "/admin/tenant/financeiro" },
@@ -74,19 +74,22 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
         </div>
         
         <nav className="flex-1 py-4">
-          {sidebarItems.map((item, index) => (
-            <Link 
-              to={item.path}
-              key={index}
-              className={cn(
-                "flex items-center py-2 px-4 mb-1 text-gray-700 hover:bg-gray-100 hover:text-vistoria-blue rounded-md mx-2",
-                item.active ? "bg-gray-100 text-vistoria-blue font-medium" : ""
-              )}
-            >
-              <span className="mr-3">{item.icon}</span>
-              {!isCollapsed && <span>{item.title}</span>}
-            </Link>
-          ))}
+          {sidebarItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link 
+                to={item.path}
+                key={item.path}
+                className={cn(
+                  "flex items-center py-2 px-4 mb-1 text-gray-700 hover:bg-gray-100 hover:text-vistoria-blue rounded-md mx-2",
+                  isActive ? "bg-gray-100 text-vistoria-blue font-medium" : ""
+                )}
+              >
+                <span className="mr-3">{item.icon}</span>
+                {!isCollapsed && <span>{item.title}</span>}
+              </Link>
+            );
+          })}
         </nav>
         
         {!isCollapsed && (
@@ -175,20 +178,23 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
               </div>
               
               <nav className="py-4">
-                {sidebarItems.map((item, index) => (
-                  <Link 
-                    to={item.path}
-                    key={index}
-                    className={cn(
-                      "flex items-center py-3 px-4 text-gray-700 hover:bg-gray-100 hover:text-vistoria-blue",
-                      item.active ? "bg-gray-100 text-vistoria-blue font-medium" : ""
-                    )}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <span className="mr-3">{item.icon}</span>
-                    <span>{item.title}</span>
-                  </Link>
-                ))}
+                {sidebarItems.map((item) => {
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <Link 
+                      to={item.path}
+                      key={item.path}
+                      className={cn(
+                        "flex items-center py-3 px-4 text-gray-700 hover:bg-gray-100 hover:text-vistoria-blue",
+                        isActive ? "bg-gray-100 text-vistoria-blue font-medium" : ""
+                      )}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <span className="mr-3">{item.icon}</span>
+                      <span>{item.title}</span>
+                    </Link>
+                  );
+                })}
               </nav>
             </div>
           </>

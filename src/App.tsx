@@ -13,6 +13,7 @@ import Register from "./pages/auth/Register";
 import Dashboard from "./pages/admin/Dashboard";
 import CompanyProfile from "./pages/admin/CompanyProfile";
 import InspectorList from "./pages/admin/InspectorList";
+import Vistorias from "./pages/admin/Vistorias";
 import InspectionList from "./pages/inspector/InspectionList";
 import InspectionForm from "./pages/inspector/InspectionForm";
 import NotFound from "./pages/NotFound";
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/admin/tenant/dashboard" element={<Dashboard />} />
           <Route path="/admin/tenant/perfil" element={<CompanyProfile />} />
           <Route path="/admin/tenant/vistoriadores" element={<InspectorList />} />
+          <Route path="/admin/tenant/vistorias" element={<Vistorias />} />
           
           {/* Inspector Routes */}
           <Route path="/app/inspector/dashboard" element={<InspectionList />} />
