@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import InspectorLayout from "@/components/layouts/InspectorLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,15 +20,60 @@ import {
   MapPin,
   User,
   Home,
-  CalendarClock
+  CalendarClock,
+  Trash2,
+  FileText,
+  Image
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import PhotoCapture from "@/components/inspection/PhotoCapture";
+import AudioRecorder from "@/components/inspection/AudioRecorder";
+import SignatureCapture from "@/components/inspection/SignatureCapture";
+import PDFViewer from "@/components/inspection/PDFViewer";
+
+// Interface for photo type
+interface Photo {
+  id: string;
+  url: string;
+}
+
+// Interface for item type
+interface InspectionItem {
+  id: string;
+  name: string;
+  status: string;
+  observation: string;
+  photos: Photo[];
+}
+
+// Interface for room type
+interface Room {
+  id: string;
+  name: string;
+  items: InspectionItem[];
+}
 
 export const InspectionForm = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  
+  // State for photo capturing
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
+  const [currentItemId, setCurrentItemId] = useState<string | null>(null);
+  
+  // State for signatures
+  const [isInspectorSignatureModalOpen, setIsInspectorSignatureModalOpen] = useState(false);
+  const [isResponsibleSignatureModalOpen, setIsResponsibleSignatureModalOpen] = useState(false);
+  const [inspectorSignature, setInspectorSignature] = useState<string | null>(null);
+  const [responsibleSignature, setResponsibleSignature] = useState<string | null>(null);
+  
+  // State for PDF preview
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   
   // Sample inspection data
   const inspectionData = {
@@ -42,7 +87,7 @@ export const InspectionForm = () => {
   };
   
   const [currentTab, setCurrentTab] = useState("info");
-  const [rooms, setRooms] = useState([
+  const [rooms, setRooms] = useState<Room[]>([
     {
       id: "sala",
       name: "Sala",
@@ -95,6 +140,29 @@ export const InspectionForm = () => {
     }
   ]);
   
+  // Calculate progress
+  const calculateProgress = () => {
+    let totalItems = 0;
+    let completedItems = 0;
+    
+    rooms.forEach(room => {
+      totalItems += room.items.length;
+      room.items.forEach(item => {
+        if (item.status !== "") {
+          completedItems++;
+        }
+      });
+    });
+    
+    return {
+      totalItems,
+      completedItems,
+      percentage: totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0
+    };
+  };
+  
+  const progress = calculateProgress();
+  
   // Update item status
   const updateItemStatus = (roomId: string, itemId: string, status: string) => {
     setRooms(
@@ -135,22 +203,74 @@ export const InspectionForm = () => {
     );
   };
   
-  // Speech recognition simulation
-  const handleSpeechRecognition = (roomId: string, itemId: string) => {
-    // In a real app, this would use the Web Speech API
-    toast.info("Escutando...");
-    
-    // Simulate recognition after 2 seconds
-    setTimeout(() => {
-      const mockText = "Apresenta pequena mancha de umidade no canto superior direito.";
-      updateItemObservation(roomId, itemId, mockText);
-      toast.success("Texto transcrito com sucesso!");
-    }, 2000);
+  // Handle speech recognition from AudioRecorder component
+  const handleSpeechRecognition = (roomId: string, itemId: string, text: string) => {
+    updateItemObservation(roomId, itemId, text);
   };
   
-  // Add photo simulation
-  const handleAddPhoto = (roomId: string, itemId: string) => {
-    toast.info("Função de câmera simulada. Em um app real, isso abriria a câmera do dispositivo.");
+  // Handle photo capture
+  const handlePhotoCaptureStart = (roomId: string, itemId: string) => {
+    setCurrentRoomId(roomId);
+    setCurrentItemId(itemId);
+    setIsPhotoModalOpen(true);
+  };
+  
+  // Add photo to item
+  const handlePhotoCapture = (photoData: string) => {
+    if (currentRoomId && currentItemId) {
+      const newPhoto = {
+        id: `photo_${Date.now()}`,
+        url: photoData
+      };
+      
+      setRooms(
+        rooms.map((room) => {
+          if (room.id === currentRoomId) {
+            return {
+              ...room,
+              items: room.items.map((item) => {
+                if (item.id === currentItemId) {
+                  return { 
+                    ...item, 
+                    photos: [...item.photos, newPhoto] 
+                  };
+                }
+                return item;
+              }),
+            };
+          }
+          return room;
+        })
+      );
+      
+      setIsPhotoModalOpen(false);
+      toast.success("Foto adicionada com sucesso!");
+    }
+  };
+  
+  // Remove photo from item
+  const handleRemovePhoto = (roomId: string, itemId: string, photoId: string) => {
+    setRooms(
+      rooms.map((room) => {
+        if (room.id === roomId) {
+          return {
+            ...room,
+            items: room.items.map((item) => {
+              if (item.id === itemId) {
+                return { 
+                  ...item, 
+                  photos: item.photos.filter(photo => photo.id !== photoId) 
+                };
+              }
+              return item;
+            }),
+          };
+        }
+        return room;
+      })
+    );
+    
+    toast.success("Foto removida com sucesso!");
   };
   
   // Add new room
@@ -170,14 +290,96 @@ export const InspectionForm = () => {
     toast.success("Novo ambiente adicionado!");
   };
   
+  // Add new item to room
+  const handleAddItem = (roomId: string) => {
+    const newItemId = `item-${Date.now()}`;
+    
+    setRooms(
+      rooms.map((room) => {
+        if (room.id === roomId) {
+          return {
+            ...room,
+            items: [...room.items, {
+              id: newItemId,
+              name: "Novo Item",
+              status: "",
+              observation: "",
+              photos: []
+            }]
+          };
+        }
+        return room;
+      })
+    );
+    
+    toast.success("Novo item adicionado!");
+  };
+  
+  // Update room name
+  const handleRoomNameChange = (roomId: string, newName: string) => {
+    setRooms(
+      rooms.map((room) => {
+        if (room.id === roomId) {
+          return {
+            ...room,
+            name: newName
+          };
+        }
+        return room;
+      })
+    );
+  };
+  
+  // Update item name
+  const handleItemNameChange = (roomId: string, itemId: string, newName: string) => {
+    setRooms(
+      rooms.map((room) => {
+        if (room.id === roomId) {
+          return {
+            ...room,
+            items: room.items.map((item) => {
+              if (item.id === itemId) {
+                return { ...item, name: newName };
+              }
+              return item;
+            }),
+          };
+        }
+        return room;
+      })
+    );
+  };
+  
   // Save inspection progress
   const handleSaveProgress = () => {
+    // In a real application, this would save the data to a server
     toast.success("Progresso da vistoria salvo com sucesso!");
+  };
+  
+  // Generate the PDF report
+  const handleGenerateReport = () => {
+    // Check if inspector signature is present
+    if (!inspectorSignature) {
+      toast.error("A assinatura do vistoriador é obrigatória para gerar o relatório.");
+      setCurrentTab("finish");
+      return;
+    }
+    
+    // In a real application, this would generate a PDF on the server
+    toast.success("Relatório gerado com sucesso!");
+    setIsPdfModalOpen(true);
   };
   
   // Complete inspection
   const handleComplete = () => {
+    // Check if inspector signature is present
+    if (!inspectorSignature) {
+      toast.error("A assinatura do vistoriador é obrigatória para finalizar.");
+      return;
+    }
+    
     toast.success("Vistoria finalizada com sucesso! O laudo será gerado automaticamente.");
+    handleGenerateReport();
   };
 
   return (
@@ -185,7 +387,12 @@ export const InspectionForm = () => {
       <div className="space-y-6 pb-16">
         {/* Header with back button */}
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8"
+            onClick={() => navigate("/app/inspector/dashboard")}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -285,14 +492,28 @@ export const InspectionForm = () => {
               <Accordion type="single" collapsible className="bg-white rounded-md border" key={room.id}>
                 <AccordionItem value={`room-${room.id}`}>
                   <AccordionTrigger className="px-4">
-                    <span>{room.name}</span>
+                    <div className="flex items-center gap-2 w-full">
+                      <Input 
+                        value={room.name}
+                        onChange={(e) => handleRoomNameChange(room.id, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-7 text-sm w-auto min-w-[120px] max-w-[200px]"
+                      />
+                      <span className="text-xs text-gray-500">
+                        ({room.items.filter(item => item.status !== "").length}/{room.items.length} verificados)
+                      </span>
+                    </div>
                   </AccordionTrigger>
                   <AccordionContent className="px-4 space-y-4">
                     {room.items.map((item) => (
                       <Card key={`${room.id}-${item.id}`} className="overflow-hidden">
                         <CardHeader className="py-3 px-4 bg-gray-50 border-b">
                           <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-medium">{item.name}</CardTitle>
+                            <Input 
+                              value={item.name}
+                              onChange={(e) => handleItemNameChange(room.id, item.id, e.target.value)}
+                              className="h-7 text-sm w-auto min-w-[120px] max-w-[200px] font-medium"
+                            />
                             <div className="flex gap-2">
                               <Button 
                                 variant={item.status === "ok" ? "default" : "outline"} 
@@ -338,14 +559,11 @@ export const InspectionForm = () => {
                                 value={item.observation}
                                 onChange={(e) => updateItemObservation(room.id, item.id, e.target.value)}
                               />
-                              <Button 
-                                variant="outline" 
-                                size="icon" 
-                                className="shrink-0 h-10 w-10"
-                                onClick={() => handleSpeechRecognition(room.id, item.id)}
-                              >
-                                <Mic className="h-4 w-4" />
-                              </Button>
+                              <div>
+                                <AudioRecorder
+                                  onTranscriptionComplete={(text) => handleSpeechRecognition(room.id, item.id, text)}
+                                />
+                              </div>
                             </div>
                           </div>
                           
@@ -357,22 +575,38 @@ export const InspectionForm = () => {
                                 variant="ghost" 
                                 size="sm" 
                                 className="h-6 text-xs"
-                                onClick={() => handleAddPhoto(room.id, item.id)}
+                                onClick={() => handlePhotoCaptureStart(room.id, item.id)}
                               >
                                 <Camera className="h-3.5 w-3.5 mr-1" />
                                 Adicionar
                               </Button>
                             </div>
                             
-                            {/* Photo gallery placeholder */}
+                            {/* Photo gallery */}
                             <div className="flex flex-wrap gap-2 mt-2">
                               {item.photos.length === 0 ? (
                                 <div className="w-full h-20 border-2 border-dashed border-gray-200 rounded-md flex items-center justify-center">
                                   <p className="text-xs text-gray-400">Nenhuma foto adicionada</p>
                                 </div>
                               ) : (
-                                Array.from({ length: item.photos.length }).map((_, i) => (
-                                  <div key={i} className="h-20 w-20 bg-gray-200 rounded-md"></div>
+                                item.photos.map((photo) => (
+                                  <div key={photo.id} className="relative h-20 w-20 rounded-md overflow-hidden group">
+                                    <img 
+                                      src={photo.url} 
+                                      alt="" 
+                                      className="h-full w-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-white"
+                                        onClick={() => handleRemovePhoto(room.id, item.id, photo.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
                                 ))
                               )}
                             </div>
@@ -382,7 +616,11 @@ export const InspectionForm = () => {
                     ))}
                     
                     {/* Add Item button */}
-                    <Button variant="outline" className="w-full">
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => handleAddItem(room.id)}
+                    >
                       <Plus className="h-4 w-4 mr-2" />
                       Adicionar Item
                     </Button>
@@ -449,11 +687,14 @@ export const InspectionForm = () => {
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium">Progresso do Checklist</h4>
                     <div className="bg-gray-100 h-2 rounded-full">
-                      <div className="bg-green-500 h-2 rounded-full w-3/5"></div>
+                      <div 
+                        className="bg-green-500 h-2 rounded-full"
+                        style={{ width: `${progress.percentage}%` }}
+                      ></div>
                     </div>
                     <div className="flex justify-between text-xs text-gray-500">
-                      <span>24 itens verificados</span>
-                      <span>68% concluído</span>
+                      <span>{progress.completedItems} itens verificados</span>
+                      <span>{progress.percentage}% concluído</span>
                     </div>
                   </div>
                 </div>
@@ -463,23 +704,75 @@ export const InspectionForm = () => {
                   <h3 className="font-medium">Assinaturas</h3>
                   
                   <div className="space-y-1">
-                    <Label className="text-sm text-gray-500">Assinatura do Vistoriador</Label>
-                    <div className="border-2 border-dashed border-gray-200 rounded-md h-24 flex items-center justify-center">
-                      <p className="text-gray-400">Assine aqui</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <Label className="text-sm text-gray-500">Assinatura do Vistoriador <span className="text-red-500">*</span></Label>
+                      {inspectorSignature && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 px-2 py-0 text-xs"
+                          onClick={() => setIsInspectorSignatureModalOpen(true)}
+                        >
+                          Alterar
+                        </Button>
+                      )}
                     </div>
+                    
+                    {inspectorSignature ? (
+                      <div className="border rounded-md h-24 flex items-center justify-center p-2 bg-gray-50">
+                        <img src={inspectorSignature} alt="Assinatura do Vistoriador" className="max-h-full" />
+                      </div>
+                    ) : (
+                      <Button 
+                        variant="outline" 
+                        className="w-full h-24 border-2 border-dashed flex flex-col gap-1"
+                        onClick={() => setIsInspectorSignatureModalOpen(true)}
+                      >
+                        <span className="text-gray-400">Clique para assinar</span>
+                        <span className="text-xs text-gray-400">(obrigatório)</span>
+                      </Button>
+                    )}
                   </div>
                   
                   <div className="space-y-1">
-                    <Label className="text-sm text-gray-500">Assinatura do Responsável (opcional)</Label>
-                    <div className="border-2 border-dashed border-gray-200 rounded-md h-24 flex items-center justify-center">
-                      <p className="text-gray-400">Assine aqui</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <Label className="text-sm text-gray-500">Assinatura do Responsável (opcional)</Label>
+                      {responsibleSignature && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 px-2 py-0 text-xs"
+                          onClick={() => setIsResponsibleSignatureModalOpen(true)}
+                        >
+                          Alterar
+                        </Button>
+                      )}
                     </div>
+                    
+                    {responsibleSignature ? (
+                      <div className="border rounded-md h-24 flex items-center justify-center p-2 bg-gray-50">
+                        <img src={responsibleSignature} alt="Assinatura do Responsável" className="max-h-full" />
+                      </div>
+                    ) : (
+                      <Button 
+                        variant="outline" 
+                        className="w-full h-24 border-2 border-dashed flex flex-col gap-1"
+                        onClick={() => setIsResponsibleSignatureModalOpen(true)}
+                      >
+                        <span className="text-gray-400">Clique para assinar</span>
+                        <span className="text-xs text-gray-400">(opcional)</span>
+                      </Button>
+                    )}
                   </div>
                 </div>
                 
                 {/* Buttons */}
                 <div className="flex flex-col gap-3">
-                  <Button onClick={handleComplete} className="w-full">
+                  <Button 
+                    onClick={handleComplete} 
+                    className="w-full"
+                    disabled={!inspectorSignature}
+                  >
                     <ClipboardCheck className="mr-2 h-4 w-4" />
                     Finalizar e Gerar Laudo
                   </Button>
@@ -500,6 +793,53 @@ export const InspectionForm = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Photo Capture Modal */}
+      <Dialog open={isPhotoModalOpen} onOpenChange={setIsPhotoModalOpen}>
+        <DialogContent className="sm:max-w-md p-0">
+          <DialogTitle className="px-4 pt-4 pb-0">Capturar Foto</DialogTitle>
+          <PhotoCapture 
+            onPhotoCapture={handlePhotoCapture} 
+            onCancel={() => setIsPhotoModalOpen(false)} 
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Inspector Signature Modal */}
+      <Dialog open={isInspectorSignatureModalOpen} onOpenChange={setIsInspectorSignatureModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <SignatureCapture 
+            title="Assinatura do Vistoriador" 
+            onSignCapture={(data) => {
+              setInspectorSignature(data);
+              setIsInspectorSignatureModalOpen(false);
+            }} 
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Responsible Signature Modal */}
+      <Dialog open={isResponsibleSignatureModalOpen} onOpenChange={setIsResponsibleSignatureModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <SignatureCapture 
+            title="Assinatura do Responsável" 
+            onSignCapture={(data) => {
+              setResponsibleSignature(data);
+              setIsResponsibleSignatureModalOpen(false);
+            }} 
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* PDF Viewer Modal */}
+      <Dialog open={isPdfModalOpen} onOpenChange={setIsPdfModalOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <PDFViewer 
+            pdfUrl="https://loremflickr.com/cache/resized/65535_52560648347_44da74c220_z_640_480_nofilter.jpg" 
+            reportTitle={`Laudo de Vistoria - ${inspectionData.id}`} 
+          />
+        </DialogContent>
+      </Dialog>
     </InspectorLayout>
   );
 };
