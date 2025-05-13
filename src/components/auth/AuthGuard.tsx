@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/services/authService";
 import CompanySetup from "./CompanySetup";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -24,14 +25,34 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
       if (!isLoading) {
         // Verificação adicional da sessão diretamente do Supabase
         const { data } = await supabase.auth.getSession();
-        console.log("AuthGuard - Sessão atual:", data.session ? "Ativa" : "Inativa");
+        console.log("AuthGuard - Sessão atual:", data.session ? "Ativa" : "Inativa", "User ID:", data.session?.user.id);
         console.log("AuthGuard - Estado da sessão no contexto:", session ? "Presente" : "Ausente");
         console.log("AuthGuard - Dados do usuário:", user);
         
-        // Se não há sessão no Supabase mas temos no contexto, atualize o contexto
-        if (!data.session && session) {
-          console.log("AuthGuard - Inconsistência detectada: Sessão inválida");
-          // O useEffect no AuthContext lidará com isso
+        if (data.session && !user) {
+          console.log("AuthGuard - Usuário não carregado mas sessão existe, aguardando carregamento...");
+          
+          // Check directly if the user exists in the profiles table
+          const { data: profileData, error } = await supabase
+            .from("profiles")
+            .select("id, role, company_id")
+            .eq("id", data.session.user.id)
+            .single();
+            
+          if (error) {
+            console.error("AuthGuard - Erro ao verificar perfil:", error);
+            if (error.code === '42P17') {
+              toast.error("Erro na política de segurança. Por favor, entre em contato com o suporte.");
+            }
+          } else {
+            console.log("AuthGuard - Perfil encontrado diretamente:", profileData);
+            // If profile exists but not loaded in context, reload the page to force context to update
+            if (profileData && !user) {
+              console.log("AuthGuard - Recarregando página para atualizar contexto de autenticação");
+              window.location.reload();
+              return;
+            }
+          }
         }
         
         setVerifyingAuth(false);
@@ -48,6 +69,7 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-vistoria-blue mb-4"></div>
           <p className="text-gray-600">Verificando autenticação...</p>
+          <p className="text-gray-500 text-sm mt-2">Por favor, aguarde um momento.</p>
         </div>
       </div>
     );
@@ -62,9 +84,15 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
     "Autenticado e autorizado -> Mostrar conteúdo"
   );
 
-  if (!session || !user) {
+  if (!session) {
     // Redirect to login if not authenticated
-    console.log("AuthGuard - Redirecionando para login de:", location.pathname);
+    console.log("AuthGuard - Redirecionando para login por falta de sessão:", location.pathname);
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  
+  if (!user) {
+    // Redirect to login if user profile couldn't be loaded
+    console.log("AuthGuard - Redirecionando para login por falta de perfil:", location.pathname);
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

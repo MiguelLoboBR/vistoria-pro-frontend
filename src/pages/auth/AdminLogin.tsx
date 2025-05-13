@@ -1,31 +1,75 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "@/components/Logo";
 import LoginForm from "@/components/auth/LoginForm";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export const AdminLogin = () => {
   const { session, isLoading, user } = useAuth();
   const navigate = useNavigate();
+  const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    // Redirecionar se já estiver autenticado
-    if (session && user && !isLoading) {
-      console.log("AdminLogin: Usuário já autenticado, redirecionando...");
+    const checkAuthentication = async () => {
+      console.log("AdminLogin: Verificando autenticação...");
+      setCheckingSession(true);
       
-      if (user.role === "admin") {
-        navigate("/admin/tenant/dashboard");
-      } else {
-        navigate("/app/inspector/dashboard");
+      try {
+        // Verificar diretamente a sessão do Supabase
+        const { data } = await supabase.auth.getSession();
+        console.log("AdminLogin: Sessão do Supabase:", data.session ? "Existe" : "Não existe");
+        
+        // Se temos uma sessão ativa, verificar o perfil diretamente
+        if (data.session) {
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select("role, company_id")
+            .eq("id", data.session.user.id)
+            .single();
+            
+          console.log("AdminLogin: Dados do perfil:", profileData, "Erro:", profileError);
+          
+          if (!profileError && profileData) {
+            console.log("AdminLogin: Usuário autenticado, redirecionando com base no papel:", profileData.role);
+            
+            if (profileData.role === "admin") {
+              navigate("/admin/tenant/dashboard");
+            } else {
+              navigate("/app/inspector/dashboard");
+            }
+            return;
+          }
+        }
+        
+        // Usar o contexto de autenticação como fallback
+        if (session && user && !isLoading) {
+          console.log("AdminLogin: Usuário autenticado via contexto, redirecionando...");
+          
+          if (user.role === "admin") {
+            navigate("/admin/tenant/dashboard");
+          } else {
+            navigate("/app/inspector/dashboard");
+          }
+        }
+      } catch (error) {
+        console.error("AdminLogin: Erro ao verificar autenticação:", error);
+      } finally {
+        setCheckingSession(false);
       }
-    }
+    };
+    
+    checkAuthentication();
   }, [session, user, isLoading, navigate]);
 
-  if (isLoading) {
+  if (isLoading || checkingSession) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-vistoria-blue"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-vistoria-blue mb-4"></div>
+          <p className="text-gray-600">Verificando autenticação...</p>
+        </div>
       </div>
     );
   }

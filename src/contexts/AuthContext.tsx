@@ -4,6 +4,7 @@ import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { UserProfile, Company, authService } from "@/services/authService";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface AuthContextType {
   session: Session | null;
@@ -31,37 +32,65 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
+      (event, currentSession) => {
         console.log("Auth state changed:", event, "Has session:", !!currentSession);
         setSession(currentSession);
         
-        // Fetch user profile when session changes
         if (currentSession) {
           console.log("Session exists, fetching user profile...");
-          try {
-            const profile = await authService.getUserProfile();
-            console.log("Profile fetched:", profile);
-            setUser(profile);
-
-            if (profile?.company_id) {
-              console.log("Fetching company data...");
-              const companyData = await authService.getCompany(profile.company_id);
-              console.log("Company data fetched:", companyData);
-              setCompany(companyData);
-            } else {
-              console.log("User has no company_id");
-              setCompany(null);
+          
+          // Use setTimeout to prevent recursive auth calls
+          setTimeout(async () => {
+            try {
+              const { data, error } = await supabase
+                .from("profiles")
+                .select("id, email, full_name, role, company_id, avatar_url")
+                .eq("id", currentSession.user.id)
+                .single();
+              
+              if (error) {
+                console.error("Error fetching user profile from auth state change:", error);
+                if (error.code === '42P17') {
+                  toast.error("Erro na política de segurança da tabela profiles. Por favor, entre em contato com o suporte.");
+                }
+                setUser(null);
+                setIsLoading(false);
+                return;
+              }
+              
+              console.log("Profile data fetched:", data);
+              setUser(data as UserProfile);
+              
+              if (data?.company_id) {
+                const { data: companyData, error: companyError } = await supabase
+                  .from("companies")
+                  .select("*")
+                  .eq("id", data.company_id)
+                  .single();
+                  
+                if (companyError) {
+                  console.error("Error fetching company data:", companyError);
+                  setCompany(null);
+                } else {
+                  console.log("Company data fetched:", companyData);
+                  setCompany(companyData as Company);
+                }
+              } else {
+                console.log("User has no company_id");
+                setCompany(null);
+              }
+            } catch (error) {
+              console.error("Error in the profile/company fetch process:", error);
+            } finally {
+              setIsLoading(false);
             }
-          } catch (error) {
-            console.error("Error fetching user data:", error);
-          }
+          }, 0);
         } else {
           console.log("No active session, clearing user and company data");
           setUser(null);
           setCompany(null);
+          setIsLoading(false);
         }
-        
-        setIsLoading(false);
       }
     );
 
@@ -74,7 +103,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (existingSession) {
           setSession(existingSession);
-          await fetchUserProfile();
+          
+          // Direct query for user profile data
+          setTimeout(async () => {
+            try {
+              const { data, error } = await supabase
+                .from("profiles")
+                .select("id, email, full_name, role, company_id, avatar_url")
+                .eq("id", existingSession.user.id)
+                .single();
+                
+              if (error) {
+                console.error("Error fetching user profile from existing session:", error);
+                if (error.code === '42P17') {
+                  toast.error("Erro na política de segurança. Por favor, entre em contato com o suporte.");
+                }
+                setIsLoading(false);
+                return;
+              }
+              
+              console.log("Profile data fetched from existing session:", data);
+              setUser(data as UserProfile);
+              
+              if (data?.company_id) {
+                const { data: companyData, error: companyError } = await supabase
+                  .from("companies")
+                  .select("*")
+                  .eq("id", data.company_id)
+                  .single();
+                  
+                if (companyError) {
+                  console.error("Error fetching company data:", companyError);
+                  setCompany(null);
+                } else {
+                  console.log("Company data fetched:", companyData);
+                  setCompany(companyData as Company);
+                }
+              }
+            } catch (error) {
+              console.error("Error in the existing session profile fetch:", error);
+            } finally {
+              setIsLoading(false);
+            }
+          }, 0);
         } else {
           setIsLoading(false);
         }
@@ -92,35 +163,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const fetchUserProfile = async () => {
-    setIsLoading(true);
-    console.log("Fetching user profile manually...");
-    try {
-      const profile = await authService.getUserProfile();
-      console.log("User profile fetched:", profile);
-      setUser(profile);
-
-      if (profile?.company_id) {
-        const companyData = await authService.getCompany(profile.company_id);
-        console.log("Company data fetched:", companyData);
-        setCompany(companyData);
-      } else {
-        console.log("User has no company_id");
-        setCompany(null);
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const signIn = async (email: string, password: string) => {
     console.log("Iniciando login para:", email);
     try {
-      const result = await authService.signIn(email, password);
-      console.log("Resultado do login:", result);
-      // A sessão será atualizada pelo onAuthStateChange
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) throw error;
+      console.log("Login bem-sucedido:", data.session ? "Session obtida" : "Sem session");
+      
+      // The session will be updated by onAuthStateChange
+      return;
     } catch (error) {
       console.error("Erro no login:", error);
       throw error;
@@ -149,7 +204,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const companyId = await authService.createCompanyWithAdmin(name, cnpj);
       if (companyId) {
-        await fetchUserProfile(); // Refresh user profile after company creation
+        // Instead of just refreshing the profile, force a reload to ensure we have fresh data
+        window.location.href = "/admin/tenant/dashboard";
       }
       return companyId;
     } catch (error) {

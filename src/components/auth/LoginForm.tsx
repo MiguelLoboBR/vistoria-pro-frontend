@@ -28,7 +28,7 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
   const [showResendConfirmation, setShowResendConfirmation] = useState(false);
   const [emailForConfirmation, setEmailForConfirmation] = useState("");
   const navigate = useNavigate();
-  const { signIn, user } = useAuth();
+  const { signIn } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -87,26 +87,36 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
       console.log("Dados do perfil:", profileData, "Erro:", profileError);
       
       if (profileError) {
-        console.error("Erro ao buscar perfil:", profileError);
-      }
-      
-      // Redirecionar com base no papel do usuário
-      if (profileData?.role === 'admin') {
-        console.log("Redirecionando admin para dashboard");
-        navigate("/admin/tenant/dashboard");
-      } else if (profileData?.role === 'inspector') {
-        console.log("Redirecionando inspetor para dashboard");
-        navigate("/app/inspector/dashboard");
+        // Se houver erro ao buscar o perfil, tente novamente após um pequeno atraso
+        console.error("Erro ao buscar perfil - tentando novamente:", profileError);
+        
+        setTimeout(async () => {
+          const { data: retryData, error: retryError } = await supabase
+            .from('profiles')
+            .select('role, company_id')
+            .eq('id', sessionData.session!.user.id)
+            .single();
+            
+          console.log("Dados do perfil (nova tentativa):", retryData, "Erro:", retryError);
+          
+          if (!retryError && retryData) {
+            redirectBasedOnProfile(retryData);
+          } else if (profileError.code === '42P17') {
+            // Erro específico de política recursiva
+            toast.error("Erro na política de segurança. Por favor, entre em contato com o suporte.");
+            // Tentar redirecionar com base no tipo de formulário
+            fallbackRedirect();
+          } else {
+            // Tentar redirecionar com base no tipo de formulário
+            fallbackRedirect();
+          }
+        }, 1000);
+      } else if (profileData) {
+        redirectBasedOnProfile(profileData);
       } else {
         // Fallback baseado no tipo de formulário
-        console.log("Fallback de redirecionamento baseado no userType:", userType);
-        if (userType === "admin") {
-          navigate("/admin/tenant/dashboard");
-        } else {
-          navigate("/app/inspector/dashboard");
-        }
+        fallbackRedirect();
       }
-      
     } catch (error: any) {
       console.error("Erro de login:", error);
       
@@ -121,10 +131,30 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
       } else {
         toast.error(`Erro ao fazer login: ${error.message}`);
       }
-    } finally {
       setIsLoading(false);
     }
   };
+
+  function redirectBasedOnProfile(profile: any) {
+    if (profile.role === 'admin') {
+      console.log("Redirecionando admin para dashboard");
+      window.location.href = "/admin/tenant/dashboard";
+    } else if (profile.role === 'inspector') {
+      console.log("Redirecionando inspetor para dashboard");
+      window.location.href = "/app/inspector/dashboard";
+    } else {
+      fallbackRedirect();
+    }
+  }
+  
+  function fallbackRedirect() {
+    console.log("Fallback de redirecionamento baseado no userType:", userType);
+    if (userType === "admin") {
+      window.location.href = "/admin/tenant/dashboard";
+    } else {
+      window.location.href = "/app/inspector/dashboard";
+    }
+  }
 
   return (
     <Form {...form}>
