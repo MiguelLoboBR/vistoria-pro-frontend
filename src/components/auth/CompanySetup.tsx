@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   companyName: z.string().min(2, "Nome da empresa deve ter no mínimo 2 caracteres"),
@@ -19,7 +20,20 @@ const formSchema = z.object({
 const CompanySetup = () => {
   const { createCompanyWithAdmin, user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Retrieve the user ID from the current session
+    const fetchSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        setUserId(data.session.user.id);
+      }
+    };
+    
+    fetchSession();
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -33,12 +47,28 @@ const CompanySetup = () => {
     setIsSubmitting(true);
     
     try {
-      const companyId = await createCompanyWithAdmin(values.companyName, values.cnpj);
-      
-      if (companyId) {
-        toast.success("Empresa criada com sucesso!");
-        navigate("/admin/tenant/dashboard");
+      if (!userId) {
+        toast.error("Você precisa estar logado para criar uma empresa");
+        setIsSubmitting(false);
+        return;
       }
+      
+      // Call RPC function directly with user ID since context might not be fully loaded yet
+      const { data, error } = await supabase.rpc(
+        "create_company_with_admin", 
+        { 
+          company_name: values.companyName, 
+          company_cnpj: values.cnpj, 
+          admin_id: userId 
+        }
+      );
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      toast.success("Empresa criada com sucesso!");
+      navigate("/admin/tenant/dashboard");
     } catch (error: any) {
       toast.error(`Erro ao criar empresa: ${error.message}`);
     } finally {
