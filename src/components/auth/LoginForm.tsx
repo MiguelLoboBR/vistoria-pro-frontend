@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -62,73 +63,30 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
       console.log("Tentando fazer login com:", values.email);
       await signIn(values.email, values.password);
       
-      console.log("Login bem-sucedido, verificando perfil e redirecionando...");
       toast.success("Login bem-sucedido!");
+      console.log("Login bem-sucedido, redirecionando...");
       
       // Wait a moment for auth state to propagate
       setTimeout(async () => {
         try {
-          // Verificar se temos uma sessão válida
-          const { data: sessionData } = await supabase.auth.getSession();
-          console.log("Sessão após login:", sessionData.session);
-          
-          if (!sessionData.session) {
-            console.error("Sessão não encontrada após login bem-sucedido");
-            toast.error("Erro ao iniciar sessão. Por favor, tente novamente.");
-            setIsLoading(false);
-            return;
-          }
-          
-          // Verificar o perfil do usuário para determinar o redirecionamento
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('role, company_id')
-            .eq('id', sessionData.session.user.id)
-            .maybeSingle();
-          
-          console.log("Dados do perfil:", profileData, "Erro:", profileError);
-          
-          if (profileError) {
-            console.error("Erro ao buscar perfil:", profileError);
-            toast.error("Erro ao verificar perfil. Por favor, tente novamente.");
-            setIsLoading(false);
-            return;
-          }
-          
-          if (profileData) {
-            console.log("Perfil encontrado, redirecionando...");
-            // Force redirect with window.location to ensure complete page refresh
-            if (profileData.role === 'admin') {
-              window.location.href = "/admin/tenant/dashboard";
-            } else if (profileData.role === 'inspector') {
-              window.location.href = "/app/inspector/dashboard";
-            } else {
-              // Fallback
-              if (userType === "admin") {
-                window.location.href = "/admin/tenant/dashboard";
-              } else {
-                window.location.href = "/app/inspector/dashboard";
-              }
-            }
+          // Force redirection based on user type even if profile fetch fails
+          if (userType === "admin") {
+            window.location.href = "/admin/tenant/dashboard";
           } else {
-            console.log("Perfil não encontrado, usando fallback...");
-            // Fallback baseado no tipo de formulário
-            if (userType === "admin") {
-              window.location.href = "/admin/tenant/dashboard";
-            } else {
-              window.location.href = "/app/inspector/dashboard";
-            }
+            window.location.href = "/app/inspector/dashboard";
           }
         } catch (err) {
           console.error("Erro durante redirecionamento:", err);
           setIsLoading(false);
+          
+          // Show a message to the user that they can try to navigate manually
+          toast.error("Redirecionamento automático falhou. Tente navegar para o dashboard manualmente.");
         }
-      }, 500);
+      }, 1000);
       
     } catch (error: any) {
       console.error("Erro de login:", error);
       
-      // Verificar se é um erro de email não confirmado
       if (error.message.includes("Email não confirmado") || 
           error.message.includes("Email not confirmed")) {
         setShowResendConfirmation(true);

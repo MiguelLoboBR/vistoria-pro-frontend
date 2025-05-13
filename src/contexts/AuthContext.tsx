@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,54 +42,64 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Use setTimeout to prevent recursive auth calls
           setTimeout(async () => {
             try {
-              const { data, error } = await supabase
-                .from("profiles")
-                .select("id, email, full_name, role, company_id, avatar_url")
-                .eq("id", currentSession.user.id)
-                .maybeSingle(); // Use maybeSingle instead of single
+              // First attempt: Get role directly from the user metadata
+              let userRole = currentSession.user.user_metadata.role;
+              let userData: UserProfile | null = null;
               
-              if (error) {
-                console.error("Error fetching user profile from auth state change:", error);
-                setUser(null);
-                setIsLoading(false);
-                return;
+              try {
+                // Second attempt: Try to fetch profile data from profiles table
+                const { data, error } = await supabase
+                  .from("profiles")
+                  .select("id, email, full_name, role, company_id, avatar_url")
+                  .eq("id", currentSession.user.id)
+                  .maybeSingle();
+                
+                if (error) {
+                  console.error("Error fetching user profile:", error);
+                  // Don't fail here, we'll use a default profile
+                } else if (data) {
+                  userData = data as UserProfile;
+                  userRole = data.role;
+                }
+              } catch (profileError) {
+                console.error("Error in profile fetch:", profileError);
+                // Continue with fallback approach
               }
               
-              console.log("Profile data fetched:", data);
-              
-              if (data) {
-                setUser(data as UserProfile);
+              // If we still don't have user data, create a minimal profile
+              if (!userData) {
+                userData = {
+                  id: currentSession.user.id,
+                  email: currentSession.user.email!,
+                  full_name: currentSession.user.user_metadata.full_name,
+                  role: userRole as any || "inspector",
+                };
                 
-                if (data?.company_id) {
-                  try {
-                    const { data: companyData, error: companyError } = await supabase
-                      .from("companies")
-                      .select("*")
-                      .eq("id", data.company_id)
-                      .maybeSingle();
-                      
-                    if (companyError) {
-                      console.error("Error fetching company data:", companyError);
-                      setCompany(null);
-                    } else {
-                      console.log("Company data fetched:", companyData);
-                      setCompany(companyData as Company);
-                    }
-                  } catch (compErr) {
-                    console.error("Company fetch error:", compErr);
-                    setCompany(null);
+                console.log("Created fallback user profile:", userData);
+              }
+              
+              setUser(userData);
+              
+              // Try to fetch company data if we have a company_id
+              if (userData?.company_id) {
+                try {
+                  const { data: companyData, error: companyError } = await supabase
+                    .from("companies")
+                    .select("*")
+                    .eq("id", userData.company_id)
+                    .maybeSingle();
+                    
+                  if (companyError) {
+                    console.error("Error fetching company data:", companyError);
+                  } else if (companyData) {
+                    setCompany(companyData as Company);
                   }
-                } else {
-                  console.log("User has no company_id");
-                  setCompany(null);
+                } catch (compErr) {
+                  console.error("Company fetch error:", compErr);
                 }
-              } else {
-                console.log("No profile data found");
-                setUser(null);
               }
             } catch (error) {
               console.error("Error in the profile/company fetch process:", error);
-              setUser(null);
             } finally {
               setIsLoading(false);
             }
@@ -112,52 +123,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (existingSession) {
           setSession(existingSession);
           
-          // Direct query for user profile data
+          // Use fallback approach similar to onAuthStateChange
           setTimeout(async () => {
             try {
-              const { data, error } = await supabase
-                .from("profiles")
-                .select("id, email, full_name, role, company_id, avatar_url")
-                .eq("id", existingSession.user.id)
-                .maybeSingle();
+              // First, try to get a minimal profile from user metadata
+              let userData: UserProfile = {
+                id: existingSession.user.id,
+                email: existingSession.user.email!,
+                full_name: existingSession.user.user_metadata.full_name,
+                role: (existingSession.user.user_metadata.role as any) || "inspector",
+              };
+              
+              try {
+                // Try to enhance with profile data
+                const { data, error } = await supabase
+                  .from("profiles")
+                  .select("id, email, full_name, role, company_id, avatar_url")
+                  .eq("id", existingSession.user.id)
+                  .maybeSingle();
                 
-              if (error) {
-                console.error("Error fetching user profile from existing session:", error);
-                setIsLoading(false);
-                return;
+                if (!error && data) {
+                  userData = data as UserProfile;
+                  
+                  // Try to fetch company data if we have a company_id
+                  if (userData.company_id) {
+                    try {
+                      const { data: companyData, error: companyError } = await supabase
+                        .from("companies")
+                        .select("*")
+                        .eq("id", userData.company_id)
+                        .maybeSingle();
+                        
+                      if (!companyError && companyData) {
+                        setCompany(companyData as Company);
+                      }
+                    } catch (compErr) {
+                      console.error("Company fetch error:", compErr);
+                    }
+                  }
+                } else {
+                  console.log("Using fallback profile data from session");
+                }
+              } catch (profileError) {
+                console.error("Error fetching profile data:", profileError);
+                // Continue with minimal profile from metadata
               }
               
-              if (data) {
-                console.log("Profile data fetched from existing session:", data);
-                setUser(data as UserProfile);
-                
-                if (data?.company_id) {
-                  try {
-                    const { data: companyData, error: companyError } = await supabase
-                      .from("companies")
-                      .select("*")
-                      .eq("id", data.company_id)
-                      .maybeSingle();
-                      
-                    if (companyError) {
-                      console.error("Error fetching company data:", companyError);
-                      setCompany(null);
-                    } else {
-                      console.log("Company data fetched:", companyData);
-                      setCompany(companyData as Company);
-                    }
-                  } catch (compErr) {
-                    console.error("Company fetch error:", compErr);
-                    setCompany(null);
-                  }
-                }
-              } else {
-                console.log("No profile data found for existing session");
-                setUser(null);
-              }
+              setUser(userData);
             } catch (error) {
-              console.error("Error in the existing session profile fetch:", error);
-              setUser(null);
+              console.error("Error in existing session handling:", error);
             } finally {
               setIsLoading(false);
             }

@@ -40,8 +40,21 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
           return;
         }
         
-        // Check profile for role
+        // Check if we have a required role
         if (requiredRole) {
+          // Check metadata first for role
+          const userRole = sessionData.session.user.user_metadata.role;
+          
+          if (userRole) {
+            setDirectCheck({
+              isAuthenticated: true,
+              matchesRole: userRole === requiredRole,
+              checking: false
+            });
+            return;
+          }
+          
+          // If no role in metadata, check profile table
           try {
             const { data: profileData, error: profileError } = await supabase
               .from('profiles')
@@ -53,20 +66,27 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
               profileData ? `Role: ${profileData.role}` : "No profile", 
               profileError ? `Error: ${profileError.message}` : "No error");
               
-            if (profileError || !profileData) {
+            if (profileError) {
+              // On error, default to authenticated but no specific role
               setDirectCheck({
                 isAuthenticated: true,
                 matchesRole: false,
                 checking: false
               });
-              return;
+            } else if (profileData) {
+              setDirectCheck({
+                isAuthenticated: true,
+                matchesRole: profileData.role === requiredRole,
+                checking: false
+              });
+            } else {
+              // No profile found, default to not matching role
+              setDirectCheck({
+                isAuthenticated: true,
+                matchesRole: false,
+                checking: false
+              });
             }
-            
-            setDirectCheck({
-              isAuthenticated: true,
-              matchesRole: profileData.role === requiredRole,
-              checking: false
-            });
           } catch (err) {
             console.error("AuthGuard: Error checking profile:", err);
             setDirectCheck({
@@ -76,6 +96,7 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
             });
           }
         } else {
+          // No role required, just check auth
           setDirectCheck({
             isAuthenticated: true,
             matchesRole: true,
@@ -109,9 +130,19 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
   
   // Check using direct connection AND context
   const isAuthenticated = session !== null || directCheck.isAuthenticated;
-  const hasRequiredRole = requiredRole 
-    ? (user?.role === requiredRole || directCheck.matchesRole)
-    : true;
+  
+  // For role check, first see if we have a required role
+  let hasRequiredRole = true;
+  
+  if (requiredRole) {
+    // First try context
+    if (user?.role === requiredRole) {
+      hasRequiredRole = true;
+    } else {
+      // Then try direct check
+      hasRequiredRole = directCheck.matchesRole;
+    }
+  }
   
   // Redirect if not authenticated
   if (!isAuthenticated) {
@@ -119,13 +150,15 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
     return <Navigate to="/login" replace />;
   }
   
-  // Redirect if doesn't have required role
+  // If authenticated but doesn't have required role, redirect to appropriate dashboard
   if (!hasRequiredRole) {
-    console.log("AuthGuard: User doesn't have required role, redirecting to appropriate dashboard");
-    
-    if (user?.role === "admin" || directCheck.isAuthenticated) {
+    // If we know the user role (from context or direct check)
+    if (user?.role === "admin" || 
+        (directCheck.isAuthenticated && sessionData?.user?.user_metadata?.role === "admin")) {
+      console.log("AuthGuard: User is admin, redirecting to admin dashboard");
       return <Navigate to="/admin/tenant/dashboard" replace />;
     } else {
+      console.log("AuthGuard: User is inspector, redirecting to inspector dashboard");
       return <Navigate to="/app/inspector/dashboard" replace />;
     }
   }
