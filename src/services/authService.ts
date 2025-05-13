@@ -43,6 +43,7 @@ export const authService = {
           full_name: fullName,
           role: "admin", // Explicitly set role to admin for new users during registration
         },
+        emailRedirectTo: window.location.origin + "/company-setup",
       },
     });
 

@@ -21,23 +21,42 @@ const CompanySetup = () => {
   const { createCompanyWithAdmin, user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     // Retrieve the user ID from the current session
     const fetchSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          throw error;
+        }
+        
+        if (!data.session) {
+          // Redirect to login if no session
+          toast.error("Sessão expirada. Por favor, faça login novamente.");
+          navigate("/login");
+          return;
+        }
+        
         setUserId(data.session.user.id);
         
         // Check if the user has the correct role
-        const { data: profile, error } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("role")
           .eq("id", data.session.user.id)
           .single();
         
+        if (profileError) {
+          console.error("Erro ao buscar perfil:", profileError);
+        }
+        
         if (profile && profile.role === 'inspector') {
+          console.log("Atualizando papel de inspector para admin");
           // Update the role to admin
           const { error: updateError } = await supabase
             .from("profiles")
@@ -45,14 +64,19 @@ const CompanySetup = () => {
             .eq("id", data.session.user.id);
             
           if (updateError) {
-            console.error("Error updating role:", updateError);
+            console.error("Erro ao atualizar função:", updateError);
           }
         }
+      } catch (error: any) {
+        console.error("Erro ao buscar sessão:", error.message);
+        toast.error("Erro ao verificar autenticação.");
+      } finally {
+        setLoading(false);
       }
     };
     
     fetchSession();
-  }, []);
+  }, [navigate]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -67,52 +91,62 @@ const CompanySetup = () => {
     
     try {
       if (!userId) {
-        // Se não tiver ID, tente buscar novamente a sessão
-        const { data } = await supabase.auth.getSession();
-        if (data.session?.user) {
-          setUserId(data.session.user.id);
-          
-          // Update the role to admin if needed
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", data.session.user.id)
-            .single();
-          
-          if (profile && profile.role === 'inspector') {
-            await supabase
-              .from("profiles")
-              .update({ role: 'admin' })
-              .eq("id", data.session.user.id);
-          }
-          
-          // Tente criar a empresa com o ID atualizado
-          if (data.session.user.id) {
-            const result = await supabase.rpc(
-              "create_company_with_admin", 
-              { 
-                company_name: values.companyName, 
-                company_cnpj: values.cnpj, 
-                admin_id: data.session.user.id 
-              }
-            );
-            
-            if (result.error) {
-              throw new Error(result.error.message);
-            }
-            
-            toast.success("Empresa criada com sucesso!");
-            navigate("/admin/tenant/dashboard");
-            return;
-          }
-        } else {
-          toast.error("Você precisa estar logado para criar uma empresa");
+        // Tenta buscar a sessão novamente se não houver ID do usuário
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          throw new Error("Erro ao recuperar a sessão do usuário: " + error.message);
         }
-        setIsSubmitting(false);
+        
+        if (!data.session) {
+          toast.error("Sessão expirada. Por favor, faça login novamente.");
+          navigate("/login");
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Atualiza o ID do usuário
+        setUserId(data.session.user.id);
+        
+        // Garante que o usuário é um admin
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.session.user.id)
+          .single();
+        
+        if (profile && profile.role === 'inspector') {
+          const { error: updateError } = await supabase
+            .from("profiles")
+            .update({ role: 'admin' })
+            .eq("id", data.session.user.id);
+            
+          if (updateError) {
+            console.error("Erro ao atualizar função:", updateError);
+          }
+        }
+        
+        // Cria a empresa com o ID do usuário
+        const result = await supabase.rpc(
+          "create_company_with_admin", 
+          { 
+            company_name: values.companyName, 
+            company_cnpj: values.cnpj, 
+            admin_id: data.session.user.id 
+          }
+        );
+        
+        if (result.error) {
+          throw new Error(result.error.message);
+        }
+        
+        toast.success("Empresa criada com sucesso!");
+        navigate("/admin/tenant/dashboard");
         return;
       }
       
-      // Call RPC function directly with user ID
+      // Call RPC function with user ID
+      console.log("Criando empresa para o usuário:", userId);
       const { data, error } = await supabase.rpc(
         "create_company_with_admin", 
         { 
@@ -130,16 +164,30 @@ const CompanySetup = () => {
       navigate("/admin/tenant/dashboard");
     } catch (error: any) {
       toast.error(`Erro ao criar empresa: ${error.message}`);
+      console.error("Erro detalhado:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-vistoria-blue mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
         <div className="text-center mb-6">
-          <Logo className="mx-auto mb-4" />
+          <div className="flex justify-center items-center">
+            <Logo className="mx-auto mb-4" />
+          </div>
           <h1 className="text-2xl font-bold">Configuração da Empresa</h1>
           <p className="text-gray-600 mt-2">
             {user?.full_name ? `Olá, ${user.full_name}! ` : ''}
@@ -156,7 +204,7 @@ const CompanySetup = () => {
                 <FormItem>
                   <FormLabel>Nome da Empresa</FormLabel>
                   <FormControl>
-                    <Input placeholder="Nome da sua empresa" {...field} />
+                    <Input placeholder="Nome da sua empresa" {...field} autoComplete="organization" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -170,7 +218,7 @@ const CompanySetup = () => {
                 <FormItem>
                   <FormLabel>CNPJ</FormLabel>
                   <FormControl>
-                    <Input placeholder="00.000.000/0000-00" {...field} />
+                    <Input placeholder="00.000.000/0000-00" {...field} autoComplete="off" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
