@@ -23,23 +23,32 @@ export const InspectorLogin = () => {
         
         // Se temos uma sessão ativa, verificar o perfil diretamente
         if (data.session) {
-          const { data: profileData, error: profileError } = await supabase
-            .from("profiles")
-            .select("role, company_id")
-            .eq("id", data.session.user.id)
-            .single();
+          // Use try-catch here to properly handle any profile fetch errors
+          try {
+            const { data: profileData, error: profileError } = await supabase
+              .from("profiles")
+              .select("role, company_id")
+              .eq("id", data.session.user.id)
+              .maybeSingle(); // Use maybeSingle instead of single to prevent errors
+              
+            console.log("InspectorLogin: Dados do perfil:", profileData, "Erro:", profileError);
             
-          console.log("InspectorLogin: Dados do perfil:", profileData, "Erro:", profileError);
-          
-          if (!profileError && profileData) {
-            console.log("InspectorLogin: Usuário autenticado, redirecionando com base no papel:", profileData.role);
-            
-            if (profileData.role === "admin") {
-              navigate("/admin/tenant/dashboard");
-            } else {
-              navigate("/app/inspector/dashboard");
+            if (!profileError && profileData) {
+              console.log("InspectorLogin: Usuário autenticado, redirecionando com base no papel:", profileData.role);
+              
+              // Force redirect to avoid any race conditions
+              if (profileData.role === "admin") {
+                window.location.href = "/admin/tenant/dashboard";
+                return;
+              } else {
+                window.location.href = "/app/inspector/dashboard";
+                return;
+              }
+            } else if (profileError) {
+              console.error("Erro ao buscar perfil:", profileError);
             }
-            return;
+          } catch (err) {
+            console.error("Erro durante verificação de perfil:", err);
           }
         }
         
@@ -48,9 +57,9 @@ export const InspectorLogin = () => {
           console.log("InspectorLogin: Usuário autenticado via contexto, redirecionando...");
           
           if (user.role === "admin") {
-            navigate("/admin/tenant/dashboard");
+            window.location.href = "/admin/tenant/dashboard";
           } else {
-            navigate("/app/inspector/dashboard");
+            window.location.href = "/app/inspector/dashboard";
           }
         }
       } catch (error) {

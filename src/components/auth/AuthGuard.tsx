@@ -1,11 +1,9 @@
 
 import { ReactNode, useEffect, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/services/authService";
-import CompanySetup from "./CompanySetup";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -13,125 +11,126 @@ interface AuthGuardProps {
 }
 
 const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
-  const { user, isLoading, session, company } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [verifyingAuth, setVerifyingAuth] = useState(true);
+  const { session, user, isLoading } = useAuth();
+  const [directCheck, setDirectCheck] = useState<{
+    isAuthenticated: boolean;
+    matchesRole: boolean;
+    checking: boolean;
+  }>({
+    isAuthenticated: false,
+    matchesRole: false,
+    checking: true
+  });
 
   useEffect(() => {
-    const verifyAuthentication = async () => {
-      console.log("AuthGuard - Verificando autenticação, isLoading:", isLoading);
-      
-      if (!isLoading) {
-        // Verificação adicional da sessão diretamente do Supabase
-        const { data } = await supabase.auth.getSession();
-        console.log("AuthGuard - Sessão atual:", data.session ? "Ativa" : "Inativa", "User ID:", data.session?.user.id);
-        console.log("AuthGuard - Estado da sessão no contexto:", session ? "Presente" : "Ausente");
-        console.log("AuthGuard - Dados do usuário:", user);
+    const checkAuthentication = async () => {
+      try {
+        // Direct check with Supabase
+        const { data: sessionData } = await supabase.auth.getSession();
         
-        if (data.session && !user) {
-          console.log("AuthGuard - Usuário não carregado mas sessão existe, aguardando carregamento...");
+        console.log("AuthGuard: Direct session check:", 
+          sessionData.session ? "Session exists" : "No session");
           
-          // Check directly if the user exists in the profiles table
-          const { data: profileData, error } = await supabase
-            .from("profiles")
-            .select("id, role, company_id")
-            .eq("id", data.session.user.id)
-            .single();
-            
-          if (error) {
-            console.error("AuthGuard - Erro ao verificar perfil:", error);
-            if (error.code === '42P17') {
-              toast.error("Erro na política de segurança. Por favor, entre em contato com o suporte.");
-            }
-          } else {
-            console.log("AuthGuard - Perfil encontrado diretamente:", profileData);
-            // If profile exists but not loaded in context, reload the page to force context to update
-            if (profileData && !user) {
-              console.log("AuthGuard - Recarregando página para atualizar contexto de autenticação");
-              window.location.reload();
-              return;
-            }
-          }
+        if (!sessionData.session) {
+          setDirectCheck({
+            isAuthenticated: false,
+            matchesRole: false,
+            checking: false
+          });
+          return;
         }
         
-        setVerifyingAuth(false);
+        // Check profile for role
+        if (requiredRole) {
+          try {
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', sessionData.session.user.id)
+              .maybeSingle();
+            
+            console.log("AuthGuard: Direct profile check:", 
+              profileData ? `Role: ${profileData.role}` : "No profile", 
+              profileError ? `Error: ${profileError.message}` : "No error");
+              
+            if (profileError || !profileData) {
+              setDirectCheck({
+                isAuthenticated: true,
+                matchesRole: false,
+                checking: false
+              });
+              return;
+            }
+            
+            setDirectCheck({
+              isAuthenticated: true,
+              matchesRole: profileData.role === requiredRole,
+              checking: false
+            });
+          } catch (err) {
+            console.error("AuthGuard: Error checking profile:", err);
+            setDirectCheck({
+              isAuthenticated: true,
+              matchesRole: false,
+              checking: false
+            });
+          }
+        } else {
+          setDirectCheck({
+            isAuthenticated: true,
+            matchesRole: true,
+            checking: false
+          });
+        }
+      } catch (err) {
+        console.error("AuthGuard: Error during direct check:", err);
+        setDirectCheck({
+          isAuthenticated: false,
+          matchesRole: false,
+          checking: false
+        });
       }
     };
     
-    verifyAuthentication();
-  }, [isLoading, session, user]);
+    checkAuthentication();
+  }, [requiredRole]);
   
-  if (isLoading || verifyingAuth) {
-    // Show loading state while checking authentication
+  // Don't show any content while loading
+  if (isLoading || directCheck.checking) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-vistoria-blue mb-4"></div>
           <p className="text-gray-600">Verificando autenticação...</p>
-          <p className="text-gray-500 text-sm mt-2">Por favor, aguarde um momento.</p>
         </div>
       </div>
     );
   }
   
-  console.log("AuthGuard - Decisão de roteamento:", 
-    !session ? "Sem sessão -> Redirecionar para login" : 
-    !user ? "Sem dados de usuário -> Redirecionar para login" :
-    !company && user.role === "admin" ? "Admin sem empresa -> CompanySetup" :
-    !company && user.role === "inspector" ? "Inspetor sem empresa -> Mensagem" :
-    requiredRole && user.role !== requiredRole ? "Papel incorreto -> Redirecionar para dashboard apropriado" :
-    "Autenticado e autorizado -> Mostrar conteúdo"
-  );
-
-  if (!session) {
-    // Redirect to login if not authenticated
-    console.log("AuthGuard - Redirecionando para login por falta de sessão:", location.pathname);
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  // Check using direct connection AND context
+  const isAuthenticated = session !== null || directCheck.isAuthenticated;
+  const hasRequiredRole = requiredRole 
+    ? (user?.role === requiredRole || directCheck.matchesRole)
+    : true;
+  
+  // Redirect if not authenticated
+  if (!isAuthenticated) {
+    console.log("AuthGuard: User not authenticated, redirecting to login");
+    return <Navigate to="/login" replace />;
   }
   
-  if (!user) {
-    // Redirect to login if user profile couldn't be loaded
-    console.log("AuthGuard - Redirecionando para login por falta de perfil:", location.pathname);
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  // Check if the user has a company assigned
-  if (!company) {
-    // If admin but no company yet, show company setup
-    if (user.role === "admin") {
-      return <CompanySetup />;
-    } else {
-      // If inspector but no company yet, show info page
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4">
-          <h1 className="text-2xl font-bold mb-4">Vistoriador não associado</h1>
-          <p className="text-center mb-6">
-            Sua conta ainda não foi associada a uma empresa. Por favor, entre em contato com o administrador da sua empresa para ser adicionado.
-          </p>
-          <button
-            onClick={() => navigate("/login/inspector")}
-            className="px-4 py-2 bg-vistoria-blue text-white rounded-md hover:bg-vistoria-darkBlue"
-          >
-            Voltar para o login
-          </button>
-        </div>
-      );
-    }
-  }
-
-  // Check if user has the required role
-  if (requiredRole && user.role !== requiredRole) {
-    console.log(`AuthGuard - Papel requerido: ${requiredRole}, Papel do usuário: ${user.role} - Redirecionando`);
-    // Redirect to appropriate dashboard based on actual role
-    if (user.role === "admin") {
+  // Redirect if doesn't have required role
+  if (!hasRequiredRole) {
+    console.log("AuthGuard: User doesn't have required role, redirecting to appropriate dashboard");
+    
+    if (user?.role === "admin" || directCheck.isAuthenticated) {
       return <Navigate to="/admin/tenant/dashboard" replace />;
     } else {
       return <Navigate to="/app/inspector/dashboard" replace />;
     }
   }
-
-  console.log("AuthGuard - Renderizando conteúdo protegido");
+  
+  // If all checks pass, render the children
   return <>{children}</>;
 };
 

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -63,60 +62,69 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
       console.log("Tentando fazer login com:", values.email);
       await signIn(values.email, values.password);
       
-      console.log("Login bem-sucedido, redirecionando...");
+      console.log("Login bem-sucedido, verificando perfil e redirecionando...");
       toast.success("Login bem-sucedido!");
       
-      // Verificar se temos uma sessão válida antes de redirecionar
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log("Sessão após login:", sessionData.session);
-      
-      if (!sessionData.session) {
-        console.error("Sessão não encontrada após login bem-sucedido");
-        toast.error("Erro ao iniciar sessão. Por favor, tente novamente.");
-        setIsLoading(false);
-        return;
-      }
-      
-      // Verificar o perfil do usuário para determinar o redirecionamento
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('role, company_id')
-        .eq('id', sessionData.session.user.id)
-        .single();
-      
-      console.log("Dados do perfil:", profileData, "Erro:", profileError);
-      
-      if (profileError) {
-        // Se houver erro ao buscar o perfil, tente novamente após um pequeno atraso
-        console.error("Erro ao buscar perfil - tentando novamente:", profileError);
-        
-        setTimeout(async () => {
-          const { data: retryData, error: retryError } = await supabase
+      // Wait a moment for auth state to propagate
+      setTimeout(async () => {
+        try {
+          // Verificar se temos uma sessão válida
+          const { data: sessionData } = await supabase.auth.getSession();
+          console.log("Sessão após login:", sessionData.session);
+          
+          if (!sessionData.session) {
+            console.error("Sessão não encontrada após login bem-sucedido");
+            toast.error("Erro ao iniciar sessão. Por favor, tente novamente.");
+            setIsLoading(false);
+            return;
+          }
+          
+          // Verificar o perfil do usuário para determinar o redirecionamento
+          const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('role, company_id')
-            .eq('id', sessionData.session!.user.id)
-            .single();
-            
-          console.log("Dados do perfil (nova tentativa):", retryData, "Erro:", retryError);
+            .eq('id', sessionData.session.user.id)
+            .maybeSingle();
           
-          if (!retryError && retryData) {
-            redirectBasedOnProfile(retryData);
-          } else if (profileError.code === '42P17') {
-            // Erro específico de política recursiva
-            toast.error("Erro na política de segurança. Por favor, entre em contato com o suporte.");
-            // Tentar redirecionar com base no tipo de formulário
-            fallbackRedirect();
-          } else {
-            // Tentar redirecionar com base no tipo de formulário
-            fallbackRedirect();
+          console.log("Dados do perfil:", profileData, "Erro:", profileError);
+          
+          if (profileError) {
+            console.error("Erro ao buscar perfil:", profileError);
+            toast.error("Erro ao verificar perfil. Por favor, tente novamente.");
+            setIsLoading(false);
+            return;
           }
-        }, 1000);
-      } else if (profileData) {
-        redirectBasedOnProfile(profileData);
-      } else {
-        // Fallback baseado no tipo de formulário
-        fallbackRedirect();
-      }
+          
+          if (profileData) {
+            console.log("Perfil encontrado, redirecionando...");
+            // Force redirect with window.location to ensure complete page refresh
+            if (profileData.role === 'admin') {
+              window.location.href = "/admin/tenant/dashboard";
+            } else if (profileData.role === 'inspector') {
+              window.location.href = "/app/inspector/dashboard";
+            } else {
+              // Fallback
+              if (userType === "admin") {
+                window.location.href = "/admin/tenant/dashboard";
+              } else {
+                window.location.href = "/app/inspector/dashboard";
+              }
+            }
+          } else {
+            console.log("Perfil não encontrado, usando fallback...");
+            // Fallback baseado no tipo de formulário
+            if (userType === "admin") {
+              window.location.href = "/admin/tenant/dashboard";
+            } else {
+              window.location.href = "/app/inspector/dashboard";
+            }
+          }
+        } catch (err) {
+          console.error("Erro durante redirecionamento:", err);
+          setIsLoading(false);
+        }
+      }, 500);
+      
     } catch (error: any) {
       console.error("Erro de login:", error);
       
@@ -134,27 +142,6 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
       setIsLoading(false);
     }
   };
-
-  function redirectBasedOnProfile(profile: any) {
-    if (profile.role === 'admin') {
-      console.log("Redirecionando admin para dashboard");
-      window.location.href = "/admin/tenant/dashboard";
-    } else if (profile.role === 'inspector') {
-      console.log("Redirecionando inspetor para dashboard");
-      window.location.href = "/app/inspector/dashboard";
-    } else {
-      fallbackRedirect();
-    }
-  }
-  
-  function fallbackRedirect() {
-    console.log("Fallback de redirecionamento baseado no userType:", userType);
-    if (userType === "admin") {
-      window.location.href = "/admin/tenant/dashboard";
-    } else {
-      window.location.href = "/app/inspector/dashboard";
-    }
-  }
 
   return (
     <Form {...form}>

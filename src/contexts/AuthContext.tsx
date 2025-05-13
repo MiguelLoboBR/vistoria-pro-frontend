@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,41 +45,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 .from("profiles")
                 .select("id, email, full_name, role, company_id, avatar_url")
                 .eq("id", currentSession.user.id)
-                .single();
+                .maybeSingle(); // Use maybeSingle instead of single
               
               if (error) {
                 console.error("Error fetching user profile from auth state change:", error);
-                if (error.code === '42P17') {
-                  toast.error("Erro na política de segurança da tabela profiles. Por favor, entre em contato com o suporte.");
-                }
                 setUser(null);
                 setIsLoading(false);
                 return;
               }
               
               console.log("Profile data fetched:", data);
-              setUser(data as UserProfile);
               
-              if (data?.company_id) {
-                const { data: companyData, error: companyError } = await supabase
-                  .from("companies")
-                  .select("*")
-                  .eq("id", data.company_id)
-                  .single();
-                  
-                if (companyError) {
-                  console.error("Error fetching company data:", companyError);
-                  setCompany(null);
+              if (data) {
+                setUser(data as UserProfile);
+                
+                if (data?.company_id) {
+                  try {
+                    const { data: companyData, error: companyError } = await supabase
+                      .from("companies")
+                      .select("*")
+                      .eq("id", data.company_id)
+                      .maybeSingle();
+                      
+                    if (companyError) {
+                      console.error("Error fetching company data:", companyError);
+                      setCompany(null);
+                    } else {
+                      console.log("Company data fetched:", companyData);
+                      setCompany(companyData as Company);
+                    }
+                  } catch (compErr) {
+                    console.error("Company fetch error:", compErr);
+                    setCompany(null);
+                  }
                 } else {
-                  console.log("Company data fetched:", companyData);
-                  setCompany(companyData as Company);
+                  console.log("User has no company_id");
+                  setCompany(null);
                 }
               } else {
-                console.log("User has no company_id");
-                setCompany(null);
+                console.log("No profile data found");
+                setUser(null);
               }
             } catch (error) {
               console.error("Error in the profile/company fetch process:", error);
+              setUser(null);
             } finally {
               setIsLoading(false);
             }
@@ -111,37 +119,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 .from("profiles")
                 .select("id, email, full_name, role, company_id, avatar_url")
                 .eq("id", existingSession.user.id)
-                .single();
+                .maybeSingle();
                 
               if (error) {
                 console.error("Error fetching user profile from existing session:", error);
-                if (error.code === '42P17') {
-                  toast.error("Erro na política de segurança. Por favor, entre em contato com o suporte.");
-                }
                 setIsLoading(false);
                 return;
               }
               
-              console.log("Profile data fetched from existing session:", data);
-              setUser(data as UserProfile);
-              
-              if (data?.company_id) {
-                const { data: companyData, error: companyError } = await supabase
-                  .from("companies")
-                  .select("*")
-                  .eq("id", data.company_id)
-                  .single();
-                  
-                if (companyError) {
-                  console.error("Error fetching company data:", companyError);
-                  setCompany(null);
-                } else {
-                  console.log("Company data fetched:", companyData);
-                  setCompany(companyData as Company);
+              if (data) {
+                console.log("Profile data fetched from existing session:", data);
+                setUser(data as UserProfile);
+                
+                if (data?.company_id) {
+                  try {
+                    const { data: companyData, error: companyError } = await supabase
+                      .from("companies")
+                      .select("*")
+                      .eq("id", data.company_id)
+                      .maybeSingle();
+                      
+                    if (companyError) {
+                      console.error("Error fetching company data:", companyError);
+                      setCompany(null);
+                    } else {
+                      console.log("Company data fetched:", companyData);
+                      setCompany(companyData as Company);
+                    }
+                  } catch (compErr) {
+                    console.error("Company fetch error:", compErr);
+                    setCompany(null);
+                  }
                 }
+              } else {
+                console.log("No profile data found for existing session");
+                setUser(null);
               }
             } catch (error) {
               console.error("Error in the existing session profile fetch:", error);
+              setUser(null);
             } finally {
               setIsLoading(false);
             }
