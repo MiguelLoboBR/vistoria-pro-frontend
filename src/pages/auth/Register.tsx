@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import RegisterLogo from "@/components/auth/RegisterLogo";
+import { useAuth } from "@/contexts/AuthContext";
 
 const formSchema = z.object({
   companyName: z.string().min(2, "Nome da empresa deve ter no mínimo 2 caracteres"),
@@ -27,7 +28,9 @@ const formSchema = z.object({
 export const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { signUp } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -43,22 +46,24 @@ export const Register = () => {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true);
+    
     try {
-      console.log("Registration data:", values);
+      // Register the user first
+      await signUp(values.email, values.password, values.responsibleName);
       
-      // Here you would connect to your backend API to register
-      // For now, we'll just simulate success
+      toast.success("Cadastro enviado com sucesso! Redirecionando para configuração da empresa.");
       
-      toast.success("Cadastro enviado com sucesso! Em breve entraremos em contato.");
-      
-      // Wait a bit before redirecting to login
+      // Wait a bit before redirecting to company setup
       setTimeout(() => {
-        navigate("/login");
-      }, 2000);
+        navigate("/company-setup");
+      }, 1500);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration error:", error);
-      toast.error("Erro ao cadastrar. Por favor, tente novamente.");
+      toast.error(`Erro ao cadastrar: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

@@ -3,7 +3,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
+// Import contexts
+import { AuthProvider } from "@/contexts/AuthContext";
+
+// Import components
+import AuthGuard from "@/components/auth/AuthGuard";
+import CompanySetup from "@/components/auth/CompanySetup";
 
 // Import pages
 import Landing from "./pages/landing/Landing";
@@ -20,32 +27,63 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const AppRoutes = () => (
+  <Routes>
+    {/* Public Routes */}
+    <Route path="/" element={<Landing />} />
+    <Route path="/login" element={<AdminLogin />} />
+    <Route path="/login/inspector" element={<InspectorLogin />} />
+    <Route path="/register" element={<Register />} />
+    <Route path="/company-setup" element={<CompanySetup />} />
+    
+    {/* Admin Routes */}
+    <Route path="/admin/tenant/dashboard" element={
+      <AuthGuard requiredRole="admin">
+        <Dashboard />
+      </AuthGuard>
+    } />
+    <Route path="/admin/tenant/perfil" element={
+      <AuthGuard requiredRole="admin">
+        <CompanyProfile />
+      </AuthGuard>
+    } />
+    <Route path="/admin/tenant/vistoriadores" element={
+      <AuthGuard requiredRole="admin">
+        <InspectorList />
+      </AuthGuard>
+    } />
+    <Route path="/admin/tenant/vistorias" element={
+      <AuthGuard requiredRole="admin">
+        <Vistorias />
+      </AuthGuard>
+    } />
+    
+    {/* Inspector Routes */}
+    <Route path="/app/inspector/dashboard" element={
+      <AuthGuard requiredRole="inspector">
+        <InspectionList />
+      </AuthGuard>
+    } />
+    <Route path="/app/inspector/inspection/:id" element={
+      <AuthGuard requiredRole="inspector">
+        <InspectionForm />
+      </AuthGuard>
+    } />
+    
+    {/* Catch-all route */}
+    <Route path="*" element={<NotFound />} />
+  </Routes>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<AdminLogin />} />
-          <Route path="/login/inspector" element={<InspectorLogin />} />
-          <Route path="/register" element={<Register />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin/tenant/dashboard" element={<Dashboard />} />
-          <Route path="/admin/tenant/perfil" element={<CompanyProfile />} />
-          <Route path="/admin/tenant/vistoriadores" element={<InspectorList />} />
-          <Route path="/admin/tenant/vistorias" element={<Vistorias />} />
-          
-          {/* Inspector Routes */}
-          <Route path="/app/inspector/dashboard" element={<InspectionList />} />
-          <Route path="/app/inspector/inspection/:id" element={<InspectionForm />} />
-          
-          {/* Catch-all route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

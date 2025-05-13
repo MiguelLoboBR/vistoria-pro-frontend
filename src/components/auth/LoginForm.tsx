@@ -9,6 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserRole } from "@/services/authService";
 
 const formSchema = z.object({
   email: z.string().email("Digite um e-mail válido"),
@@ -16,12 +18,14 @@ const formSchema = z.object({
 });
 
 interface LoginFormProps {
-  userType: "admin" | "inspector";
+  userType: UserRole;
 }
 
 export const LoginForm = ({ userType }: LoginFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { signIn, user } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -31,21 +35,30 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    // In a real app, this would call an API for authentication
-    console.log("Login attempt:", values);
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsLoading(true);
     
-    // Mock login success
-    toast.success("Login bem-sucedido!");
-    
-    // Navigate based on user type
-    setTimeout(() => {
-      if (userType === "admin") {
-        navigate("/admin/tenant/dashboard");
-      } else {
-        navigate("/app/inspector/dashboard");
-      }
-    }, 1000);
+    try {
+      await signIn(values.email, values.password);
+      
+      toast.success("Login bem-sucedido!");
+      
+      // Navigate after successful authentication
+      setTimeout(() => {
+        // The AuthGuard will redirect to the appropriate dashboard
+        // based on the user's role and company
+        if (userType === "admin") {
+          navigate("/admin/tenant/dashboard");
+        } else {
+          navigate("/app/inspector/dashboard");
+        }
+      }, 1000);
+      
+    } catch (error: any) {
+      toast.error(`Erro ao fazer login: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -58,7 +71,7 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
             <FormItem>
               <FormLabel>E-mail</FormLabel>
               <FormControl>
-                <Input placeholder="seu@email.com" type="email" {...field} />
+                <Input placeholder="seu@email.com" type="email" {...field} disabled={isLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -77,6 +90,7 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
                     placeholder="Sua senha" 
                     type={showPassword ? "text" : "password"} 
                     {...field} 
+                    disabled={isLoading}
                   />
                   <Button
                     type="button"
@@ -84,6 +98,7 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
                     size="icon"
                     className="absolute right-0 top-0 h-full px-3"
                     onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
                   >
                     {showPassword ? (
                       <EyeOffIcon className="h-4 w-4 text-gray-500" />
@@ -98,12 +113,16 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
           )}
         />
         
-        <Button type="submit" className="w-full bg-vistoria-blue hover:bg-vistoria-darkBlue">
-          Entrar
+        <Button 
+          type="submit" 
+          className="w-full bg-vistoria-blue hover:bg-vistoria-darkBlue"
+          disabled={isLoading}
+        >
+          {isLoading ? "Entrando..." : "Entrar"}
         </Button>
         
         <div className="text-center">
-          <Button variant="link" className="text-sm text-vistoria-blue">
+          <Button variant="link" className="text-sm text-vistoria-blue" disabled={isLoading}>
             Esqueci minha senha
           </Button>
         </div>
