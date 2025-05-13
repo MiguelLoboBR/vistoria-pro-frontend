@@ -16,10 +16,12 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
     isAuthenticated: boolean;
     matchesRole: boolean;
     checking: boolean;
+    userRole?: string;
   }>({
     isAuthenticated: false,
     matchesRole: false,
-    checking: true
+    checking: true,
+    userRole: undefined
   });
 
   useEffect(() => {
@@ -35,7 +37,8 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
           setDirectCheck({
             isAuthenticated: false,
             matchesRole: false,
-            checking: false
+            checking: false,
+            userRole: undefined
           });
           return;
         }
@@ -49,7 +52,8 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
             setDirectCheck({
               isAuthenticated: true,
               matchesRole: userRole === requiredRole,
-              checking: false
+              checking: false,
+              userRole: userRole
             });
             return;
           }
@@ -71,20 +75,23 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
               setDirectCheck({
                 isAuthenticated: true,
                 matchesRole: false,
-                checking: false
+                checking: false,
+                userRole: undefined
               });
             } else if (profileData) {
               setDirectCheck({
                 isAuthenticated: true,
                 matchesRole: profileData.role === requiredRole,
-                checking: false
+                checking: false,
+                userRole: profileData.role
               });
             } else {
               // No profile found, default to not matching role
               setDirectCheck({
                 isAuthenticated: true,
                 matchesRole: false,
-                checking: false
+                checking: false,
+                userRole: undefined
               });
             }
           } catch (err) {
@@ -92,7 +99,8 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
             setDirectCheck({
               isAuthenticated: true,
               matchesRole: false,
-              checking: false
+              checking: false,
+              userRole: undefined
             });
           }
         } else {
@@ -100,7 +108,8 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
           setDirectCheck({
             isAuthenticated: true,
             matchesRole: true,
-            checking: false
+            checking: false,
+            userRole: undefined
           });
         }
       } catch (err) {
@@ -108,7 +117,8 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
         setDirectCheck({
           isAuthenticated: false,
           matchesRole: false,
-          checking: false
+          checking: false,
+          userRole: undefined
         });
       }
     };
@@ -153,8 +163,9 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
   // If authenticated but doesn't have required role, redirect to appropriate dashboard
   if (!hasRequiredRole) {
     // If we know the user role (from context or direct check)
-    if (user?.role === "admin" || 
-        (directCheck.isAuthenticated && sessionData?.user?.user_metadata?.role === "admin")) {
+    const userRole = user?.role || directCheck.userRole;
+    
+    if (userRole === "admin") {
       console.log("AuthGuard: User is admin, redirecting to admin dashboard");
       return <Navigate to="/admin/tenant/dashboard" replace />;
     } else {
