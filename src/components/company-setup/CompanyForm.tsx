@@ -1,4 +1,4 @@
-
+import React, { useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,7 +54,7 @@ export const CompanyForm = ({
   });
   
   // Check for stored company details from registration
-  React.useEffect(() => {
+  useEffect(() => {
     const storedCompanyDetails = localStorage.getItem('pendingCompanySetup');
     if (storedCompanyDetails) {
       try {
@@ -93,6 +93,7 @@ export const CompanyForm = ({
               Dados da Empresa
             </h2>
             
+            {/* Company fields section */}
             <FormField
               control={form.control}
               name="companyName"
@@ -106,6 +107,8 @@ export const CompanyForm = ({
                 </FormItem>
               )}
             />
+            
+            
             
             <FormField
               control={form.control}
@@ -204,6 +207,7 @@ export const CompanyForm = ({
           <div className="space-y-6">
             <h2 className="font-bold text-lg">Dados do Administrador</h2>
             
+            {/* Admin fields section */}
             <FormField
               control={form.control}
               name="adminName"
@@ -217,6 +221,8 @@ export const CompanyForm = ({
                 </FormItem>
               )}
             />
+            
+            
             
             <FormField
               control={form.control}

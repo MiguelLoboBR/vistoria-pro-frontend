@@ -176,14 +176,14 @@ export type Database = {
               company_name: string
               company_cnpj: string
               admin_id: string
-              company_address: string
-              company_phone: string
-              company_email: string
-              company_logo_url: string
-              admin_name: string
-              admin_cpf: string
-              admin_phone: string
-              admin_email: string
+              company_address?: string
+              company_phone?: string
+              company_email?: string
+              company_logo_url?: string
+              admin_name?: string
+              admin_cpf?: string
+              admin_phone?: string
+              admin_email?: string
             }
         Returns: string
       }

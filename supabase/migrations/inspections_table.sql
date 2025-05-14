@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS public.inspections (
   address TEXT NOT NULL,
   date TEXT NOT NULL, -- Store as text to maintain formatting
   time TEXT, -- Optional time field
-  status TEXT NOT NULL CHECK (status IN ('pending', 'in_progress', 'completed')) DEFAULT 'pending',
+  status TEXT NOT NULL CHECK (status IN ('pending', 'in_progress', 'completed', 'canceled')) DEFAULT 'pending',
   inspector_id UUID REFERENCES public.profiles(id),
   type TEXT NOT NULL,
   company_id UUID NOT NULL REFERENCES public.companies(id),
