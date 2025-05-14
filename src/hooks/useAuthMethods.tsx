@@ -64,10 +64,32 @@ export function useAuthMethods(fetchUserProfile: (userId: string) => Promise<voi
     }
   };
 
-  const createCompanyWithAdmin = async (name: string, cnpj: string) => {
+  const createCompanyWithAdmin = async (
+    name: string, 
+    cnpj: string,
+    address?: string,
+    phone?: string,
+    email?: string,
+    logoUrl?: string,
+    adminName?: string,
+    adminCpf?: string,
+    adminPhone?: string,
+    adminEmail?: string
+  ) => {
     try {
       setIsSubmitting(true);
-      const companyId = await authService.createCompanyWithAdmin(name, cnpj);
+      const companyId = await authService.createCompanyWithAdmin(
+        name, 
+        cnpj,
+        address,
+        phone,
+        email,
+        logoUrl,
+        adminName,
+        adminCpf,
+        adminPhone,
+        adminEmail
+      );
       if (companyId) {
         // Instead of just refreshing the profile, force a reload to ensure we have fresh data
         window.location.href = "/admin/dashboard";

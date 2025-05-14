@@ -15,7 +15,6 @@ import AuthGuard from "@/components/auth/AuthGuard";
 import Landing from "./pages/landing/Landing";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
-import CompanySetup from "./pages/auth/CompanySetup";
 import NotFound from "./pages/NotFound";
 
 // Admin pages
@@ -38,9 +37,6 @@ const AppRoutes = () => (
     <Route path="/login" element={<Login role="admin" />} />
     <Route path="/login/inspector" element={<Login role="inspector" />} />
     <Route path="/register" element={<Register />} />
-    
-    {/* Company Setup Route */}
-    <Route path="/setup/company" element={<CompanySetup />} />
     
     {/* Admin Routes */}
     <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />

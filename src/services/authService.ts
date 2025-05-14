@@ -182,7 +182,19 @@ const signOut = async (): Promise<void> => {
   }
 };
 
-const createCompanyWithAdmin = async (name: string, cnpj: string): Promise<string | null> => {
+// Modified to use direct creation from registration data
+const createCompanyWithAdmin = async (
+  name: string, 
+  cnpj: string,
+  address?: string,
+  phone?: string,
+  email?: string,
+  logoUrl?: string,
+  adminName?: string,
+  adminCpf?: string,
+  adminPhone?: string,
+  adminEmail?: string
+): Promise<string | null> => {
   try {
     // Get the current user's ID
     const { data: { user } } = await supabase.auth.getUser();
@@ -191,12 +203,23 @@ const createCompanyWithAdmin = async (name: string, cnpj: string): Promise<strin
       throw new Error("No authenticated user found");
     }
 
-    // Call the RPC function to create company and set up the admin
-    const { data, error } = await supabase.rpc('create_company_with_admin', {
-      company_name: name,
-      company_cnpj: cnpj,
-      admin_id: user.id
-    });
+    // Call the RPC function to create company and set up the admin with all the data
+    const { data, error } = await supabase.rpc(
+      "create_company_with_admin", 
+      { 
+        company_name: name, 
+        company_cnpj: cnpj, 
+        admin_id: user.id,
+        company_address: address || null,
+        company_phone: phone || null,
+        company_email: email || null,
+        company_logo_url: logoUrl || null,
+        admin_name: adminName || null,
+        admin_cpf: adminCpf || null,
+        admin_phone: adminPhone || null,
+        admin_email: adminEmail || null
+      }
+    );
 
     if (error) {
       throw error;

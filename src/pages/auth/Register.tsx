@@ -8,40 +8,47 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon, UploadCloud } from "lucide-react";
 import RegisterLogo from "@/components/auth/RegisterLogo";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
-  // Comum a ambos tipos de registro
+  // User auth fields
   email: z.string().email("Digite um e-mail válido"),
-  phone: z.string().min(10, "Telefone inválido"),
   password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
   confirmPassword: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
   
-  // Tipo de registro (CNPJ para empresa, CPF para pessoa física)
-  registrationType: z.enum(["cnpj", "cpf"]),
+  // Registration type
+  registrationType: z.enum(["company", "individual"]),
   
-  // Campos específicos para empresa
+  // Company fields
   companyName: z.string().optional(),
   companyAddress: z.string().optional(),
   companyPhone: z.string().optional(),
   companyEmail: z.string().optional(),
   cnpj: z.string().optional(),
   
-  // Campos específicos para pessoa física
+  // Individual/admin fields
   fullName: z.string().optional(),
   cpf: z.string().optional(),
+  phone: z.string().optional(),
+  
+  // Admin fields (when company)
+  adminName: z.string().optional(),
+  adminCpf: z.string().optional(),
+  adminPhone: z.string().optional(),
+  adminEmail: z.string().optional(),
   
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"]
 }).refine(
   (data) => {
-    if (data.registrationType === 'cnpj') {
+    if (data.registrationType === 'company') {
       return !!data.companyName && !!data.cnpj;
     }
     return true;
@@ -52,7 +59,7 @@ const formSchema = z.object({
   }
 ).refine(
   (data) => {
-    if (data.registrationType === 'cpf') {
+    if (data.registrationType === 'individual') {
       return !!data.fullName && !!data.cpf;
     }
     return true;
@@ -60,6 +67,17 @@ const formSchema = z.object({
   {
     message: "Dados pessoais obrigatórios",
     path: ["fullName"]
+  }
+).refine(
+  (data) => {
+    if (data.registrationType === 'company') {
+      return !!data.adminName && !!data.adminCpf && !!data.adminPhone;
+    }
+    return true;
+  },
+  {
+    message: "Dados do administrador obrigatórios",
+    path: ["adminName"]
   }
 );
 
@@ -69,64 +87,121 @@ export const Register = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  
   const navigate = useNavigate();
   const { signUp } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      registrationType: "cnpj",
+      registrationType: "company",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      
+      // Company fields
       companyName: "",
       companyAddress: "",
       companyPhone: "",
       companyEmail: "",
       cnpj: "",
+      
+      // Individual fields
       fullName: "",
       cpf: "",
-      email: "",
       phone: "",
-      password: "",
-      confirmPassword: "",
+      
+      // Admin fields
+      adminName: "",
+      adminCpf: "",
+      adminPhone: "",
+      adminEmail: "",
     },
   });
 
   // Watch the registration type to conditionally render fields
   const registrationType = form.watch("registrationType");
 
+  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     
     try {
+      // Use admin email for authentication (or regular email for individual)
+      const authEmail = values.registrationType === 'company' 
+        ? (values.adminEmail || values.email) 
+        : values.email;
+      
+      // Use company/individual name based on registration type
+      const name = values.registrationType === 'company' 
+        ? values.companyName 
+        : values.fullName;
+      
       // Register the user with admin role
-      const name = values.registrationType === 'cnpj' ? values.companyName : values.fullName;
-      const result = await signUp(values.email, values.password, name as string);
-      
+      const result = await signUp(authEmail, values.password, name as string);
       console.log("Registration result:", result);
-      setRegisteredEmail(values.email);
-      setRegistrationComplete(true);
       
-      toast.success("Cadastro enviado com sucesso! Verifique seu email para confirmar sua conta.");
-      
-      // Store registration details in localStorage for later use
-      const registrationData = values.registrationType === 'cnpj' 
-        ? {
-            name: values.companyName,
-            cnpj: values.cnpj,
-            address: values.companyAddress,
-            phone: values.companyPhone,
-            email: values.companyEmail || values.email,
-            type: 'company'
+      if (values.registrationType === 'company') {
+        // Upload logo if selected
+        let logoUrl = null;
+        if (logoFile) {
+          const { data: storageData, error: storageError } = await supabase.storage
+            .from('company_logos')
+            .upload(`${values.cnpj}/logo`, logoFile);
+            
+          if (storageError) {
+            console.error("Error uploading logo:", storageError);
+          } else if (storageData) {
+            logoUrl = supabase.storage.from('company_logos').getPublicUrl(storageData.path).data.publicUrl;
           }
-        : {
-            name: values.fullName,
-            cpf: values.cpf,
-            phone: values.phone,
-            email: values.email,
-            type: 'individual'
-          };
+        }
+        
+        // Store extended company and admin data to be used during confirmation
+        const companyData = {
+          companyName: values.companyName,
+          cnpj: values.cnpj,
+          address: values.companyAddress,
+          phone: values.companyPhone,
+          email: values.companyEmail || values.email,
+          logoUrl,
+          adminName: values.adminName,
+          adminCpf: values.adminCpf,
+          adminPhone: values.adminPhone,
+          adminEmail: values.adminEmail || values.email,
+          type: 'company'
+        };
+        
+        localStorage.setItem('pendingCompanySetup', JSON.stringify(companyData));
+      } else {
+        // Store individual profile data
+        const individualData = {
+          name: values.fullName,
+          cpf: values.cpf,
+          phone: values.phone,
+          email: values.email,
+          type: 'individual'
+        };
+        
+        localStorage.setItem('pendingCompanySetup', JSON.stringify(individualData));
+      }
       
-      localStorage.setItem('pendingCompanySetup', JSON.stringify(registrationData));
-      
+      setRegisteredEmail(authEmail);
+      setRegistrationComplete(true);
+      toast.success("Cadastro enviado com sucesso! Verifique seu email para confirmar sua conta.");
     } catch (error: any) {
       console.error("Registration error:", error);
       toast.error(`Erro ao cadastrar: ${error.message}`);
@@ -203,14 +278,14 @@ export const Register = () => {
                         className="flex flex-col space-y-1"
                       >
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="cnpj" id="cnpj" />
-                          <FormLabel htmlFor="cnpj" className="font-normal">
+                          <RadioGroupItem value="company" id="company" />
+                          <FormLabel htmlFor="company" className="font-normal">
                             Empresa (CNPJ)
                           </FormLabel>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="cpf" id="cpf" />
-                          <FormLabel htmlFor="cpf" className="font-normal">
+                          <RadioGroupItem value="individual" id="individual" />
+                          <FormLabel htmlFor="individual" className="font-normal">
                             Pessoa Física (CPF)
                           </FormLabel>
                         </div>
@@ -221,60 +296,20 @@ export const Register = () => {
                 )}
               />
               
-              {/* Campos específicos para empresas */}
-              {registrationType === 'cnpj' && (
+              {registrationType === 'company' ? (
                 <>
-                  <FormField
-                    control={form.control}
-                    name="companyName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome da Empresa</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nome da empresa" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="cnpj"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>CNPJ</FormLabel>
-                        <FormControl>
-                          <Input placeholder="00.000.000/0000-00" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="companyAddress"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Endereço</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Endereço completo" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Company Fields */}
+                  <div className="space-y-5">
+                    <h2 className="font-bold text-lg border-b pb-2">Dados da Empresa</h2>
+                    
                     <FormField
                       control={form.control}
-                      name="companyPhone"
+                      name="companyName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Telefone da Empresa</FormLabel>
+                          <FormLabel>Nome da Empresa</FormLabel>
                           <FormControl>
-                            <Input placeholder="(00) 0000-0000" {...field} />
+                            <Input placeholder="Nome da empresa" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -283,16 +318,208 @@ export const Register = () => {
                     
                     <FormField
                       control={form.control}
-                      name="companyEmail"
+                      name="cnpj"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>E-mail da Empresa</FormLabel>
+                          <FormLabel>CNPJ</FormLabel>
                           <FormControl>
-                            <Input placeholder="empresa@exemplo.com" type="email" {...field} />
+                            <Input placeholder="00.000.000/0000-00" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="companyAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Endereço</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Endereço completo" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="companyPhone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Telefone da Empresa</FormLabel>
+                            <FormControl>
+                              <Input placeholder="(00) 0000-0000" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="companyEmail"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>E-mail da Empresa</FormLabel>
+                            <FormControl>
+                              <Input placeholder="empresa@exemplo.com" type="email" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              Opcional, se diferente do e-mail de login
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <FormLabel>Logo da Empresa</FormLabel>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center">
+                        {logoPreview ? (
+                          <div className="mb-4">
+                            <img 
+                              src={logoPreview} 
+                              alt="Logo preview" 
+                              className="max-h-32 max-w-full object-contain" 
+                            />
+                          </div>
+                        ) : (
+                          <UploadCloud className="h-10 w-10 text-gray-400 mb-2" />
+                        )}
+                        
+                        <p className="text-sm text-gray-500 mb-2">Arraste ou clique para fazer upload</p>
+                        
+                        <Input
+                          id="logo"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleLogoChange}
+                        />
+                        <label htmlFor="logo">
+                          <div className="bg-vistoria-blue text-white px-4 py-2 rounded cursor-pointer hover:bg-vistoria-darkBlue text-sm">
+                            Selecionar arquivo
+                          </div>
+                        </label>
+                        <p className="text-xs text-gray-400 mt-2">
+                          PNG ou JPEG, max 2MB
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Admin Fields */}
+                  <div className="space-y-5 pt-4">
+                    <h2 className="font-bold text-lg border-b pb-2">Dados do Administrador</h2>
+                    
+                    <FormField
+                      control={form.control}
+                      name="adminName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome Completo</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nome completo" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="adminCpf"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>CPF</FormLabel>
+                          <FormControl>
+                            <Input placeholder="000.000.000-00" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="adminPhone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Telefone</FormLabel>
+                          <FormControl>
+                            <Input placeholder="(00) 00000-0000" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="adminEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>E-mail do Administrador</FormLabel>
+                          <FormControl>
+                            <Input placeholder="admin@exemplo.com" type="email" {...field} />
                           </FormControl>
                           <FormDescription>
-                            Opcional, se diferente do e-mail de login
+                            Este será o e-mail usado para login no sistema
                           </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Individual Fields */}
+                  <div className="space-y-5">
+                    <h2 className="font-bold text-lg border-b pb-2">Dados Pessoais</h2>
+                    
+                    <FormField
+                      control={form.control}
+                      name="fullName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome Completo</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nome completo" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="cpf"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>CPF</FormLabel>
+                          <FormControl>
+                            <Input placeholder="000.000.000-00" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Telefone</FormLabel>
+                          <FormControl>
+                            <Input placeholder="(00) 00000-0000" {...field} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -301,41 +528,10 @@ export const Register = () => {
                 </>
               )}
               
-              {/* Campos específicos para pessoa física */}
-              {registrationType === 'cpf' && (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="fullName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome Completo</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nome completo" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="cpf"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>CPF</FormLabel>
-                        <FormControl>
-                          <Input placeholder="000.000.000-00" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
-              
-              {/* Campos comuns para ambos */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Common Auth Fields */}
+              <div className="space-y-5 pt-4">
+                <h2 className="font-bold text-lg border-b pb-2">Dados de Acesso</h2>
+                
                 <FormField
                   control={form.control}
                   name="email"
@@ -352,84 +548,70 @@ export const Register = () => {
                 
                 <FormField
                   control={form.control}
-                  name="phone"
+                  name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Telefone de Contato</FormLabel>
+                      <FormLabel>Senha</FormLabel>
                       <FormControl>
-                        <Input placeholder="(00) 00000-0000" {...field} />
+                        <div className="relative">
+                          <Input 
+                            placeholder="Sua senha" 
+                            type={showPassword ? "text" : "password"} 
+                            {...field} 
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? (
+                              <EyeOffIcon className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <EyeIcon className="h-4 w-4 text-gray-500" />
+                            )}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirmar Senha</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            placeholder="Confirme sua senha" 
+                            type={showConfirmPassword ? "text" : "password"} 
+                            {...field} 
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOffIcon className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <EyeIcon className="h-4 w-4 text-gray-500" />
+                            )}
+                          </Button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-              
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Senha</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input 
-                          placeholder="Sua senha" 
-                          type={showPassword ? "text" : "password"} 
-                          {...field} 
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full px-3"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? (
-                            <EyeOffIcon className="h-4 w-4 text-gray-500" />
-                          ) : (
-                            <EyeIcon className="h-4 w-4 text-gray-500" />
-                          )}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirmar Senha</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input 
-                          placeholder="Confirme sua senha" 
-                          type={showConfirmPassword ? "text" : "password"} 
-                          {...field} 
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full px-3"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOffIcon className="h-4 w-4 text-gray-500" />
-                          ) : (
-                            <EyeIcon className="h-4 w-4 text-gray-500" />
-                          )}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               
               <Button type="submit" className="w-full bg-vistoria-blue hover:bg-vistoria-darkBlue" disabled={isSubmitting}>
                 {isSubmitting ? "Cadastrando..." : "Cadastrar"}
