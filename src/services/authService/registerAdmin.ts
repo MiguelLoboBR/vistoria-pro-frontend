@@ -9,7 +9,7 @@ export const registerAdmin = async (
   fullName: string
 ): Promise<UserProfile | null> => {
   try {
-    // 1. Cria usuário com metadata esperada pela trigger
+    // 1. Create user with metadata that the trigger expects
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -31,7 +31,7 @@ export const registerAdmin = async (
       throw new Error("User ID not found after signup");
     }
 
-    // 2. Retorna perfil simulado (trigger criará o real)
+    // 2. Return simulated profile (trigger will create the real one)
     return {
       id: userId,
       email: email,

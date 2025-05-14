@@ -1,7 +1,7 @@
 
 import { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { UserRole } from "@/services/types"; // Import from services/types for consistency
+import { UserRole } from "@/services/authService/types";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { LoadingAuthentication } from "./LoadingAuthentication";
 
@@ -38,7 +38,7 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
   
   // If authenticated but doesn't have required role, redirect to appropriate dashboard
   if (!hasRequiredRole) {
-    if (userRole === "admin_tenant") {
+    if (userRole === "admin_tenant" || userRole === "admin_master") {
       console.log("AuthGuard: User is admin, redirecting to admin dashboard");
       return <Navigate to="/admin/dashboard" replace />;
     } else {

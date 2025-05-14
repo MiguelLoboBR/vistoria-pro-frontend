@@ -1,100 +1,92 @@
 
 import { useState } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { UserRole } from "@/services/types";
+import { UserRole } from "@/services/authService/types";
 
-const formSchema = z.object({
-  email: z.string().email("Digite um e-mail válido"),
-  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
+interface UseLoginFormProps {
+  role: UserRole | string;
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}
+
+const loginFormSchema = z.object({
+  email: z.string().email("Email inválido"),
+  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres")
 });
 
-export type LoginFormValues = z.infer<typeof formSchema>;
+type LoginFormValues = z.infer<typeof loginFormSchema>;
 
-export function useLoginForm(userType: UserRole) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [showResendConfirmation, setShowResendConfirmation] = useState(false);
-  const [emailForConfirmation, setEmailForConfirmation] = useState("");
-
+export const useLoginForm = ({ role, onSuccess, onError }: UseLoginFormProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const form = useForm<LoginFormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(loginFormSchema),
     defaultValues: {
       email: "",
-      password: "",
-    },
-  });
-
-  const handleResendConfirmation = async () => {
-    if (!emailForConfirmation) return;
-    
-    setIsLoading(true);
-    try {
-      await supabase.auth.resend({
-        type: 'signup',
-        email: emailForConfirmation,
-      });
-      toast.success("Link de confirmação reenviado para seu e-mail!");
-    } catch (error: any) {
-      toast.error(`Erro ao reenviar o e-mail de confirmação: ${error.message}`);
-    } finally {
-      setIsLoading(false);
+      password: ""
     }
-  };
-
+  });
+  
   const onSubmit = async (values: LoginFormValues) => {
-    setIsLoading(true);
-    setShowResendConfirmation(false);
+    setIsSubmitting(true);
     
     try {
-      console.log("Tentando fazer login com:", values.email);
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email,
-        password: values.password,
+        password: values.password
       });
       
-      if (error) throw error;
-      
-      toast.success("Login bem-sucedido!");
-      console.log("Login bem-sucedido, redirecionando...");
-      
-      // Get user metadata to check actual role
-      const role = data.user?.user_metadata?.role || "inspector";
-      
-      // Direct redirects to ensure no race conditions with context
-      if (role === "admin_tenant") {
-        window.location.href = "/admin/dashboard";
-      } else {
-        window.location.href = "/inspector/dashboard";
+      if (error) {
+        throw error;
       }
       
-    } catch (error: any) {
-      console.error("Erro de login:", error);
+      if (!data.user) {
+        throw new Error("Usuário não encontrado");
+      }
       
-      if (error.message.includes("Email não confirmado") || 
-          error.message.includes("Email not confirmed")) {
-        setShowResendConfirmation(true);
-        setEmailForConfirmation(values.email);
-        toast.error(
-          "Email não confirmado. Por favor, verifique sua caixa de entrada para o link de confirmação."
-        );
-      } else {
-        toast.error(`Erro ao fazer login: ${error.message}`);
+      // Check user role from metadata
+      const userRole = data.user.user_metadata?.role;
+      
+      // Role validation - only if role is provided and doesn't match
+      if (role && userRole && role !== 'admin_tenant' && userRole !== role) {
+        // Allow admin_master to login through admin_tenant route
+        if (!(role === 'admin_tenant' && userRole === 'admin_master')) {
+          await supabase.auth.signOut();
+          throw new Error(`Acesso não autorizado para tipo ${userRole}`);
+        }
+      }
+      
+      // Success callback
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error: any) {
+      console.error("Login error:", error);
+      
+      // Transform error message for better user experience
+      let errorMessage = error.message;
+      if (error.message.includes("Invalid login credentials")) {
+        errorMessage = "Credenciais inválidas";
+      } else if (error.message.includes("Email not confirmed")) {
+        errorMessage = "Email não confirmado";
+      }
+      
+      // Error callback
+      if (onError) {
+        error.message = errorMessage;
+        onError(error);
       }
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
-
+  
   return {
     form,
-    isLoading,
-    showResendConfirmation,
-    emailForConfirmation,
-    handleResendConfirmation,
+    isSubmitting,
     onSubmit
   };
-}
+};

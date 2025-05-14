@@ -1,185 +1,101 @@
 
 import { useState, useEffect } from "react";
-import { Session } from "@supabase/supabase-js";
+import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { UserProfile, Company } from "@/contexts/types";
-import { UserRole } from "@/services/types";
+import { UserProfile } from "@/services/types";
 
-export function useAuthState() {
+export const useAuthState = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [fetchProfileFailed, setFetchProfileFailed] = useState(false);
-  
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   useEffect(() => {
-    console.log("AuthContext initializing...");
-    
-    // Set up auth state listener
+    // First, set up the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        console.log("Auth state changed:", event, "Has session:", !!currentSession);
-        setSession(currentSession);
+      (event, session) => {
+        console.log("Auth state changed:", event);
+        setSession(session);
         
-        if (currentSession) {
-          // Reset fetch fail flag on new session
-          setFetchProfileFailed(false);
-          
-          // Use a timeout to prevent potential lock issues when fetching profile
-          setTimeout(() => {
-            fetchUserProfile(currentSession.user.id);
-          }, 0);
-        } else {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          setIsAuthenticated(true);
+        } else if (event === 'SIGNED_OUT') {
+          setIsAuthenticated(false);
           setUser(null);
-          setCompany(null);
-          setIsLoading(false);
         }
       }
     );
 
-    // Check for existing session
-    const checkExistingSession = async () => {
+    // Then check for an existing session
+    const initializeAuth = async () => {
       try {
-        console.log("Checking for existing session...");
-        const { data: { session: existingSession } } = await supabase.auth.getSession();
-        console.log("Existing session check result:", existingSession ? "Session found" : "No session");
-        
-        if (existingSession) {
-          setSession(existingSession);
-          fetchUserProfile(existingSession.user.id);
-        } else {
-          setIsLoading(false);
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        setIsAuthenticated(!!session);
+
+        // Fetch the user profile if we have a session
+        if (session?.user) {
+          await fetchUserProfile(session.user);
         }
       } catch (error) {
-        console.error("Error checking existing session:", error);
+        console.error("Error initializing auth:", error);
+      } finally {
         setIsLoading(false);
       }
     };
-    
-    checkExistingSession();
+
+    initializeAuth();
 
     return () => {
-      console.log("Cleaning up auth subscription");
       subscription.unsubscribe();
     };
   }, []);
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (authUser: User) => {
     try {
-      // If we've already tried and failed once, use fallback immediately
-      if (fetchProfileFailed) {
-        createFallbackUserProfile(userId);
+      // Try to fetch the user's profile from the database
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, email, full_name, role, company_id, avatar_url, cpf, phone")
+        .eq("id", authUser.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching user profile:", error);
         return;
       }
-      
-      console.log("Fetching user profile for:", userId);
-      
-      try {
-        // Try using RPC function to avoid RLS issues
-        const { data, error } = await supabase
-          .rpc('get_user_role_safely')
-          .then(async (roleResult) => {
-            if (roleResult.error) {
-              throw roleResult.error;
-            }
-            
-            // If we successfully got the role, we can now try to fetch the full profile
-            return supabase
-              .from("profiles")
-              .select("id, email, full_name, role, company_id, avatar_url, cpf, phone")
-              .eq("id", userId)
-              .maybeSingle();
-          });
-        
-        if (error) {
-          if (error.message.includes('infinite recursion') || error.code === '42P17') {
-            console.warn("Detected infinite recursion in policy - using fallback approach");
-            createFallbackUserProfile(userId);
-            return;
-          } else {
-            throw error;
-          }
-        }
 
-        if (data) {
-          console.log("User profile found:", data);
-          setUser(data as UserProfile);
-          
-          // If the user has a company, fetch company data
-          if (data.company_id) {
-            fetchCompanyData(data.company_id);
-          } else {
-            setCompany(null);
-            console.log("User has no company associated");
-            setIsLoading(false);
-          }
-        } else {
-          console.log("No profile found for user:", userId);
-          createFallbackUserProfile(userId);
-        }
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
-        setFetchProfileFailed(true);
-        createFallbackUserProfile(userId);
+      // If we got profile data, use it
+      if (data) {
+        setUser(data as UserProfile);
+        return;
       }
-    } catch (error) {
-      console.error("Error in fetchUserProfile:", error);
-      createFallbackUserProfile(userId);
-    }
-  };
-  
-  const createFallbackUserProfile = (userId: string) => {
-    console.log("Creating fallback user profile for", userId);
-    // Create a default profile with basic info to allow the app to function
-    const fallbackUser: UserProfile = {
-      id: userId,
-      email: session?.user?.email || "user@example.com",
-      role: "admin_tenant", // Updated from "admin" to "admin_tenant"
-      company_id: null,
-      full_name: session?.user?.user_metadata?.full_name || "User",
-      avatar_url: null
-    };
-    
-    setUser(fallbackUser);
-    setCompany(null);
-    setIsLoading(false);
-  };
 
-  const fetchCompanyData = async (companyId: string) => {
-    try {
-      console.log("Fetching company data for:", companyId);
-      const { data, error } = await supabase
-        .from("companies")
-        .select("*")
-        .eq("id", companyId)
-        .maybeSingle();
-        
-      if (error) {
-        console.error("Error fetching company data:", error);
-        setCompany(null);
-      } else if (data) {
-        console.log("Company found:", data);
-        setCompany(data as Company);
-      } else {
-        console.log("No company found with ID:", companyId);
-        setCompany(null);
+      // If no profile data was found but we have user metadata,
+      // create a temporary profile from the auth metadata
+      if (authUser.user_metadata) {
+        const metadata = authUser.user_metadata;
+        setUser({
+          id: authUser.id,
+          email: authUser.email || "",
+          full_name: metadata.full_name,
+          role: metadata.role || "inspector",
+          company_id: metadata.company_id,
+          avatar_url: metadata.avatar_url,
+          cpf: metadata.cpf,
+          phone: metadata.phone
+        });
       }
-    } catch (error) {
-      console.error("Error fetching company data:", error);
-      setCompany(null);
-    } finally {
-      setIsLoading(false);
+    } catch (err) {
+      console.error("Error in fetchUserProfile:", err);
     }
   };
 
   return {
     session,
     user,
-    company,
     isLoading,
-    setUser,
-    setCompany,
-    setIsLoading,
+    isAuthenticated,
     fetchUserProfile
   };
-}
+};

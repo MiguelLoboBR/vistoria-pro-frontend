@@ -1,13 +1,26 @@
 
-import { Company, UserProfile } from "@/contexts/types";
+import { UserRole } from './authService/types';
 
-// Define and export the UserRole type as a literal union type
-export type UserRole = "admin_master" | "admin_tenant" | "inspector";
+export type { UserRole };
 
-// Export a helper function to check role validity
-export const isValidUserRole = (role: string): role is UserRole => {
-  return role === "admin_master" || role === "admin_tenant" || role === "inspector";
-};
+export interface Company {
+  id: string;
+  name: string;
+  cnpj?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  logo_url?: string;
+  is_individual?: boolean;
+}
 
-// Re-export types from contexts
-export { type Company, type UserProfile };
+export interface UserProfile {
+  id: string;
+  email: string;
+  full_name?: string;
+  avatar_url?: string;
+  company_id?: string;
+  role: UserRole;
+  cpf?: string;
+  phone?: string;
+}

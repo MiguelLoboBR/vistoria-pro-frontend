@@ -1,13 +1,8 @@
 
-// Import types from the main types file
-import type { UserRole } from "../types";
+export type UserRole = "admin_master" | "admin_tenant" | "inspector";
 
-// Re-export the UserRole type using 'export type' for isolatedModules compatibility
-export type { UserRole };
-
-// Add constants for available roles
 export const USER_ROLES = {
-  ADMIN_MASTER: "admin_master" as const,
-  ADMIN_TENANT: "admin_tenant" as const,
-  INSPECTOR: "inspector" as const
+  ADMIN_MASTER: "admin_master" as UserRole,
+  ADMIN_TENANT: "admin_tenant" as UserRole,
+  INSPECTOR: "inspector" as UserRole
 };
