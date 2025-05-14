@@ -17,6 +17,7 @@ import Landing from "./pages/landing/Landing";
 import AdminLogin from "./pages/auth/AdminLogin";
 import InspectorLogin from "./pages/auth/InspectorLogin";
 import Register from "./pages/auth/Register";
+import Dashboard from "./pages/admin/Dashboard";
 import Vistorias from "./pages/admin/Vistorias";
 import CompanyProfile from "./pages/admin/CompanyProfile";
 import InspectorList from "./pages/admin/InspectorList";
@@ -33,29 +34,34 @@ const AppRoutes = () => (
     <Route path="/login" element={<AdminLogin />} />
     <Route path="/login/inspector" element={<InspectorLogin />} />
     <Route path="/register" element={<Register />} />
-    <Route path="/company-setup" element={<CompanySetup />} />
-    <Route path="/setup/company" element={<CompanySetup />} />
     
-    {/* Admin Routes - all routes redirect to vistorias as requested */}
-    <Route path="/admin/tenant" element={<Navigate to="/admin/tenant/vistorias" replace />} />
+    {/* Admin Routes - redirect to dashboard as primary entry point */}
+    <Route path="/admin/tenant" element={<Navigate to="/admin/tenant/dashboard" replace />} />
     <Route path="/admin/tenant/dashboard" element={
       <AuthGuard requiredRole="admin">
-        <Vistorias />
+        <Dashboard />
       </AuthGuard>
     } />
     <Route path="/admin/tenant/perfil" element={
       <AuthGuard requiredRole="admin">
-        <Vistorias />
+        <CompanyProfile />
       </AuthGuard>
     } />
     <Route path="/admin/tenant/vistoriadores" element={
       <AuthGuard requiredRole="admin">
-        <Vistorias />
+        <InspectorList />
       </AuthGuard>
     } />
     <Route path="/admin/tenant/vistorias" element={
       <AuthGuard requiredRole="admin">
         <Vistorias />
+      </AuthGuard>
+    } />
+    
+    {/* Move company setup to be protected and part of admin section */}
+    <Route path="/admin/tenant/setup" element={
+      <AuthGuard requiredRole="admin">
+        <CompanySetup />
       </AuthGuard>
     } />
     

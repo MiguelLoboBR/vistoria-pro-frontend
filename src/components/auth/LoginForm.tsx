@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -72,7 +71,7 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
       toast.success("Login bem-sucedido!");
       console.log("Login bem-sucedido, redirecionando...");
       
-      // Force redirection based on user type
+      // Force redirection based on user type - now redirect to dashboard
       if (userType === "admin") {
         window.location.href = "/admin/tenant/dashboard";
       } else {

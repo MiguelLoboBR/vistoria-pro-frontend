@@ -1,30 +1,67 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import RegisterLogo from "@/components/auth/RegisterLogo";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 
 const formSchema = z.object({
-  companyName: z.string().min(2, "Nome da empresa deve ter no mínimo 2 caracteres"),
-  cnpj: z.string().min(14, "CNPJ inválido"),
-  responsibleName: z.string().min(3, "Nome do responsável deve ter no mínimo 3 caracteres"),
+  // Comum a ambos tipos de registro
   email: z.string().email("Digite um e-mail válido"),
   phone: z.string().min(10, "Telefone inválido"),
   password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
   confirmPassword: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
+  
+  // Tipo de registro (CNPJ para empresa, CPF para pessoa física)
+  registrationType: z.enum(["cnpj", "cpf"]),
+  
+  // Campos específicos para empresa
+  companyName: z.string().optional(),
+  companyAddress: z.string().optional(),
+  companyPhone: z.string().optional(),
+  companyEmail: z.string().optional(),
+  cnpj: z.string().optional(),
+  
+  // Campos específicos para pessoa física
+  fullName: z.string().optional(),
+  cpf: z.string().optional(),
+  
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"]
-});
+}).refine(
+  (data) => {
+    if (data.registrationType === 'cnpj') {
+      return !!data.companyName && !!data.cnpj;
+    }
+    return true;
+  },
+  {
+    message: "Dados da empresa obrigatórios",
+    path: ["companyName"]
+  }
+).refine(
+  (data) => {
+    if (data.registrationType === 'cpf') {
+      return !!data.fullName && !!data.cpf;
+    }
+    return true;
+  },
+  {
+    message: "Dados pessoais obrigatórios",
+    path: ["fullName"]
+  }
+);
 
 export const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -38,9 +75,14 @@ export const Register = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      registrationType: "cnpj",
       companyName: "",
+      companyAddress: "",
+      companyPhone: "",
+      companyEmail: "",
       cnpj: "",
-      responsibleName: "",
+      fullName: "",
+      cpf: "",
       email: "",
       phone: "",
       password: "",
@@ -48,12 +90,16 @@ export const Register = () => {
     },
   });
 
+  // Watch the registration type to conditionally render fields
+  const registrationType = form.watch("registrationType");
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     
     try {
       // Register the user with admin role
-      const result = await signUp(values.email, values.password, values.responsibleName);
+      const name = values.registrationType === 'cnpj' ? values.companyName : values.fullName;
+      const result = await signUp(values.email, values.password, name as string);
       
       console.log("Registration result:", result);
       setRegisteredEmail(values.email);
@@ -61,12 +107,25 @@ export const Register = () => {
       
       toast.success("Cadastro enviado com sucesso! Verifique seu email para confirmar sua conta.");
       
-      // Store company details in localStorage for later use
-      localStorage.setItem('pendingCompanySetup', JSON.stringify({
-        name: values.companyName,
-        cnpj: values.cnpj,
-        email: values.email,
-      }));
+      // Store registration details in localStorage for later use
+      const registrationData = values.registrationType === 'cnpj' 
+        ? {
+            name: values.companyName,
+            cnpj: values.cnpj,
+            address: values.companyAddress,
+            phone: values.companyPhone,
+            email: values.companyEmail || values.email,
+            type: 'company'
+          }
+        : {
+            name: values.fullName,
+            cpf: values.cpf,
+            phone: values.phone,
+            email: values.email,
+            type: 'individual'
+          };
+      
+      localStorage.setItem('pendingCompanySetup', JSON.stringify(registrationData));
       
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -123,61 +182,166 @@ export const Register = () => {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <RegisterLogo className="mx-auto mb-6" />
-            <h1 className="text-2xl md:text-3xl font-bold">Cadastro de Empresa</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">Cadastro</h1>
             <p className="text-gray-500 mt-2">Preencha os dados para criar sua conta</p>
           </div>
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              
+              {/* Tipo de registro */}
               <FormField
                 control={form.control}
-                name="companyName"
+                name="registrationType"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome da Empresa</FormLabel>
+                  <FormItem className="space-y-3">
+                    <FormLabel>Tipo de Cadastro</FormLabel>
                     <FormControl>
-                      <Input placeholder="Sua empresa" {...field} />
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-1"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="cnpj" id="cnpj" />
+                          <FormLabel htmlFor="cnpj" className="font-normal">
+                            Empresa (CNPJ)
+                          </FormLabel>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="cpf" id="cpf" />
+                          <FormLabel htmlFor="cpf" className="font-normal">
+                            Pessoa Física (CPF)
+                          </FormLabel>
+                        </div>
+                      </RadioGroup>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               
-              <FormField
-                control={form.control}
-                name="cnpj"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CNPJ</FormLabel>
-                    <FormControl>
-                      <Input placeholder="00.000.000/0000-00" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="responsibleName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome do Responsável</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome completo" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+              {/* Campos específicos para empresas */}
+              {registrationType === 'cnpj' && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="companyName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome da Empresa</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nome da empresa" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="cnpj"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CNPJ</FormLabel>
+                        <FormControl>
+                          <Input placeholder="00.000.000/0000-00" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="companyAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Endereço</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Endereço completo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="companyPhone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Telefone da Empresa</FormLabel>
+                          <FormControl>
+                            <Input placeholder="(00) 0000-0000" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="companyEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>E-mail da Empresa</FormLabel>
+                          <FormControl>
+                            <Input placeholder="empresa@exemplo.com" type="email" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            Opcional, se diferente do e-mail de login
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </>
+              )}
+              
+              {/* Campos específicos para pessoa física */}
+              {registrationType === 'cpf' && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome Completo</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nome completo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="cpf"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CPF</FormLabel>
+                        <FormControl>
+                          <Input placeholder="000.000.000-00" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+              
+              {/* Campos comuns para ambos */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>E-mail</FormLabel>
+                      <FormLabel>E-mail de Login</FormLabel>
                       <FormControl>
                         <Input placeholder="seu@email.com" type="email" {...field} />
                       </FormControl>
@@ -191,7 +355,7 @@ export const Register = () => {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Telefone</FormLabel>
+                      <FormLabel>Telefone de Contato</FormLabel>
                       <FormControl>
                         <Input placeholder="(00) 00000-0000" {...field} />
                       </FormControl>
@@ -267,8 +431,8 @@ export const Register = () => {
                 )}
               />
               
-              <Button type="submit" className="w-full bg-vistoria-blue hover:bg-vistoria-darkBlue">
-                Cadastrar
+              <Button type="submit" className="w-full bg-vistoria-blue hover:bg-vistoria-darkBlue" disabled={isSubmitting}>
+                {isSubmitting ? "Cadastrando..." : "Cadastrar"}
               </Button>
               
               <div className="text-center mt-4">
