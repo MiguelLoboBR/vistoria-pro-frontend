@@ -14,6 +14,7 @@ export interface CompanyFormValues {
   adminCpf: string;
   adminPhone: string;
   adminEmail: string;
+  logoFile?: File; // Add logoFile property
 }
 
 export interface IndividualFormValues {
