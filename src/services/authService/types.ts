@@ -1,6 +1,7 @@
 
 // Import types from the main types file
-import { UserRole } from "../types";
+import type { UserRole } from "../types";
 
-// Re-export the UserRole type
-export { UserRole };
+// Re-export the UserRole type using 'export type'
+export type { UserRole };
+
