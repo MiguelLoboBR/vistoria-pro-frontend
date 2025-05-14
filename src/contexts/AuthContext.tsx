@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -10,23 +9,33 @@ interface AuthContextType {
   company: Company | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  session: Session | null; // Added missing property
+  session: Session | null;
   login: (email: string, password: string) => Promise<{ error: any } | undefined>;
   logout: () => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any } | undefined>;
-  signIn: (email: string, password: string) => Promise<void>; // Added missing property
-  signOut: () => Promise<void>; // Added missing property
-  refreshUserProfile: () => Promise<void>; // Added missing property
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  refreshUserProfile: () => Promise<void>;
 }
 
+// Create the context with undefined as default value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Export the useAuth hook that will be used in components to access the context
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [session, setSession] = useState<Session | null>(null); // Added session state
+  const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
   
   // Added refreshUserProfile function
@@ -340,12 +349,4 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       {!isLoading && children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
 };
