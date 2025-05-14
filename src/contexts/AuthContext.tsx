@@ -251,10 +251,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     company,
     isLoading,
     isAdmin,
-    signIn: authService.signIn,
-    signUp: authService.signUp,
-    signOut: authService.signOut,
-    createCompanyWithAdmin: authService.createCompanyWithAdmin,
+    signIn,
+    signUp,
+    signOut,
+    createCompanyWithAdmin,
     refreshUserProfile
   };
 
