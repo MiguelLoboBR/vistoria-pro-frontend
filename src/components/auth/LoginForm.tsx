@@ -72,11 +72,14 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
       toast.success("Login bem-sucedido!");
       console.log("Login bem-sucedido, redirecionando...");
       
-      // Force redirection based on user type - now redirect to dashboard
-      if (userType === "admin") {
-        window.location.href = "/admin/tenant/dashboard";
+      // Get user metadata to check actual role
+      const role = data.user?.user_metadata?.role || "inspector";
+      
+      // Force redirection based on actual user role from metadata
+      if (role === "admin") {
+        window.location.href = "/admin/dashboard";
       } else {
-        window.location.href = "/app/inspector/dashboard";
+        window.location.href = "/inspector/dashboard";
       }
       
     } catch (error: any) {

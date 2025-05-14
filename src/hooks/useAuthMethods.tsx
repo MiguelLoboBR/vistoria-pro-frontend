@@ -21,8 +21,18 @@ export function useAuthMethods(fetchUserProfile: (userId: string) => Promise<voi
       if (error) throw error;
       console.log("Login bem-sucedido:", data.session ? "Session obtida" : "Sem session");
       
-      // The session will be updated by onAuthStateChange
-      return;
+      // Check user role from metadata and redirect accordingly
+      const role = data.user?.user_metadata?.role || "inspector";
+      
+      console.log("User role:", role);
+      
+      if (role === "admin") {
+        window.location.href = "/admin/dashboard";
+      } else {
+        window.location.href = "/inspector/dashboard";
+      }
+      
+      return data;
     } catch (error) {
       console.error("Erro no login:", error);
       throw error;
@@ -34,8 +44,7 @@ export function useAuthMethods(fetchUserProfile: (userId: string) => Promise<voi
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       setIsSubmitting(true);
-      await authService.signUp(email, password, fullName);
-      // A sessão será atualizada pelo onAuthStateChange
+      return await authService.signUp(email, password, fullName);
     } catch (error) {
       throw error;
     } finally {
@@ -61,7 +70,7 @@ export function useAuthMethods(fetchUserProfile: (userId: string) => Promise<voi
       const companyId = await authService.createCompanyWithAdmin(name, cnpj);
       if (companyId) {
         // Instead of just refreshing the profile, force a reload to ensure we have fresh data
-        window.location.href = "/admin/tenant/dashboard";
+        window.location.href = "/admin/dashboard";
       }
       return companyId;
     } catch (error) {

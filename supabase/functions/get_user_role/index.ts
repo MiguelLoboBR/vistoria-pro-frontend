@@ -1,3 +1,4 @@
+
 // Follow this setup guide to integrate the Deno language server with your editor:
 // https://deno.land/manual/getting_started/setup_your_environment
 // This enables autocomplete, go to definition, etc.
@@ -42,32 +43,41 @@ serve(async (req) => {
       )
     }
 
-    // Acessa diretamente os metadados do usuário para evitar recursão
-    // Se não existir na metadata, consulta a tabela com SECURITY DEFINER
-    let role;
-    
+    // First check user metadata for role to avoid DB query
     if (user.user_metadata && user.user_metadata.role) {
-      // Use a role from user metadata if available
-      role = user.user_metadata.role;
-    } else {
-      // Otherwise, use the SECURITY DEFINER function
-      const { data, error } = await supabaseClient.rpc('get_user_role_safely')
-      
-      if (error) {
-        console.error("Error getting role:", error);
-        // Fallback to a default role if there's an error
-        role = 'inspector';
-      } else {
-        role = data || 'inspector';
-      }
+      // Return the role from metadata
+      return new Response(
+        JSON.stringify(user.user_metadata.role),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      )
     }
 
-    // Return the user's role
+    // If no role in metadata, query the profiles table
+    // Using a direct query to avoid RLS policy issues
+    const { data, error, status } = await supabaseClient
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (error && status !== 406) {
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      )
+    }
+
+    // Return the role or "inspector" as default
+    const role = data?.role || "inspector"
+
     return new Response(
-      JSON.stringify({ 
-        role,
-        userId: user.id
-      }),
+      JSON.stringify(role),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,

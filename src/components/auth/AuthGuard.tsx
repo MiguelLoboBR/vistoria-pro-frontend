@@ -1,4 +1,3 @@
-
 import { ReactNode, useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,7 +11,7 @@ interface AuthGuardProps {
 }
 
 const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
-  const { session, user, isLoading, company, refreshUserProfile } = useAuth();
+  const { session, user, isLoading, refreshUserProfile } = useAuth();
   const navigate = useNavigate();
   const [directCheck, setDirectCheck] = useState<{
     isAuthenticated: boolean;
@@ -51,78 +50,102 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
           return;
         }
         
-        // Use the safer RPC function to get role
-        try {
-          const { data: roleData, error: roleError } = await supabase
-            .rpc('get_user_role_safely');
-          
-          if (roleError) {
-            console.error("AuthGuard: Error getting role:", roleError.message);
-            // Default to inspector role if there's an error
-            const assumedRole = sessionData.session.user.user_metadata?.role || "inspector";
-            const matchesRole = requiredRole ? requiredRole === assumedRole : true;
-            
-            setDirectCheck({
-              isAuthenticated: true,
-              matchesRole: matchesRole,
-              checking: false,
-              userRole: assumedRole,
-              hasCompany: true  // Assume has company to prevent blocking users
-            });
-            
-            return;
-          }
-          
-          // Use user metadata to avoid profile query that might cause recursion
-          const hasCompanyInMetadata = !!sessionData.session.user.user_metadata?.company_id;
-          
-          // Fallback to profile query only if metadata doesn't have the info
-          let hasCompany = hasCompanyInMetadata;
-          
-          if (!hasCompanyInMetadata && checkAttempts < maxAttempts) {
-            try {
-              const { data: profileData, error: profileError } = await supabase
-                .from('profiles')
-                .select('company_id')
-                .eq('id', sessionData.session.user.id)
-                .maybeSingle();
-                
-              if (!profileError && profileData) {
-                hasCompany = !!profileData.company_id;
-              }
-            } catch (err) {
-              console.warn("AuthGuard: Error checking company in profile:", err);
-              // Continue with what we know from metadata
-            }
-          }
-          
-          // Check if required role exists and matches
-          const matchesRole = requiredRole ? roleData === requiredRole : true;
+        // Get the user role from user metadata first
+        const userMetadata = sessionData.session.user.user_metadata;
+        const roleFromMetadata = userMetadata?.role as UserRole | undefined;
+        
+        if (roleFromMetadata) {
+          // If we have a role in metadata, use it directly
+          const matchesRole = requiredRole ? requiredRole === roleFromMetadata : true;
+          const hasCompany = !!userMetadata?.company_id;
           
           setDirectCheck({
             isAuthenticated: true,
             matchesRole: matchesRole,
             checking: false,
-            userRole: roleData,
+            userRole: roleFromMetadata,
             hasCompany: hasCompany
           });
           
-          // If the context doesn't have up-to-date profile data, refresh it
-          // But only if we haven't reached max attempts to avoid loops
-          if (checkAttempts < maxAttempts && (!user || user.role !== roleData)) {
+          if (checkAttempts < maxAttempts && (!user || user.role !== roleFromMetadata)) {
             setCheckAttempts(prev => prev + 1);
             refreshUserProfile();
           }
-        } catch (err) {
-          console.error("AuthGuard: Error checking profile:", err);
-          // Default to authenticated with inspector role
-          setDirectCheck({
-            isAuthenticated: true,
-            matchesRole: requiredRole ? requiredRole === "inspector" : true,
-            checking: false,
-            userRole: "inspector",
-            hasCompany: true
-          });
+        } else {
+          // Otherwise, try the safer RPC function to get role
+          try {
+            const { data: roleData, error: roleError } = await supabase
+              .rpc('get_user_role_safely');
+            
+            if (roleError) {
+              console.error("AuthGuard: Error getting role:", roleError.message);
+              // Default to inspector role if there's an error
+              const assumedRole = sessionData.session.user.user_metadata?.role || "inspector";
+              const matchesRole = requiredRole ? requiredRole === assumedRole : true;
+              
+              setDirectCheck({
+                isAuthenticated: true,
+                matchesRole: matchesRole,
+                checking: false,
+                userRole: assumedRole,
+                hasCompany: true  // Assume has company to prevent blocking users
+              });
+              
+              return;
+            }
+            
+            // Use user metadata to avoid profile query that might cause recursion
+            const hasCompanyInMetadata = !!sessionData.session.user.user_metadata?.company_id;
+            
+            // Fallback to profile query only if metadata doesn't have the info
+            let hasCompany = hasCompanyInMetadata;
+            
+            if (!hasCompanyInMetadata && checkAttempts < maxAttempts) {
+              try {
+                const { data: profileData, error: profileError } = await supabase
+                  .from('profiles')
+                  .select('company_id')
+                  .eq('id', sessionData.session.user.id)
+                  .maybeSingle();
+                  
+                if (!profileError && profileData) {
+                  hasCompany = !!profileData.company_id;
+                }
+              } catch (err) {
+                console.warn("AuthGuard: Error checking company in profile:", err);
+                // Continue with what we know from metadata
+              }
+            }
+            
+            // Check if required role exists and matches
+            const matchesRole = requiredRole ? roleData === requiredRole : true;
+            
+            setDirectCheck({
+              isAuthenticated: true,
+              matchesRole: matchesRole,
+              checking: false,
+              userRole: roleData,
+              hasCompany: hasCompany
+            });
+            
+            // If the context doesn't have up-to-date profile data, refresh it
+            // But only if we haven't reached max attempts to avoid loops
+            if (checkAttempts < maxAttempts && (!user || user.role !== roleData)) {
+              setCheckAttempts(prev => prev + 1);
+              refreshUserProfile();
+            }
+          } catch (err) {
+            console.error("AuthGuard: Error checking profile:", err);
+            // Use user metadata as fallback
+            const metadataRole = sessionData.session.user.user_metadata?.role || "inspector";
+            setDirectCheck({
+              isAuthenticated: true,
+              matchesRole: requiredRole ? requiredRole === metadataRole : true,
+              checking: false,
+              userRole: metadataRole,
+              hasCompany: !!sessionData.session.user.user_metadata?.company_id || false
+            });
+          }
         }
       } catch (err) {
         console.error("AuthGuard: Error during direct check:", err);

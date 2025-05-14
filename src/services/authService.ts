@@ -54,7 +54,7 @@ const registerInspector = async (
       throw new Error(profileError.message);
     }
 
-    // 3. Add inspector role to the user
+    // 3. Return inspector profile
     return {
       id: userId,
       email: email,
@@ -74,7 +74,7 @@ const registerAdmin = async (
   fullName: string
 ): Promise<UserProfile | null> => {
   try {
-    // 1. Create user in Supabase auth
+    // 1. Create user in Supabase auth with role=admin in metadata
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -96,7 +96,7 @@ const registerAdmin = async (
       throw new Error("User ID not found after signup");
     }
 
-    // 2. Create user profile in Supabase DB
+    // 2. Create user profile in Supabase DB with role=admin
     const { error: profileError } = await supabase
       .from("profiles")
       .insert([
@@ -114,7 +114,7 @@ const registerAdmin = async (
       throw new Error(profileError.message);
     }
 
-    // 3. Add admin role to the user
+    // 3. Return admin profile
     return {
       id: userId,
       email: email,
@@ -127,15 +127,16 @@ const registerAdmin = async (
   }
 };
 
-// Add missing methods used by the app
 const signUp = async (email: string, password: string, fullName: string): Promise<any> => {
   try {
+    // By default, sign up creates an admin user
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
+          role: "admin", // Default role is admin for direct sign ups
         },
       },
     });
@@ -153,7 +154,7 @@ const signUp = async (email: string, password: string, fullName: string): Promis
             id: data.user.id,
             email: email,
             full_name: fullName,
-            role: 'inspector',
+            role: 'admin', // Default role is admin for direct sign ups
           },
         ]);
 
