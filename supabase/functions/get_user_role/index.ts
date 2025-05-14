@@ -11,11 +11,23 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
-    // Get the user's role from the profiles table
-    const { data: profileData, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('role')
-      .maybeSingle()
+    // Get the user's identity from auth.users
+    const { data: { user } } = await supabaseClient.auth.getUser()
+    
+    if (!user) {
+      return new Response(JSON.stringify({
+        error: 'User not authenticated'
+      }), {
+        headers: { 'Content-Type': 'application/json' },
+        status: 401,
+      })
+    }
+
+    // Get the user's role from the profiles table using a direct query
+    // This avoids the RLS policy recursion issues
+    const { data: profileData, error: profileError } = await supabaseClient.rpc(
+      'get_user_role_safely'
+    )
 
     if (profileError) {
       console.error('Error fetching profile:', profileError)
@@ -29,7 +41,7 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      role: profileData?.role ?? 'inspector',
+      role: profileData || 'inspector',
     }), {
       headers: { 'Content-Type': 'application/json' },
       status: 200,

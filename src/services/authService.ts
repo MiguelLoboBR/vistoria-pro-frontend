@@ -70,7 +70,50 @@ export const authService = {
   },
 
   async registerInspector(email: string, password: string, fullName: string, companyId: string) {
-    // First, create the user
+    try {
+      // First, create the user
+      const { data, error } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true, // Automatically confirm the email
+        user_metadata: {
+          full_name: fullName,
+          role: "inspector",
+          company_id: companyId
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data.user) {
+        throw new Error("Erro ao criar usuário");
+      }
+
+      // Link inspector to the company
+      try {
+        await this.addInspectorToCompany(data.user.id, companyId);
+      } catch (error: any) {
+        console.error("Error linking inspector to company:", error);
+        throw new Error(`Erro ao vincular inspetor à empresa: ${error.message}`);
+      }
+
+      return data.user;
+    } catch (error: any) {
+      // If this is a regular API error and not an admin function error,
+      // try the regular signup method
+      if (error.message.includes("auth.admin") || error.message.includes("permission denied")) {
+        console.log("Falling back to regular signup method for inspector...");
+        return this.registerInspectorFallback(email, password, fullName, companyId);
+      }
+      throw error;
+    }
+  },
+
+  // Fallback method using regular signup
+  async registerInspectorFallback(email: string, password: string, fullName: string, companyId: string) {
+    // Create the user with regular signup (will require email confirmation)
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -101,6 +144,7 @@ export const authService = {
       // We'll just log the error for now
     }
 
+    toast.info("Um e-mail de confirmação foi enviado para o vistoriador. Ele precisa confirmar para acessar o sistema.");
     return data.user;
   },
 
@@ -117,18 +161,37 @@ export const authService = {
     
     if (!session.session) return null;
     
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", session.session.user.id)
-      .single();
-
-    if (error) {
-      console.error("Error fetching user profile:", error);
-      return null;
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.session.user.id)
+        .maybeSingle();
+  
+      if (error) {
+        console.error("Error fetching user profile:", error);
+        // Return a fallback profile based on session metadata
+        return {
+          id: session.session.user.id,
+          email: session.session.user.email!,
+          full_name: session.session.user.user_metadata.full_name,
+          role: session.session.user.user_metadata.role as UserRole || "inspector",
+          company_id: session.session.user.user_metadata.company_id
+        };
+      }
+  
+      return data as UserProfile;
+    } catch (error) {
+      console.error("Error in getUserProfile:", error);
+      // Return fallback profile
+      return {
+        id: session.session.user.id,
+        email: session.session.user.email!,
+        full_name: session.session.user.user_metadata.full_name,
+        role: session.session.user.user_metadata.role as UserRole || "inspector",
+        company_id: session.session.user.user_metadata.company_id
+      };
     }
-
-    return data as UserProfile;
   },
 
   async getCompany(companyId: string): Promise<Company | null> {
@@ -136,7 +199,7 @@ export const authService = {
       .from("companies")
       .select("*")
       .eq("id", companyId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error fetching company:", error);
@@ -187,6 +250,36 @@ export const authService = {
     if (error) {
       console.error("Error adding inspector to company:", error);
       throw new Error(error.message);
+    }
+  },
+  
+  async updateUserProfile(updates: Partial<UserProfile>): Promise<void> {
+    const { data: session } = await supabase.auth.getSession();
+    
+    if (!session.session) {
+      toast.error("Você precisa estar logado para atualizar seu perfil");
+      return;
+    }
+    
+    // Update the profiles table
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update(updates)
+      .eq("id", session.session.user.id);
+      
+    if (profileError) {
+      console.error("Error updating profile:", profileError);
+      throw new Error(profileError.message);
+    }
+    
+    // Also update metadata in auth.users
+    const { error: metadataError } = await supabase.auth.updateUser({
+      data: updates
+    });
+    
+    if (metadataError) {
+      console.error("Error updating user metadata:", metadataError);
+      // Don't throw here as the profile update succeeded
     }
   }
 };

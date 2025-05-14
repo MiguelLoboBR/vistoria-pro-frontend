@@ -3,10 +3,9 @@ import { useState, useEffect } from "react";
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Pencil, Plus, Search, Trash2, UserPlus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
@@ -26,7 +25,7 @@ const formSchema = z.object({
 });
 
 interface Inspector extends UserProfile {
-  inspections?: number;
+  inspections_count?: number;
 }
 
 export const InspectorList = () => {
@@ -50,13 +49,20 @@ export const InspectorList = () => {
   // Fetch real inspectors from database
   useEffect(() => {
     const fetchInspectors = async () => {
-      if (!company) return;
+      if (!company) {
+        toast.error("Você precisa estar vinculado a uma empresa");
+        setIsLoading(false);
+        return;
+      }
       
       setIsLoading(true);
       try {
         const { data, error } = await supabase
           .from("profiles")
-          .select("*")
+          .select(`
+            *,
+            inspections:inspections(count)
+          `)
           .eq("company_id", company.id)
           .eq("role", "inspector");
 
@@ -72,7 +78,7 @@ export const InspectorList = () => {
           avatar_url: profile.avatar_url || "",
           company_id: profile.company_id || "",
           role: "inspector",
-          inspections: 0 // We'll set this to 0 for now
+          inspections_count: profile.inspections?.length || 0
         }));
 
         setInspectors(inspectorsData);
@@ -106,55 +112,41 @@ export const InspectorList = () => {
     setSubmitting(true);
     
     try {
-      // Register the user with inspector role
-      const { data, error } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-        options: {
-          data: {
-            full_name: values.name,
-            role: "inspector",
-          }
-        }
-      });
-
-      if (error) throw error;
+      // Register the inspector using the authService
+      const inspector = await authService.registerInspector(
+        values.email, 
+        values.password, 
+        values.name,
+        company.id
+      );
       
-      if (data.user) {
-        // Add the inspector to the company
-        await authService.addInspectorToCompany(data.user.id, company.id);
-        
-        // Add to local state
-        const newInspector: Inspector = {
-          id: data.user.id,
-          email: values.email,
-          full_name: values.name,
-          role: "inspector",
-          company_id: company.id,
-          inspections: 0
-        };
-        
-        setInspectors(prev => [...prev, newInspector]);
-        
-        // Close dialog and reset form
-        setOpenAddDialog(false);
-        form.reset();
-        
-        toast.success("Vistoriador adicionado com sucesso!");
-      } else {
-        throw new Error("Erro ao criar usuário");
+      if (!inspector) {
+        throw new Error("Erro ao criar usuário do vistoriador");
       }
+
+      // Add to local state
+      const newInspector: Inspector = {
+        id: inspector.id,
+        email: values.email,
+        full_name: values.name,
+        role: "inspector",
+        company_id: company.id,
+        inspections_count: 0
+      };
+      
+      setInspectors(prev => [...prev, newInspector]);
+      
+      // Close dialog and reset form
+      setOpenAddDialog(false);
+      form.reset();
+      
+      toast.success("Vistoriador adicionado com sucesso!");
     } catch (error: any) {
       console.error("Error adding inspector:", error);
       toast.error(`Erro ao adicionar vistoriador: ${error.message}`);
     } finally {
       setSubmitting(false);
     }
-  };
-  
-  // Handle toggling inspector status (would implement in a real app)
-  const toggleInspectorStatus = async (id: string) => {
-    toast.error("Esta funcionalidade ainda não está implementada");
   };
 
   return (
@@ -298,7 +290,7 @@ export const InspectorList = () => {
                     <div className="text-sm">
                       <div className="flex justify-between py-1 border-b">
                         <span className="text-gray-500">Vistorias:</span>
-                        <span>{inspector.inspections || 0}</span>
+                        <span>{inspector.inspections_count || 0}</span>
                       </div>
                       <div className="flex justify-between py-1">
                         <span className="text-gray-500">ID:</span>

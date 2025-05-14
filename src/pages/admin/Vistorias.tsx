@@ -1,72 +1,62 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Plus, Search, Filter, ListFilter, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { Calendar, Plus, Search, ListFilter, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-
-interface VistoriaItem {
-  id: string;
-  address: string;
-  date: string;
-  time: string;
-  status: "pending" | "in_progress" | "completed";
-  inspector: string;
-  type: string;
-}
-
-const mockVistorias: VistoriaItem[] = [
-  {
-    id: "VIS-1001",
-    address: "Rua Augusta, 1200, Apto 45 - Consolação",
-    date: "15/05/2025",
-    time: "14:30",
-    status: "pending",
-    inspector: "Carlos Silva",
-    type: "Entrada"
-  },
-  {
-    id: "VIS-1002",
-    address: "Av. Paulista, 1000, Sala 301 - Bela Vista",
-    date: "16/05/2025",
-    time: "10:15",
-    status: "in_progress",
-    inspector: "Ana Oliveira",
-    type: "Saída"
-  },
-  {
-    id: "VIS-1003",
-    address: "Rua Oscar Freire, 500, Casa 3 - Jardins",
-    date: "14/05/2025",
-    time: "09:00",
-    status: "completed",
-    inspector: "Roberto Martins",
-    type: "Periódica"
-  },
-  {
-    id: "VIS-1004",
-    address: "Alameda Santos, 800, Apto 122 - Jardim Paulista",
-    date: "17/05/2025",
-    time: "16:30",
-    status: "pending",
-    inspector: "Mariana Costa",
-    type: "Entrada"
-  },
-  {
-    id: "VIS-1005",
-    address: "Rua Haddock Lobo, 350, Casa 2 - Cerqueira César",
-    date: "13/05/2025",
-    time: "11:45",
-    status: "completed",
-    inspector: "Carlos Silva",
-    type: "Saída"
-  }
-];
+import { toast } from "sonner";
+import { Inspection, inspectionService } from "@/services/inspectionService";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Vistorias = () => {
+  const [vistorias, setVistorias] = useState<Inspection[]>([]);
+  const [filteredVistorias, setFilteredVistorias] = useState<Inspection[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { company } = useAuth();
+
+  useEffect(() => {
+    const fetchVistorias = async () => {
+      if (!company) {
+        toast.error("Você precisa estar vinculado a uma empresa");
+        setIsLoading(false);
+        return;
+      }
+      
+      setIsLoading(true);
+      try {
+        const data = await inspectionService.getCompanyInspections(company.id);
+        setVistorias(data);
+        setFilteredVistorias(data);
+      } catch (error) {
+        console.error("Erro ao buscar vistorias:", error);
+        toast.error("Erro ao carregar vistorias");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchVistorias();
+  }, [company]);
+
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredVistorias(vistorias);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = vistorias.filter((vistoria) => 
+      vistoria.address.toLowerCase().includes(query) ||
+      vistoria.id.toLowerCase().includes(query) ||
+      vistoria.type.toLowerCase().includes(query) ||
+      (vistoria.inspector_name && vistoria.inspector_name.toLowerCase().includes(query))
+    );
+    setFilteredVistorias(filtered);
+  }, [searchQuery, vistorias]);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
@@ -92,6 +82,32 @@ const Vistorias = () => {
         );
       default:
         return null;
+    }
+  };
+
+  const formatDateTime = (dateString: string, timeString?: string) => {
+    if (!dateString) return "Data não informada";
+    
+    try {
+      // If dateString already has time information
+      if (dateString.includes("T")) {
+        const date = new Date(dateString);
+        return `${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit'
+        })}`;
+      } 
+      // If we have separate date and time strings
+      else if (timeString) {
+        return `${dateString} às ${timeString}`;
+      } 
+      // If we only have date string
+      else {
+        return dateString;
+      }
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return dateString;
     }
   };
 
@@ -125,6 +141,8 @@ const Vistorias = () => {
                   <Input 
                     placeholder="Buscar por endereço..." 
                     className="pl-9"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
                 <Button variant="outline" size="icon">
@@ -134,44 +152,63 @@ const Vistorias = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <div className="grid grid-cols-1 md:grid-cols-[1fr_150px_150px_100px] py-3 px-4 border-b bg-gray-50 font-medium text-sm">
-                <div>Detalhes</div>
-                <div className="hidden md:block">Data</div>
-                <div className="hidden md:block">Vistoriador</div>
-                <div className="hidden md:block">Status</div>
+            {isLoading ? (
+              <div className="flex justify-center p-8">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-vistoria-blue"></div>
               </div>
-              <div className="divide-y">
-                {mockVistorias.map((vistoria) => (
-                  <div 
-                    key={vistoria.id} 
-                    className="grid grid-cols-1 md:grid-cols-[1fr_150px_150px_100px] py-3 px-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="space-y-1">
-                      <div className="font-medium text-sm">
-                        {vistoria.id} - {vistoria.type}
+            ) : filteredVistorias.length > 0 ? (
+              <div className="rounded-md border">
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_150px_150px_100px] py-3 px-4 border-b bg-gray-50 font-medium text-sm">
+                  <div>Detalhes</div>
+                  <div className="hidden md:block">Data</div>
+                  <div className="hidden md:block">Vistoriador</div>
+                  <div className="hidden md:block">Status</div>
+                </div>
+                <div className="divide-y">
+                  {filteredVistorias.map((vistoria) => (
+                    <div 
+                      key={vistoria.id} 
+                      className="grid grid-cols-1 md:grid-cols-[1fr_150px_150px_100px] py-3 px-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="space-y-1">
+                        <div className="font-medium text-sm">
+                          {vistoria.id.slice(0, 8)} - {vistoria.type}
+                        </div>
+                        <div className="text-sm text-gray-500">{vistoria.address}</div>
+                        <div className="md:hidden text-xs text-gray-500 flex items-center gap-1 mt-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>{formatDateTime(vistoria.date, vistoria.time)}</span>
+                        </div>
+                        <div className="md:hidden mt-2">{getStatusBadge(vistoria.status)}</div>
+                        <div className="md:hidden text-xs text-gray-500 mt-1">{vistoria.inspector_name || "Não atribuído"}</div>
                       </div>
-                      <div className="text-sm text-gray-500">{vistoria.address}</div>
-                      <div className="md:hidden text-xs text-gray-500 flex items-center gap-1 mt-1">
-                        <Calendar className="h-3 w-3" />
-                        <span>{vistoria.date} às {vistoria.time}</span>
+                      <div className="hidden md:flex md:items-center text-sm">
+                        {formatDateTime(vistoria.date, vistoria.time)}
                       </div>
-                      <div className="md:hidden mt-2">{getStatusBadge(vistoria.status)}</div>
-                      <div className="md:hidden text-xs text-gray-500 mt-1">{vistoria.inspector}</div>
+                      <div className="hidden md:flex md:items-center text-sm">
+                        {vistoria.inspector_name || "Não atribuído"}
+                      </div>
+                      <div className="hidden md:flex md:items-center">
+                        {getStatusBadge(vistoria.status)}
+                      </div>
                     </div>
-                    <div className="hidden md:flex md:items-center text-sm">
-                      {vistoria.date} às {vistoria.time}
-                    </div>
-                    <div className="hidden md:flex md:items-center text-sm">
-                      {vistoria.inspector}
-                    </div>
-                    <div className="hidden md:flex md:items-center">
-                      {getStatusBadge(vistoria.status)}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="text-center py-12">
+                {searchQuery ? (
+                  <p className="text-gray-500">Nenhuma vistoria encontrada para "{searchQuery}"</p>
+                ) : (
+                  <p className="text-gray-500">Nenhuma vistoria cadastrada. Adicione a primeira!</p>
+                )}
+                {searchQuery && (
+                  <Button variant="link" onClick={() => setSearchQuery("")}>
+                    Limpar busca
+                  </Button>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
