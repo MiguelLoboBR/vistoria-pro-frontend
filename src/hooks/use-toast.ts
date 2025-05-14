@@ -1,6 +1,6 @@
 
-import { toast as sonnerToast, type Toast } from "sonner";
-import { useToast as useShadcnToast } from "@/components/ui/use-toast";
+import { toast as sonnerToast, type ToastT } from "sonner";
+import { useToast as useShadcnToast } from "@/components/ui/toast";
 
 type ToastType = "default" | "success" | "error" | "warning" | "info";
 
@@ -37,4 +37,5 @@ export function toast(title: string, options?: ToastOptions) {
 // Re-export the useToast hook from shadcn/ui for components that rely on it
 export const useToast = useShadcnToast;
 
-export type { Toast };
+// Export the type from shadcn/ui toast
+export type { ToastT as Toast };
