@@ -11,27 +11,42 @@ export type Database = {
     Tables: {
       companies: {
         Row: {
+          address: string | null
           admin_id: string | null
           cnpj: string | null
           created_at: string
+          email: string | null
           id: string
+          is_individual: boolean | null
+          logo_url: string | null
           name: string
+          phone: string | null
           updated_at: string
         }
         Insert: {
+          address?: string | null
           admin_id?: string | null
           cnpj?: string | null
           created_at?: string
+          email?: string | null
           id?: string
+          is_individual?: boolean | null
+          logo_url?: string | null
           name: string
+          phone?: string | null
           updated_at?: string
         }
         Update: {
+          address?: string | null
           admin_id?: string | null
           cnpj?: string | null
           created_at?: string
+          email?: string | null
           id?: string
+          is_individual?: boolean | null
+          logo_url?: string | null
           name?: string
+          phone?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -102,30 +117,36 @@ export type Database = {
         Row: {
           avatar_url: string | null
           company_id: string | null
+          cpf: string | null
           created_at: string
           email: string
           full_name: string | null
           id: string
+          phone: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           company_id?: string | null
+          cpf?: string | null
           created_at?: string
           email: string
           full_name?: string | null
           id: string
+          phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           company_id?: string | null
+          cpf?: string | null
           created_at?: string
           email?: string
           full_name?: string | null
           id?: string
+          phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
@@ -149,7 +170,32 @@ export type Database = {
         Returns: undefined
       }
       create_company_with_admin: {
-        Args: { company_name: string; company_cnpj: string; admin_id: string }
+        Args:
+          | { company_name: string; company_cnpj: string; admin_id: string }
+          | {
+              company_name: string
+              company_cnpj: string
+              admin_id: string
+              company_address: string
+              company_phone: string
+              company_email: string
+              company_logo_url: string
+              admin_name: string
+              admin_cpf: string
+              admin_phone: string
+              admin_email: string
+            }
+        Returns: string
+      }
+      create_individual_profile: {
+        Args: {
+          full_name: string
+          cpf: string
+          user_id: string
+          address: string
+          phone: string
+          email: string
+        }
         Returns: string
       }
       get_current_user_role: {
