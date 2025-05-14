@@ -64,6 +64,7 @@ export function useAuthMethods(fetchUserProfile: (userId: string) => Promise<voi
     }
   };
 
+  // Modified to directly create company and admin profile
   const createCompanyWithAdmin = async (
     name: string, 
     cnpj: string,
@@ -90,10 +91,6 @@ export function useAuthMethods(fetchUserProfile: (userId: string) => Promise<voi
         adminPhone,
         adminEmail
       );
-      if (companyId) {
-        // Instead of just refreshing the profile, force a reload to ensure we have fresh data
-        window.location.href = "/admin/dashboard";
-      }
       return companyId;
     } catch (error) {
       console.error("Error creating company:", error);

@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { authService, UserRole } from "@/services/authService";
 
 const formSchema = z.object({
   // User auth fields
@@ -146,57 +147,69 @@ export const Register = () => {
         ? (values.adminEmail || values.email) 
         : values.email;
       
-      // Use company/individual name based on registration type
-      const name = values.registrationType === 'company' 
-        ? values.companyName 
-        : values.fullName;
-      
-      // Register the user with admin role
-      const result = await signUp(authEmail, values.password, name as string);
-      console.log("Registration result:", result);
+      // Upload logo if selected
+      let logoUrl = null;
+      if (logoFile) {
+        const { data: storageData, error: storageError } = await supabase.storage
+          .from('company_logos')
+          .upload(`${values.cnpj}/logo`, logoFile);
+            
+        if (storageError) {
+          console.error("Error uploading logo:", storageError);
+        } else if (storageData) {
+          logoUrl = supabase.storage.from('company_logos').getPublicUrl(storageData.path).data.publicUrl;
+        }
+      }
+
+      let role: UserRole = "admin";
+      let result;
       
       if (values.registrationType === 'company') {
-        // Upload logo if selected
-        let logoUrl = null;
-        if (logoFile) {
-          const { data: storageData, error: storageError } = await supabase.storage
-            .from('company_logos')
-            .upload(`${values.cnpj}/logo`, logoFile);
-            
-          if (storageError) {
-            console.error("Error uploading logo:", storageError);
-          } else if (storageData) {
-            logoUrl = supabase.storage.from('company_logos').getPublicUrl(storageData.path).data.publicUrl;
-          }
+        // Register with company information directly
+        result = await authService.registerAdmin(
+          authEmail, 
+          values.password,
+          values.adminName || ""
+        );
+        
+        if (result) {
+          // Create company directly with the registered user
+          await authService.createCompanyWithAdmin(
+            values.companyName || "",
+            values.cnpj || "",
+            values.companyAddress,
+            values.companyPhone,
+            values.companyEmail || values.email,
+            logoUrl,
+            values.adminName,
+            values.adminCpf,
+            values.adminPhone,
+            values.adminEmail || values.email
+          );
         }
-        
-        // Store extended company and admin data to be used during confirmation
-        const companyData = {
-          companyName: values.companyName,
-          cnpj: values.cnpj,
-          address: values.companyAddress,
-          phone: values.companyPhone,
-          email: values.companyEmail || values.email,
-          logoUrl,
-          adminName: values.adminName,
-          adminCpf: values.adminCpf,
-          adminPhone: values.adminPhone,
-          adminEmail: values.adminEmail || values.email,
-          type: 'company'
-        };
-        
-        localStorage.setItem('pendingCompanySetup', JSON.stringify(companyData));
       } else {
-        // Store individual profile data
-        const individualData = {
-          name: values.fullName,
-          cpf: values.cpf,
-          phone: values.phone,
-          email: values.email,
-          type: 'individual'
-        };
+        // Register as individual
+        result = await authService.registerAdmin(
+          values.email, 
+          values.password,
+          values.fullName || ""
+        );
         
-        localStorage.setItem('pendingCompanySetup', JSON.stringify(individualData));
+        if (result) {
+          // Create an individual company entry
+          await authService.createCompanyWithAdmin(
+            values.fullName || "",
+            values.cpf || "",
+            "", // address
+            values.phone,
+            values.email,
+            null, // logo url
+            values.fullName,
+            values.cpf,
+            values.phone,
+            values.email
+          );
+        }
       }
       
       setRegisteredEmail(authEmail);

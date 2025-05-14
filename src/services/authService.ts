@@ -182,7 +182,7 @@ const signOut = async (): Promise<void> => {
   }
 };
 
-// Modified to use direct creation from registration data
+// Modified to directly create company entry and update admin profile
 const createCompanyWithAdmin = async (
   name: string, 
   cnpj: string,
