@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { CalendarDays, Users, CheckCircle2, Clock, AlertCircle, BarChart3 } from "lucide-react";
 
-export const Dashboard = () => {
+export const AdminDashboard = () => {
   return (
     <AdminLayout>
       <div className="space-y-8">
@@ -85,28 +85,28 @@ export const Dashboard = () => {
                         address: "Av. Paulista, 1000, Apto 123",
                         inspector: "João Silva",
                         date: "15/05/2025",
-                        status: "concluída"
+                        status: "completed"
                       },
                       {
                         id: "VIS-1235",
                         address: "R. Augusta, 500, Casa 2",
                         inspector: "Maria Oliveira",
                         date: "14/05/2025",
-                        status: "concluída"
+                        status: "completed"
                       },
                       {
                         id: "VIS-1236",
                         address: "R. Oscar Freire, 200, Sala 45",
                         inspector: "Carlos Santos",
                         date: "13/05/2025",
-                        status: "pendente"
+                        status: "pending"
                       },
                       {
                         id: "VIS-1237",
                         address: "Av. Brigadeiro, 800, Apto 42",
                         inspector: "Ana Pereira",
                         date: "12/05/2025",
-                        status: "concluída"
+                        status: "completed"
                       },
                     ].map((item, i) => (
                       <tr key={i} className="border-b hover:bg-gray-50">
@@ -115,8 +115,8 @@ export const Dashboard = () => {
                         <td className="py-3 px-4 text-sm">{item.inspector}</td>
                         <td className="py-3 px-4 text-sm">{item.date}</td>
                         <td className="py-3 px-4">
-                          <span className={item.status === "concluída" ? "status-ok" : "status-warning"}>
-                            {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                          <span className={item.status === "completed" ? "status-ok" : "status-warning"}>
+                            {item.status === "completed" ? "Concluída" : "Pendente"}
                           </span>
                         </td>
                       </tr>
@@ -181,53 +181,9 @@ export const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
-        
-        {/* Alerts and notifications */}
-        <Card>
-          <CardHeader className="flex flex-row items-center">
-            <div className="flex-1">
-              <CardTitle>Alertas e Notificações</CardTitle>
-              <CardDescription>Informações importantes que precisam de sua atenção</CardDescription>
-            </div>
-            <AlertCircle className="h-5 w-5 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex gap-3 items-start pb-3 border-b">
-                <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2"></div>
-                <div>
-                  <p className="font-medium">Vistoria atrasada</p>
-                  <p className="text-sm text-gray-500">
-                    A vistoria VIS-1230 (R. Haddock Lobo, 595) está 2 dias atrasada.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex gap-3 items-start pb-3 border-b">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2"></div>
-                <div>
-                  <p className="font-medium">Contrato próximo do vencimento</p>
-                  <p className="text-sm text-gray-500">
-                    O contrato do vistoriador Carlos Santos vence em 5 dias.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex gap-3 items-start">
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2"></div>
-                <div>
-                  <p className="font-medium">Atualização disponível</p>
-                  <p className="text-sm text-gray-500">
-                    Nova versão do app VistoriaPro disponível para vistoriadores.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </AdminLayout>
   );
 };
 
-export default Dashboard;
+export default AdminDashboard;

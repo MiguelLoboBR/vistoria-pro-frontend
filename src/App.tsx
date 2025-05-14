@@ -10,20 +10,24 @@ import { AuthProvider } from "@/contexts/AuthContext";
 
 // Import components
 import AuthGuard from "@/components/auth/AuthGuard";
-import CompanySetup from "@/components/auth/CompanySetup";
 
 // Import pages
 import Landing from "./pages/landing/Landing";
-import AdminLogin from "./pages/auth/AdminLogin";
-import InspectorLogin from "./pages/auth/InspectorLogin";
+import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
-import Dashboard from "./pages/admin/Dashboard";
-import Vistorias from "./pages/admin/Vistorias";
-import CompanyProfile from "./pages/admin/CompanyProfile";
-import InspectorList from "./pages/admin/InspectorList";
-import InspectionList from "./pages/inspector/InspectionList";
-import InspectionForm from "./pages/inspector/InspectionForm";
+import CompanySetup from "./pages/auth/CompanySetup";
 import NotFound from "./pages/NotFound";
+
+// Admin pages
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminInspections from "./pages/admin/Inspections";
+import AdminProfile from "./pages/admin/Profile";
+import AdminInspectors from "./pages/admin/Inspectors";
+
+// Inspector pages
+import InspectorDashboard from "./pages/inspector/Dashboard";
+import InspectorInspection from "./pages/inspector/Inspection";
+import InspectorProfile from "./pages/inspector/Profile";
 
 const queryClient = new QueryClient();
 
@@ -31,46 +35,51 @@ const AppRoutes = () => (
   <Routes>
     {/* Public Routes */}
     <Route path="/" element={<Landing />} />
-    <Route path="/login" element={<AdminLogin />} />
-    <Route path="/login/inspector" element={<InspectorLogin />} />
+    <Route path="/login" element={<Login role="admin" />} />
+    <Route path="/login/inspector" element={<Login role="inspector" />} />
     <Route path="/register" element={<Register />} />
     
-    {/* Company Setup Route - Move to standalone route for better accessibility */}
+    {/* Company Setup Route */}
     <Route path="/setup/company" element={<CompanySetup />} />
     
-    {/* Admin Routes - redirect to dashboard as primary entry point */}
-    <Route path="/admin/tenant" element={<Navigate to="/admin/tenant/dashboard" replace />} />
-    <Route path="/admin/tenant/dashboard" element={
+    {/* Admin Routes */}
+    <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+    <Route path="/admin/dashboard" element={
       <AuthGuard requiredRole="admin">
-        <Dashboard />
+        <AdminDashboard />
       </AuthGuard>
     } />
-    <Route path="/admin/tenant/perfil" element={
+    <Route path="/admin/profile" element={
       <AuthGuard requiredRole="admin">
-        <CompanyProfile />
+        <AdminProfile />
       </AuthGuard>
     } />
-    <Route path="/admin/tenant/vistoriadores" element={
+    <Route path="/admin/inspectors" element={
       <AuthGuard requiredRole="admin">
-        <InspectorList />
+        <AdminInspectors />
       </AuthGuard>
     } />
-    <Route path="/admin/tenant/vistorias" element={
+    <Route path="/admin/inspections" element={
       <AuthGuard requiredRole="admin">
-        <Vistorias />
+        <AdminInspections />
       </AuthGuard>
     } />
     
     {/* Inspector Routes */}
-    <Route path="/app/inspector" element={<Navigate to="/app/inspector/dashboard" replace />} />
-    <Route path="/app/inspector/dashboard" element={
+    <Route path="/inspector" element={<Navigate to="/inspector/dashboard" replace />} />
+    <Route path="/inspector/dashboard" element={
       <AuthGuard requiredRole="inspector">
-        <InspectionList />
+        <InspectorDashboard />
       </AuthGuard>
     } />
-    <Route path="/app/inspector/inspection/:id" element={
+    <Route path="/inspector/inspection/:id" element={
       <AuthGuard requiredRole="inspector">
-        <InspectionForm />
+        <InspectorInspection />
+      </AuthGuard>
+    } />
+    <Route path="/inspector/profile" element={
+      <AuthGuard requiredRole="inspector">
+        <InspectorProfile />
       </AuthGuard>
     } />
     

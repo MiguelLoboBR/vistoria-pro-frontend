@@ -28,10 +28,8 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
     hasCompany: false
   });
   
-  // Add state to track attempts
   const [checkAttempts, setCheckAttempts] = useState(0);
-  // Max number of attempts to prevent excessive recursion
-  const maxAttempts = 3;
+  const maxAttempts = 3; // Prevent excessive recursion
 
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -139,7 +137,7 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
     };
     
     checkAuthentication();
-  }, [requiredRole, refreshUserProfile, checkAttempts]);
+  }, [requiredRole, refreshUserProfile, checkAttempts, user]);
   
   // Don't show any content while loading
   if (isLoading || directCheck.checking) {
@@ -195,10 +193,10 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
     
     if (userRole === "admin") {
       console.log("AuthGuard: User is admin, redirecting to admin dashboard");
-      return <Navigate to="/admin/tenant/vistorias" replace />;
+      return <Navigate to="/admin/dashboard" replace />;
     } else {
       console.log("AuthGuard: User is inspector, redirecting to inspector dashboard");
-      return <Navigate to="/app/inspector/dashboard" replace />;
+      return <Navigate to="/inspector/dashboard" replace />;
     }
   }
   
