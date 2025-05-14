@@ -1,6 +1,10 @@
 
 import { toast as sonnerToast, type ToastT } from "sonner";
-import { useToast as useShadcnToast } from "@/components/ui/toast";
+import { 
+  type ToastActionElement, 
+  ToastProps 
+} from "@/components/ui/toast";
+import * as React from "react";
 
 type ToastType = "default" | "success" | "error" | "warning" | "info";
 
@@ -34,8 +38,38 @@ export function toast(title: string, options?: ToastOptions) {
   }
 }
 
-// Re-export the useToast hook from shadcn/ui for components that rely on it
-export const useToast = useShadcnToast;
+// Define a proper type for Toast
+export interface Toast extends ToastProps {
+  id: string;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  action?: ToastActionElement;
+}
 
-// Export the type from shadcn/ui toast
-export type { ToastT as Toast };
+// Define a proper useToast hook that doesn't cause circular dependencies
+export const useToast = () => {
+  const [toasts, setToasts] = React.useState<Toast[]>([]);
+
+  const addToast = React.useCallback(
+    ({ title, description, variant, ...props }: Omit<Toast, "id">) => {
+      setToasts((state) => {
+        const id = Math.random().toString(36).substring(2, 9);
+        return [...state, { id, title, description, variant, ...props }];
+      });
+    },
+    []
+  );
+
+  const dismissToast = React.useCallback((id: string) => {
+    setToasts((state) => state.filter((toast) => toast.id !== id));
+  }, []);
+
+  return {
+    toasts,
+    addToast,
+    dismissToast,
+  };
+};
+
+// Export the type from sonner
+export type { ToastT };
