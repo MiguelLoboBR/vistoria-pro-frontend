@@ -7,15 +7,6 @@ import { Link } from "react-router-dom";
 import { inspectionService, Inspection } from "@/services/inspectionService";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface Inspection {
-  id: string;
-  address: string;
-  date: string;
-  time: string;
-  type: string;
-  status: "pending" | "in_progress" | "completed";
-}
-
 export const InspectionList = () => {
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
