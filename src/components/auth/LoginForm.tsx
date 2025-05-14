@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -10,6 +11,7 @@ import { toast } from "sonner";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/services/authService";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   email: z.string().email("Digite um e-mail válido"),
