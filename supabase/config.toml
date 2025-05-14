@@ -6,3 +6,4 @@ verify_jwt = true
 
 [postgres.policies]
 prevent_recursion_depth = 10
+

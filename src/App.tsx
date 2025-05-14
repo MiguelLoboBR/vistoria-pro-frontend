@@ -37,9 +37,10 @@ const AppRoutes = () => (
     <Route path="/company-setup" element={<CompanySetup />} />
     
     {/* Admin Routes */}
+    <Route path="/admin/tenant" element={<Navigate to="/admin/tenant/vistorias" replace />} />
     <Route path="/admin/tenant/dashboard" element={
       <AuthGuard requiredRole="admin">
-        <Dashboard />
+        <Vistorias />
       </AuthGuard>
     } />
     <Route path="/admin/tenant/perfil" element={
@@ -59,6 +60,7 @@ const AppRoutes = () => (
     } />
     
     {/* Inspector Routes */}
+    <Route path="/app/inspector" element={<Navigate to="/app/inspector/dashboard" replace />} />
     <Route path="/app/inspector/dashboard" element={
       <AuthGuard requiredRole="inspector">
         <InspectionList />

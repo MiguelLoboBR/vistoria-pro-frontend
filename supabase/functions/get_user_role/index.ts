@@ -44,12 +44,11 @@ serve(async (req) => {
       )
     }
 
-    // Query the user's role directly from the database
-    // Use RPC to bypass RLS issues
+    // Use the security definer function we created to safely get the user role
     const { data, error } = await supabaseClient.rpc('get_user_role_safely')
 
     if (error) {
-      // If we have an error, return a fallback role
+      // Se tivermos um erro, retornamos um papel padrão
       return new Response(
         JSON.stringify({ 
           role: 'inspector',
@@ -63,7 +62,7 @@ serve(async (req) => {
       )
     }
 
-    // Return the user's role
+    // Retornamos o papel do usuário
     return new Response(
       JSON.stringify({ 
         role: data || 'inspector',

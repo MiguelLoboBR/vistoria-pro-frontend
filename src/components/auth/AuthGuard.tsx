@@ -1,3 +1,4 @@
+
 import { ReactNode, useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,88 +51,58 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
           return;
         }
         
-        // Check profile including role and company_id
+        // Check profile including role and company_id using the function RPC que criamos
         try {
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('role, company_id')
-            .eq('id', sessionData.session.user.id)
-            .maybeSingle();
+          const { data: roleData, error: roleError } = await supabase
+            .rpc('get_user_role_safely');
           
-          console.log("AuthGuard: Direct profile check:", 
-            profileData ? `Role: ${profileData.role}, Has company: ${!!profileData.company_id}` : "No profile", 
-            profileError ? `Error: ${profileError.message}` : "No error");
-            
-          if (profileError) {
-            // If we're seeing infinite recursion errors from RLS policy, just assume auth
-            if (profileError.message.includes('infinite recursion')) {
-              // First attempt - try to refresh user profile with a timeout
-              if (checkAttempts < 1) {
-                setCheckAttempts(prevAttempts => prevAttempts + 1);
-                setTimeout(() => refreshUserProfile(), 500);
-              }
-              
-              if (requiredRole) {
-                // Fallback for inspector role, most common user type
-                const assumedRole = "inspector";
-                const matchesRole = requiredRole === assumedRole;
-                
-                setDirectCheck({
-                  isAuthenticated: true,
-                  matchesRole: matchesRole,
-                  checking: false,
-                  userRole: assumedRole,
-                  hasCompany: true  // Assume company exists to avoid blocking users
-                });
-              } else {
-                // If no required role, allow access
-                setDirectCheck({
-                  isAuthenticated: true,
-                  matchesRole: true,
-                  checking: false,
-                  userRole: "inspector",
-                  hasCompany: true  // Assume company exists to avoid blocking users
-                });
-              }
-            } else {
-              // Other errors, default to authenticated but no specific role
-              setDirectCheck({
-                isAuthenticated: true,
-                matchesRole: false,
-                checking: false,
-                userRole: undefined,
-                hasCompany: false
-              });
-            }
-          } else if (profileData) {
-            // Check if required role exists and matches
-            const matchesRole = requiredRole ? profileData.role === requiredRole : true;
+          if (roleError) {
+            console.error("AuthGuard: Error getting role:", roleError.message);
+            // Default to inspector role if there's an error
+            const assumedRole = "inspector";
+            const matchesRole = requiredRole ? requiredRole === assumedRole : true;
             
             setDirectCheck({
               isAuthenticated: true,
               matchesRole: matchesRole,
               checking: false,
-              userRole: profileData.role,
-              hasCompany: !!profileData.company_id
+              userRole: assumedRole,
+              hasCompany: true  // Assume has company to prevent blocking users
             });
             
-            // If the context doesn't have up-to-date profile data, refresh it
-            if (!user || user.role !== profileData.role || user.company_id !== profileData.company_id) {
-              refreshUserProfile();
-            }
-          } else {
-            // No profile found, default to not matching role
-            setDirectCheck({
-              isAuthenticated: true,
-              matchesRole: false,
-              checking: false,
-              userRole: undefined,
-              hasCompany: false
-            });
+            return;
+          }
+          
+          // Now get the profile data to check for company_id
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('company_id')
+            .eq('id', sessionData.session.user.id)
+            .maybeSingle();
+          
+          console.log("AuthGuard: Direct profile check:", 
+            profileData ? `Has company: ${!!profileData.company_id}` : "No profile", 
+            profileError ? `Error: ${profileError.message}` : "No error");
+            
+          // Check if required role exists and matches
+          const matchesRole = requiredRole ? roleData === requiredRole : true;
+          const hasCompany = profileData ? !!profileData.company_id : false;
+          
+          setDirectCheck({
+            isAuthenticated: true,
+            matchesRole: matchesRole,
+            checking: false,
+            userRole: roleData,
+            hasCompany: hasCompany
+          });
+          
+          // If the context doesn't have up-to-date profile data, refresh it
+          if (!user || user.role !== roleData || (profileData && user.company_id !== profileData.company_id)) {
+            refreshUserProfile();
           }
         } catch (err) {
           console.error("AuthGuard: Error checking profile:", err);
-          // Default to authenticated with inspector role to avoid blocking users
+          // Default to authenticated with inspector role
           setDirectCheck({
             isAuthenticated: true,
             matchesRole: requiredRole ? requiredRole === "inspector" : true,
@@ -206,7 +177,7 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
     
     if (userRole === "admin") {
       console.log("AuthGuard: User is admin, redirecting to admin dashboard");
-      return <Navigate to="/admin/tenant/dashboard" replace />;
+      return <Navigate to="/admin/tenant/vistorias" replace />;
     } else {
       console.log("AuthGuard: User is inspector, redirecting to inspector dashboard");
       return <Navigate to="/app/inspector/dashboard" replace />;
