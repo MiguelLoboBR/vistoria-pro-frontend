@@ -76,7 +76,7 @@ export function useAuthState() {
       try {
         // Try using RPC function to avoid RLS issues
         const { data, error } = await supabase
-          .rpc('get_current_user_role')
+          .rpc('get_user_role_safely')
           .then(async (roleResult) => {
             if (roleResult.error) {
               throw roleResult.error;

@@ -1,114 +1,89 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { UserProfile } from "@/contexts/types";
+import { authService } from "@/services/authService";
 
 export function useAuthActions(fetchUserProfile: (userId: string) => Promise<void>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const login = async (email: string, password: string) => {
-    setIsSubmitting(true);
     try {
+      setIsSubmitting(true);
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
+        email,
+        password
       });
       
       if (error) {
-        console.error("Login error:", error);
+        toast.error("Erro ao fazer login: " + error.message);
         return { error };
       }
-      
-      if (data.user) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-        
-        if (profileError) {
-          console.error("Error fetching profile:", profileError);
-          setIsSubmitting(false);
-          return { error: profileError };
-        }
-        
-        // Profile data is fetched in the auth state change listener
+
+      // If sign in is successful, fetch the user profile
+      if (data.session && data.user) {
+        // We'll use the session change event to trigger profile fetching
+        return;
       }
+
+      return undefined;
+    } catch (error: any) {
+      toast.error("Erro inesperado: " + error.message);
+      return { error };
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Add signIn method that wraps login for consistency
-  const signIn = async (email: string, password: string) => {
-    setIsSubmitting(true);
-    try {
-      const result = await login(email, password);
-      if (result?.error) {
-        throw result.error;
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  
   const logout = async () => {
-    setIsSubmitting(true);
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error("Logout error:", error);
-      }
-      navigate('/login');
+      setIsSubmitting(true);
+      await supabase.auth.signOut();
+      navigate("/login");
+    } catch (error) {
+      console.error("Error signing out:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
-  
-  // Add signOut method that wraps logout for consistency
-  const signOut = async () => {
-    await logout();
-  };
-  
+
   const signUp = async (email: string, password: string, fullName: string) => {
-    setIsSubmitting(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
+      setIsSubmitting(true);
+      return await authService.signUp(email, password, fullName);
+    } catch (error: any) {
+      return { error };
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      setIsSubmitting(true);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
       });
       
-      if (error) {
-        console.error("Signup error:", error);
-        return { error };
-      }
-      
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: data.user.id,
-              email: email,
-              full_name: fullName,
-              role: 'inspector',
-            },
-          ]);
-        
-        if (profileError) {
-          console.error("Error creating profile:", profileError);
-          return { error: profileError };
-        }
-      }
-      
-      navigate('/login');
+      if (error) throw error;
+    } catch (error: any) {
+      toast.error("Erro ao fazer login: " + error.message);
+      throw error;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      setIsSubmitting(true);
+      await authService.signOut();
+      navigate("/login");
+    } catch (error) {
+      console.error("Error signing out:", error);
     } finally {
       setIsSubmitting(false);
     }
