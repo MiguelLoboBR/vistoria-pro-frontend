@@ -7,7 +7,7 @@ import { fabric } from "fabric";
 import { Card, CardContent } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 
-interface PhotoCaptureProps {
+export interface PhotoCaptureProps {
   onPhotoCapture: (photoData: string) => void;
   onCancel: () => void;
 }

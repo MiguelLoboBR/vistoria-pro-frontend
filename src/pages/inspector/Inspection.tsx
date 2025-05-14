@@ -28,6 +28,9 @@ export const InspectorInspection = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentTab, setCurrentTab] = useState("overview");
   const [isSaving, setIsSaving] = useState(false);
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [signature, setSignature] = useState<string | null>(null);
+  const [transcription, setTranscription] = useState<string | null>(null);
   
   useEffect(() => {
     // In a real implementation, we would fetch data from the API
@@ -55,6 +58,25 @@ export const InspectorInspection = () => {
   const handleComplete = () => {
     toast.success("Vistoria concluída com sucesso!");
     navigate("/inspector/dashboard");
+  };
+  
+  const handlePhotoCapture = (photoData: string) => {
+    setCapturedPhoto(photoData);
+    toast.success("Foto capturada com sucesso!");
+  };
+  
+  const handlePhotoCancel = () => {
+    toast.info("Captura de foto cancelada");
+  };
+  
+  const handleSignatureCapture = (signatureData: string) => {
+    setSignature(signatureData);
+    toast.success("Assinatura salva com sucesso!");
+  };
+  
+  const handleTranscriptionComplete = (text: string) => {
+    setTranscription(text);
+    toast.success("Áudio transcrito com sucesso!");
   };
   
   const getStatusBadge = (status: string) => {
@@ -108,10 +130,10 @@ export const InspectorInspection = () => {
             </Button>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold">Vistoria #{inspection.id}</h1>
-                {getStatusBadge(inspection.status)}
+                <h1 className="text-2xl font-bold">Vistoria #{inspection?.id}</h1>
+                {inspection && getStatusBadge(inspection.status)}
               </div>
-              <p className="text-gray-500">{inspection.address}</p>
+              <p className="text-gray-500">{inspection?.address}</p>
             </div>
           </div>
           
@@ -206,7 +228,10 @@ export const InspectorInspection = () => {
                   <CardDescription>Tire fotos do imóvel</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <PhotoCapture />
+                  <PhotoCapture 
+                    onPhotoCapture={handlePhotoCapture}
+                    onCancel={handlePhotoCancel}
+                  />
                 </CardContent>
               </Card>
               
@@ -216,7 +241,10 @@ export const InspectorInspection = () => {
                   <CardDescription>Coleta de assinaturas</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <SignatureCapture />
+                  <SignatureCapture 
+                    title="Assinatura do Responsável"
+                    onSignCapture={handleSignatureCapture}
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -227,7 +255,9 @@ export const InspectorInspection = () => {
                 <CardDescription>Grave observações sobre o imóvel</CardDescription>
               </CardHeader>
               <CardContent>
-                <AudioRecorder />
+                <AudioRecorder 
+                  onTranscriptionComplete={handleTranscriptionComplete}
+                />
               </CardContent>
             </Card>
           </TabsContent>

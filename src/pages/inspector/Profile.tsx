@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import InspectorLayout from "@/components/layouts/InspectorLayout";
 import { Button } from "@/components/ui/button";
@@ -32,6 +31,7 @@ export const InspectorProfile = () => {
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
 
+  // Initialize the form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {

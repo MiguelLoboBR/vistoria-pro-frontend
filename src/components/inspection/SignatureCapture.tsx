@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eraser, Save, RotateCcw } from "lucide-react";
 
-interface SignatureCaptureProps {
+export interface SignatureCaptureProps {
   title: string;
   onSignCapture: (signatureData: string) => void;
 }

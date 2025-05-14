@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
-interface AudioRecorderProps {
+export interface AudioRecorderProps {
   onTranscriptionComplete: (text: string) => void;
 }
 
