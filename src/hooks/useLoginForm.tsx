@@ -64,7 +64,7 @@ export function useLoginForm(userType: UserRole) {
       // Get user metadata to check actual role
       const role = data.user?.user_metadata?.role || "inspector";
       
-      // Force redirection based on actual user role from metadata
+      // Direct redirects to ensure no race conditions with context
       if (role === "admin") {
         window.location.href = "/admin/dashboard";
       } else {
@@ -84,6 +84,7 @@ export function useLoginForm(userType: UserRole) {
       } else {
         toast.error(`Erro ao fazer login: ${error.message}`);
       }
+    } finally {
       setIsLoading(false);
     }
   };

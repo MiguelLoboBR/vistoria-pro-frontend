@@ -43,11 +43,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!session?.user?.id) return;
     
     try {
-      // Try using RPC function first to avoid policy issues
-      const { data: roleData, error: roleError } = await supabase.rpc('get_current_user_role');
+      // Use get_user_role_safely function to avoid infinite recursion
+      const { data: roleData, error: roleError } = await supabase.rpc('get_user_role_safely');
       
       if (roleError) {
-        console.warn("Could not get role using RPC function:", roleError);
+        console.warn("Could not get role using safer RPC function:", roleError);
         // Fall back to direct query with error handling
       }
       
@@ -166,11 +166,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log("Fetching profile for user:", userId);
       
-      // Try get_current_user_role RPC function first to avoid RLS issues
+      // Use get_user_role_safely RPC function first to avoid RLS issues
       try {
-        await supabase.rpc('get_current_user_role');
+        await supabase.rpc('get_user_role_safely');
       } catch (roleError) {
-        console.warn("RPC get_current_user_role failed:", roleError);
+        console.warn("RPC get_user_role_safely failed:", roleError);
       }
       
       // Then try to get the full profile
