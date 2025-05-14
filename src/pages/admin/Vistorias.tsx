@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   address: z.string().min(5, "Endereço deve ter no mínimo 5 caracteres"),

@@ -1,13 +1,20 @@
-
 import InspectorLayout from "@/components/layouts/InspectorLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Clock, MapPin, CalendarClock, CheckCircle, AlertTriangle, ChevronRight, Hourglass } from "lucide-react";
+import { 
+  Clock, 
+  MapPin, 
+  CalendarClock, 
+  CheckCircle, 
+  AlertTriangle, 
+  ChevronRight, 
+  Hourglass,
+  Calendar 
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { inspectionService, Inspection } from "@/services/inspectionService";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 
 export const InspectionList = () => {
   const [inspections, setInspections] = useState<Inspection[]>([]);

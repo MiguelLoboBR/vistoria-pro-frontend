@@ -49,14 +49,14 @@ export const inspectionService = {
 
       if (error) throw error;
 
-      // Transform data to match our Inspection interface
+      // Transform data to match our Inspection interface with proper type casting
       const inspections: Inspection[] = data.map(item => {
-        const inspection = {
+        const inspection: Inspection = {
           id: item.id,
           address: item.address,
           date: item.date,
           time: item.time,
-          status: item.status,
+          status: item.status as "agendada" | "atrasada" | "em_andamento" | "concluida",
           inspector_id: item.inspector_id,
           inspector_name: item.profiles?.full_name || null,
           type: item.type,
@@ -83,7 +83,10 @@ export const inspectionService = {
 
       if (error) throw error;
 
-      return data as Inspection[];
+      return data.map(item => ({
+        ...item,
+        status: item.status as "agendada" | "atrasada" | "em_andamento" | "concluida"
+      })) as Inspection[];
     } catch (error: any) {
       console.error("Error fetching inspector inspections:", error.message);
       toast.error(`Erro ao buscar vistorias: ${error.message}`);
@@ -111,7 +114,7 @@ export const inspectionService = {
         address: data.address,
         date: data.date,
         time: data.time,
-        status: data.status,
+        status: data.status as "agendada" | "atrasada" | "em_andamento" | "concluida",
         inspector_id: data.inspector_id,
         inspector_name: data.profiles?.full_name || null,
         type: data.type,
