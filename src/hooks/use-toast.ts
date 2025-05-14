@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from "react"
+import { useReducer, useEffect, useRef } from "react"
 import { toast as sonnerToast } from "sonner"
 
 const TOAST_LIMIT = 20
@@ -105,7 +105,8 @@ function toastReducer(state: State, action: Action): State {
 }
 
 function useToaster(initialState: State = { toasts: [] }) {
-  const [state, dispatch] = useState<State>(initialState)
+  // Change from useState to useReducer for handling complex state updates
+  const [state, dispatch] = useReducer(toastReducer, initialState)
 
   const dispatchRef = useRef(dispatch)
   useEffect(() => {
