@@ -10,8 +10,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { EyeIcon, EyeOffIcon, UploadCloud } from "lucide-react";
 import RegisterLogo from "@/components/auth/RegisterLogo";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,64 +21,22 @@ const formSchema = z.object({
   password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
   confirmPassword: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
   
-  // Registration type
-  registrationType: z.enum(["company", "individual"]),
-  
   // Company fields
-  companyName: z.string().optional(),
+  companyName: z.string().min(2, "Nome da empresa é obrigatório"),
   companyAddress: z.string().optional(),
   companyPhone: z.string().optional(),
   companyEmail: z.string().optional(),
-  cnpj: z.string().optional(),
+  cnpj: z.string().min(1, "CNPJ/CPF é obrigatório"),
   
-  // Individual/admin fields
-  fullName: z.string().optional(),
-  cpf: z.string().optional(),
-  phone: z.string().optional(),
-  
-  // Admin fields (when company)
-  adminName: z.string().optional(),
-  adminCpf: z.string().optional(),
+  // Admin fields
+  adminName: z.string().min(3, "Nome do administrador é obrigatório"),
+  adminCpf: z.string().min(11, "CPF inválido"),
   adminPhone: z.string().optional(),
   adminEmail: z.string().optional(),
-  
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"]
-}).refine(
-  (data) => {
-    if (data.registrationType === 'company') {
-      return !!data.companyName && !!data.cnpj;
-    }
-    return true;
-  },
-  {
-    message: "Dados da empresa obrigatórios",
-    path: ["companyName"]
-  }
-).refine(
-  (data) => {
-    if (data.registrationType === 'individual') {
-      return !!data.fullName && !!data.cpf;
-    }
-    return true;
-  },
-  {
-    message: "Dados pessoais obrigatórios",
-    path: ["fullName"]
-  }
-).refine(
-  (data) => {
-    if (data.registrationType === 'company') {
-      return !!data.adminName && !!data.adminCpf && !!data.adminPhone;
-    }
-    return true;
-  },
-  {
-    message: "Dados do administrador obrigatórios",
-    path: ["adminName"]
-  }
-);
+});
 
 export const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -97,7 +53,6 @@ export const Register = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      registrationType: "company",
       email: "",
       password: "",
       confirmPassword: "",
@@ -109,11 +64,6 @@ export const Register = () => {
       companyEmail: "",
       cnpj: "",
       
-      // Individual fields
-      fullName: "",
-      cpf: "",
-      phone: "",
-      
       // Admin fields
       adminName: "",
       adminCpf: "",
@@ -121,9 +71,6 @@ export const Register = () => {
       adminEmail: "",
     },
   });
-
-  // Watch the registration type to conditionally render fields
-  const registrationType = form.watch("registrationType");
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -142,10 +89,8 @@ export const Register = () => {
     setIsSubmitting(true);
     
     try {
-      // Use admin email for authentication (or regular email for individual)
-      const authEmail = values.registrationType === 'company' 
-        ? (values.adminEmail || values.email) 
-        : values.email;
+      // Use admin email for authentication
+      const authEmail = values.adminEmail || values.email;
       
       // Upload logo if selected
       let logoUrl = null;
@@ -161,55 +106,28 @@ export const Register = () => {
         }
       }
 
-      let role: UserRole = "admin";
-      let result;
+      const role: UserRole = "admin";
+      // Register the admin
+      const result = await authService.registerAdmin(
+        authEmail, 
+        values.password,
+        values.adminName || ""
+      );
       
-      if (values.registrationType === 'company') {
-        // Register with company information directly
-        result = await authService.registerAdmin(
-          authEmail, 
-          values.password,
-          values.adminName || ""
+      if (result) {
+        // Create company directly with the registered user
+        await authService.createCompanyWithAdmin(
+          values.companyName || "",
+          values.cnpj || "",
+          values.companyAddress,
+          values.companyPhone,
+          values.companyEmail || values.email,
+          logoUrl,
+          values.adminName,
+          values.adminCpf,
+          values.adminPhone,
+          values.adminEmail || values.email
         );
-        
-        if (result) {
-          // Create company directly with the registered user
-          await authService.createCompanyWithAdmin(
-            values.companyName || "",
-            values.cnpj || "",
-            values.companyAddress,
-            values.companyPhone,
-            values.companyEmail || values.email,
-            logoUrl,
-            values.adminName,
-            values.adminCpf,
-            values.adminPhone,
-            values.adminEmail || values.email
-          );
-        }
-      } else {
-        // Register as individual
-        result = await authService.registerAdmin(
-          values.email, 
-          values.password,
-          values.fullName || ""
-        );
-        
-        if (result) {
-          // Create an individual company entry
-          await authService.createCompanyWithAdmin(
-            values.fullName || "",
-            values.cpf || "",
-            "", // address
-            values.phone,
-            values.email,
-            null, // logo url
-            values.fullName,
-            values.cpf,
-            values.phone,
-            values.email
-          );
-        }
       }
       
       setRegisteredEmail(authEmail);
@@ -276,270 +194,187 @@ export const Register = () => {
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-              
-              {/* Tipo de registro */}
-              <FormField
-                control={form.control}
-                name="registrationType"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>Tipo de Cadastro</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex flex-col space-y-1"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="company" id="company" />
-                          <FormLabel htmlFor="company" className="font-normal">
-                            Empresa (CNPJ)
-                          </FormLabel>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="individual" id="individual" />
-                          <FormLabel htmlFor="individual" className="font-normal">
-                            Pessoa Física (CPF)
-                          </FormLabel>
-                        </div>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {registrationType === 'company' ? (
-                <>
-                  {/* Company Fields */}
-                  <div className="space-y-5">
-                    <h2 className="font-bold text-lg border-b pb-2">Dados da Empresa</h2>
-                    
-                    <FormField
-                      control={form.control}
-                      name="companyName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nome da Empresa</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Nome da empresa" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="cnpj"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>CNPJ</FormLabel>
-                          <FormControl>
-                            <Input placeholder="00.000.000/0000-00" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="companyAddress"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Endereço</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Endereço completo" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="companyPhone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Telefone da Empresa</FormLabel>
-                            <FormControl>
-                              <Input placeholder="(00) 0000-0000" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="companyEmail"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>E-mail da Empresa</FormLabel>
-                            <FormControl>
-                              <Input placeholder="empresa@exemplo.com" type="email" {...field} />
-                            </FormControl>
-                            <FormDescription>
-                              Opcional, se diferente do e-mail de login
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <FormLabel>Logo da Empresa</FormLabel>
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center">
-                        {logoPreview ? (
-                          <div className="mb-4">
-                            <img 
-                              src={logoPreview} 
-                              alt="Logo preview" 
-                              className="max-h-32 max-w-full object-contain" 
-                            />
-                          </div>
-                        ) : (
-                          <UploadCloud className="h-10 w-10 text-gray-400 mb-2" />
-                        )}
-                        
-                        <p className="text-sm text-gray-500 mb-2">Arraste ou clique para fazer upload</p>
-                        
-                        <Input
-                          id="logo"
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleLogoChange}
-                        />
-                        <label htmlFor="logo">
-                          <div className="bg-vistoria-blue text-white px-4 py-2 rounded cursor-pointer hover:bg-vistoria-darkBlue text-sm">
-                            Selecionar arquivo
-                          </div>
-                        </label>
-                        <p className="text-xs text-gray-400 mt-2">
-                          PNG ou JPEG, max 2MB
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+              {/* Company Fields */}
+              <div className="space-y-5">
+                <h2 className="font-bold text-lg border-b pb-2">Dados da Empresa</h2>
+                
+                <FormField
+                  control={form.control}
+                  name="companyName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome da Empresa</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome da empresa" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="cnpj"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CNPJ/CPF</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Digite o CNPJ ou CPF" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Aceita ambos CNPJ ou CPF
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="companyAddress"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Endereço</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Endereço completo" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="companyPhone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telefone da Empresa</FormLabel>
+                        <FormControl>
+                          <Input placeholder="(00) 0000-0000" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   
-                  {/* Admin Fields */}
-                  <div className="space-y-5 pt-4">
-                    <h2 className="font-bold text-lg border-b pb-2">Dados do Administrador</h2>
+                  <FormField
+                    control={form.control}
+                    name="companyEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>E-mail da Empresa</FormLabel>
+                        <FormControl>
+                          <Input placeholder="empresa@exemplo.com" type="email" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Opcional, se diferente do e-mail de login
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <div className="space-y-3">
+                  <FormLabel>Logo da Empresa</FormLabel>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center">
+                    {logoPreview ? (
+                      <div className="mb-4">
+                        <img 
+                          src={logoPreview} 
+                          alt="Logo preview" 
+                          className="max-h-32 max-w-full object-contain" 
+                        />
+                      </div>
+                    ) : (
+                      <UploadCloud className="h-10 w-10 text-gray-400 mb-2" />
+                    )}
                     
-                    <FormField
-                      control={form.control}
-                      name="adminName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nome Completo</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Nome completo" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <p className="text-sm text-gray-500 mb-2">Arraste ou clique para fazer upload</p>
                     
-                    <FormField
-                      control={form.control}
-                      name="adminCpf"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>CPF</FormLabel>
-                          <FormControl>
-                            <Input placeholder="000.000.000-00" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                    <Input
+                      id="logo"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleLogoChange}
                     />
-                    
-                    <FormField
-                      control={form.control}
-                      name="adminPhone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Telefone</FormLabel>
-                          <FormControl>
-                            <Input placeholder="(00) 00000-0000" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="adminEmail"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>E-mail do Administrador</FormLabel>
-                          <FormControl>
-                            <Input placeholder="admin@exemplo.com" type="email" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Este será o e-mail usado para login no sistema
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <label htmlFor="logo">
+                      <div className="bg-vistoria-blue text-white px-4 py-2 rounded cursor-pointer hover:bg-vistoria-darkBlue text-sm">
+                        Selecionar arquivo
+                      </div>
+                    </label>
+                    <p className="text-xs text-gray-400 mt-2">
+                      PNG ou JPEG, max 2MB
+                    </p>
                   </div>
-                </>
-              ) : (
-                <>
-                  {/* Individual Fields */}
-                  <div className="space-y-5">
-                    <h2 className="font-bold text-lg border-b pb-2">Dados Pessoais</h2>
-                    
-                    <FormField
-                      control={form.control}
-                      name="fullName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nome Completo</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Nome completo" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="cpf"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>CPF</FormLabel>
-                          <FormControl>
-                            <Input placeholder="000.000.000-00" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Telefone</FormLabel>
-                          <FormControl>
-                            <Input placeholder="(00) 00000-0000" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </>
-              )}
+                </div>
+              </div>
+              
+              {/* Admin Fields */}
+              <div className="space-y-5 pt-4">
+                <h2 className="font-bold text-lg border-b pb-2">Dados do Administrador</h2>
+                
+                <FormField
+                  control={form.control}
+                  name="adminName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome Completo</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome completo" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="adminCpf"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CPF</FormLabel>
+                      <FormControl>
+                        <Input placeholder="000.000.000-00" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="adminPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="(00) 00000-0000" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="adminEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>E-mail do Administrador</FormLabel>
+                      <FormControl>
+                        <Input placeholder="admin@exemplo.com" type="email" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Este será o e-mail usado para login no sistema
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               
               {/* Common Auth Fields */}
               <div className="space-y-5 pt-4">
