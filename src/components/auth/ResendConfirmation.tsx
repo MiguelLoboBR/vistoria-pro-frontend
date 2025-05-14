@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 
-interface ResendConfirmationProps {
+export interface ResendConfirmationProps {
   show: boolean;
   email: string;
   isLoading: boolean;
@@ -12,10 +12,11 @@ export const ResendConfirmation = ({ show, email, isLoading, onResend }: ResendC
   if (!show) return null;
   
   return (
-    <div className="text-center p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+    <div className="mt-4 text-center p-3 bg-yellow-50 border border-yellow-200 rounded-md">
       <p className="text-sm text-yellow-800 mb-2">
         Seu email ainda não foi confirmado. Verifique sua caixa de entrada ou reenvie o email de confirmação.
       </p>
+      <p className="text-xs text-yellow-700 mb-3">Email: {email}</p>
       <Button 
         type="button"
         variant="outline"
@@ -23,7 +24,7 @@ export const ResendConfirmation = ({ show, email, isLoading, onResend }: ResendC
         onClick={onResend}
         disabled={isLoading}
       >
-        Reenviar email de confirmação
+        {isLoading ? "Enviando..." : "Reenviar email de confirmação"}
       </Button>
     </div>
   );

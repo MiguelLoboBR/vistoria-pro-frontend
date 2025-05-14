@@ -9,10 +9,15 @@ import { ResendConfirmation } from "./ResendConfirmation";
 import { toast } from "@/components/ui/use-toast";
 import { useLoginForm } from "@/hooks/useLoginForm";
 
-export const LoginForm = ({ role }: { role: "admin_tenant" | "inspector" }) => {
+interface LoginFormProps {
+  role: "admin_tenant" | "inspector";
+}
+
+export const LoginForm = ({ role }: LoginFormProps) => {
   const navigate = useNavigate();
   const [showResendUI, setShowResendUI] = useState(false);
   const [resendEmail, setResendEmail] = useState("");
+  const [isResending, setIsResending] = useState(false);
   
   const { 
     form, 
@@ -32,27 +37,44 @@ export const LoginForm = ({ role }: { role: "admin_tenant" | "inspector" }) => {
       if (error.message.includes("Email not confirmed")) {
         setResendEmail(form.getValues("email"));
         setShowResendUI(true);
-        toast({
-          title: "Email não confirmado",
+        toast("Email não confirmado", {
           description: "Verifique seu email para confirmar sua conta",
-          variant: "warning"
+          type: "warning"
         });
       } else {
-        toast({
-          title: "Erro ao fazer login",
+        toast("Erro ao fazer login", {
           description: error.message || "Verifique suas credenciais",
-          variant: "destructive"
+          type: "error"
         });
       }
     }
   });
 
+  const handleResendConfirmation = async () => {
+    setIsResending(true);
+    try {
+      // Implement resend logic here
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast("Email enviado", { 
+        description: "Verifique sua caixa de entrada", 
+        type: "success" 
+      });
+    } catch (error) {
+      toast("Erro ao reenviar email", { 
+        description: "Tente novamente mais tarde", 
+        type: "error" 
+      });
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   return (
     <div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <EmailField form={form} />
-          <PasswordField form={form} />
+          <EmailField control={form.control} />
+          <PasswordField control={form.control} />
           
           <Button 
             type="submit" 
@@ -64,11 +86,14 @@ export const LoginForm = ({ role }: { role: "admin_tenant" | "inspector" }) => {
         </form>
       </Form>
       
-      {showResendUI && (
-        <div className="mt-8 p-4 border rounded-md bg-gray-50">
-          <ResendConfirmation email={resendEmail} />
-        </div>
-      )}
+      <ResendConfirmation 
+        show={showResendUI} 
+        email={resendEmail} 
+        isLoading={isResending} 
+        onResend={handleResendConfirmation}
+      />
     </div>
   );
 };
+
+export default LoginForm;

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "@/components/Logo";
-import LoginForm from "@/components/auth/LoginForm";
+import { LoginForm } from "@/components/auth/LoginForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { UserRole } from "@/services/types"; // Import from services/types
+import { UserRole } from "@/services/authService/types"; // Import from services/authService/types
 
 interface LoginProps {
   role: UserRole;

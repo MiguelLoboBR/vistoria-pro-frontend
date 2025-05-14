@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,7 +32,6 @@ const inspectorFormSchema = z.object({
 
 const Inspectors = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   
   const [open, setOpen] = useState(false);
@@ -91,17 +90,14 @@ const Inspectors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inspectors'] });
-      toast({
-        title: "Inspetor criado com sucesso!",
-      });
+      toast("Inspetor criado com sucesso!");
       setOpen(false);
       form.reset();
     },
     onError: (error: any) => {
-      toast({
-        title: "Erro ao criar inspetor",
+      toast("Erro ao criar inspetor", {
         description: error.message,
-        variant: "destructive",
+        type: "error"
       });
     },
   });
@@ -116,16 +112,13 @@ const Inspectors = () => {
     
     const { error } = await supabase.from('profiles').delete().eq('id', inspectorId);
     if (error) {
-      toast({
-        title: "Erro ao excluir inspetor",
+      toast("Erro ao excluir inspetor", {
         description: error.message,
-        variant: "destructive",
+        type: "error"
       });
     } else {
       queryClient.invalidateQueries({ queryKey: ['inspectors'] });
-      toast({
-        title: "Inspetor excluído com sucesso!",
-      });
+      toast("Inspetor excluído com sucesso!");
     }
   };
   

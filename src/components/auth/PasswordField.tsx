@@ -6,7 +6,7 @@ import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { Control } from "react-hook-form";
 import { usePasswordVisibility } from "@/hooks/usePasswordVisibility";
 
-interface PasswordFieldProps {
+export interface PasswordFieldProps {
   control: Control<any>;
   disabled?: boolean;
 }

@@ -1,79 +1,61 @@
 
-import { toast as sonnerToast, type ToastT } from "sonner";
-import { 
-  type ToastActionElement 
-} from "@/components/ui/toast";
 import * as React from "react";
+import { 
+  toast as sonnerToast,
+  type ToastT as SonnerToastType,
+  type ExternalToast
+} from "sonner";
 
-type ToastType = "default" | "success" | "error" | "warning" | "info";
-
-interface ToastOptions {
-  description?: string;
-  type?: ToastType;
-  duration?: number;
-  position?: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "top-center" | "bottom-center";
-  variant?: "default" | "destructive";
-}
-
-// We'll use sonner toast for consistency across the application
-export function toast(title: string, options?: ToastOptions) {
-  const { description, type = "default", duration = 5000, variant } = options || {};
-  
-  switch (type) {
-    case "success":
-      return sonnerToast.success(title, { description, duration });
-    case "error":
-      return sonnerToast.error(title, { description, duration });
-    case "warning": 
-      // Sonner doesn't have warning by default, use info with custom styling
-      return sonnerToast(title, {
-        description,
-        duration,
-        className: 'sonner-toast-warning'
-      });
-    case "info":
-      return sonnerToast.info(title, { description, duration });
-    default:
-      return sonnerToast(title, { description, duration });
-  }
-}
-
-// Define a proper type for Toast without extending ToastProps
-export interface Toast {
-  id: string;
-  title?: React.ReactNode;
+export type ToastProps = {
+  title?: string;
   description?: React.ReactNode;
-  action?: ToastActionElement;
-  variant?: "default" | "destructive";
-  // Add other necessary properties that were from ToastProps
-  className?: string;
+  variant?: "default" | "destructive" | "success" | "warning" | "info";
+  action?: React.ReactNode;
   duration?: number;
-}
+};
 
-// Define a proper useToast hook that doesn't cause circular dependencies
-export const useToast = () => {
+export type ToastT = SonnerToastType;
+
+export type Toast = {
+  id: string;
+} & ToastProps;
+
+const useToast = () => {
   const [toasts, setToasts] = React.useState<Toast[]>([]);
 
-  const addToast = React.useCallback(
-    ({ title, description, variant, ...props }: Omit<Toast, "id">) => {
-      setToasts((state) => {
-        const id = Math.random().toString(36).substring(2, 9);
-        return [...state, { id, title, description, variant, ...props }];
-      });
-    },
-    []
-  );
+  const addToast = (props: ToastProps) => {
+    const { title, description, variant, action, duration } = props;
+    
+    // Map variant to Sonner's toast type
+    const id = sonnerToast(title || "", {
+      description,
+      action,
+      duration,
+    }).toString();
 
-  const dismissToast = React.useCallback((id: string) => {
-    setToasts((state) => state.filter((toast) => toast.id !== id));
+    setToasts((prevToasts) => [
+      ...prevToasts,
+      { id, title, description, variant, action, duration },
+    ]);
+
+    return id;
+  };
+
+  const dismissToast = React.useCallback((toastId?: string) => {
+    if (toastId) {
+      sonnerToast.dismiss(toastId);
+      setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== toastId));
+    }
   }, []);
 
   return {
+    toast: addToast,
+    dismiss: dismissToast,
     toasts,
-    addToast,
-    dismissToast,
   };
 };
 
-// Export the type from sonner
-export type { ToastT };
+// Re-export sonner toast for direct access
+const toast = sonnerToast;
+
+export { useToast, toast };
