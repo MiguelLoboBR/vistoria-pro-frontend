@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { UserRole } from "@/services/authService";
+import { UserRole } from "@/services/authService"; // Import from authService
 import { supabase } from "@/integrations/supabase/client";
 
 interface AuthGuardState {

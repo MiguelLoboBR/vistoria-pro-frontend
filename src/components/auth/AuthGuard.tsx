@@ -1,7 +1,7 @@
 
 import { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { UserRole } from "@/services/authService";
+import { UserRole } from "@/services/authService"; // Make sure to import from authService
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { LoadingAuthentication } from "./LoadingAuthentication";
 

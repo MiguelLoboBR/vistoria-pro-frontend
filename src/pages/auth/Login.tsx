@@ -5,13 +5,13 @@ import Logo from "@/components/Logo";
 import LoginForm from "@/components/auth/LoginForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { UserRole } from "@/services/authService";
+import { UserRole } from "@/services/types"; // Import from services/types
 
 interface LoginProps {
   role: UserRole;
 }
 
-const Login = ({ role = "admin" }: LoginProps) => {
+const Login = ({ role = "admin_tenant" }: LoginProps) => {
   const { session, isLoading } = useAuth();
   const navigate = useNavigate();
   const [checkingSession, setCheckingSession] = useState(true);

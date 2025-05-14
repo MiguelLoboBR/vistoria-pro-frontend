@@ -1,54 +1,94 @@
-
-import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
-import { UserRole } from "@/services/authService";
-import { EmailField } from "./EmailField";
-import { PasswordField } from "./PasswordField";
-import { ResendConfirmation } from "./ResendConfirmation";
-import { useLoginForm } from "@/hooks/useLoginForm";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { toast } from "@/components/ui/use-toast"
 
 interface LoginFormProps {
-  userType: UserRole;
+  userType: 'admin' | 'inspector';
 }
 
-export const LoginForm = ({ userType }: LoginFormProps) => {
-  const { 
-    form, 
-    isLoading, 
-    showResendConfirmation, 
-    emailForConfirmation,
-    handleResendConfirmation,
-    onSubmit 
-  } = useLoginForm(userType);
+const LoginForm: React.FC<LoginFormProps> = ({ userType }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+
+    try {
+      if (signIn) {
+        const success = await signIn(email, password, userType);
+        if (success) {
+          // Redirect based on user type
+          const redirectPath = userType === 'inspector' ? '/inspector/dashboard' : '/admin/dashboard';
+          navigate(redirectPath);
+        } else {
+          toast({
+            title: "Falha ao fazer login",
+            description: "Por favor, verifique suas credenciais.",
+            variant: "destructive",
+          })
+        }
+      } else {
+        toast({
+          title: "Erro",
+          description: "signIn function is not available.",
+          variant: "destructive",
+        })
+      }
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      toast({
+        title: "Falha ao fazer login",
+        description: error.message || "Ocorreu um erro ao tentar fazer login.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <EmailField control={form.control} disabled={isLoading} />
-        <PasswordField control={form.control} disabled={isLoading} />
-        
-        <Button 
-          type="submit" 
-          className="w-full bg-vistoria-blue hover:bg-vistoria-darkBlue"
-          disabled={isLoading}
-        >
-          {isLoading ? "Entrando..." : "Entrar"}
-        </Button>
-        
-        <ResendConfirmation 
-          show={showResendConfirmation}
-          email={emailForConfirmation}
-          isLoading={isLoading}
-          onResend={handleResendConfirmation}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          Email
+        </label>
+        <Input
+          type="email"
+          id="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          placeholder="seuemail@exemplo.com"
+          disabled={loading}
         />
-        
-        <div className="text-center">
-          <Button variant="link" className="text-sm text-vistoria-blue" disabled={isLoading}>
-            Esqueci minha senha
-          </Button>
-        </div>
-      </form>
-    </Form>
+      </div>
+      <div>
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          Senha
+        </label>
+        <Input
+          type="password"
+          id="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          placeholder="********"
+          disabled={loading}
+        />
+      </div>
+      <div>
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? 'Entrando...' : 'Entrar'}
+        </Button>
+      </div>
+    </form>
   );
 };
 
