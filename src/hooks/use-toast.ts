@@ -16,7 +16,8 @@ export type ToasterToast = ToastProps & {
   open: boolean
 }
 
-export type ToasterToastActionElement = React.ReactElement<typeof ToastActionElement>
+// Fix the type reference - remove React.ReactElement since we're referring to a type
+export type ToasterToastActionElement = React.ReactNode
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -143,7 +144,8 @@ function dispatch(action: Action) {
   })
 }
 
-export function toast({
+// Define the toast function once - remove export to fix duplicate export
+function toast({
   ...props
 }: Omit<ToasterToast, "id" | "open">) {
   const id = genId()
@@ -218,5 +220,5 @@ export function useToast() {
   }
 }
 
-// Only export toast once
+// Single export for the toast function
 export { toast }
