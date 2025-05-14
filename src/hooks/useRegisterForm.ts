@@ -62,6 +62,16 @@ export const useRegisterForm = () => {
       let logoUrl = null;
       if (logoFile) {
         try {
+          // Check if company_logos bucket exists
+          const { data: bucketData } = await supabase.storage
+            .getBucket('company_logos');
+            
+          if (!bucketData) {
+            // Create bucket if it doesn't exist
+            await supabase.storage
+              .createBucket('company_logos', { public: true });
+          }
+          
           const { data: storageData, error: storageError } = await supabase.storage
             .from('company_logos')
             .upload(`${values.cnpj}/logo`, logoFile);
@@ -122,6 +132,7 @@ export const useRegisterForm = () => {
       
       try {
         // Try to create company but don't fail if this part fails
+        // We no longer pass the user ID directly - it will be handled after email confirmation
         await authService.createCompanyWithAdmin(
           values.companyName || "",
           values.cnpj || "",
