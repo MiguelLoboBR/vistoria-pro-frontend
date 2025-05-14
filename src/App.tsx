@@ -38,7 +38,7 @@ const AppRoutes = () => (
   <Routes>
     {/* Public Routes */}
     <Route path="/" element={<Landing />} />
-    <Route path="/login" element={<Login role="admin" />} />
+    <Route path="/login" element={<Login role="admin_tenant" />} />
     <Route path="/login/inspector" element={<Login role="inspector" />} />
     <Route path="/register" element={<Register />} />
     <Route path="/register/success" element={<RegisterSuccess />} />
@@ -53,22 +53,22 @@ const AppRoutes = () => (
     {/* Admin Routes */}
     <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
     <Route path="/admin/dashboard" element={
-      <AuthGuard requiredRole="admin">
+      <AuthGuard requiredRole="admin_tenant">
         <AdminDashboard />
       </AuthGuard>
     } />
     <Route path="/admin/profile" element={
-      <AuthGuard requiredRole="admin">
+      <AuthGuard requiredRole="admin_tenant">
         <AdminProfile />
       </AuthGuard>
     } />
     <Route path="/admin/inspectors" element={
-      <AuthGuard requiredRole="admin">
+      <AuthGuard requiredRole="admin_tenant">
         <AdminInspectors />
       </AuthGuard>
     } />
     <Route path="/admin/inspections" element={
-      <AuthGuard requiredRole="admin">
+      <AuthGuard requiredRole="admin_tenant">
         <AdminInspections />
       </AuthGuard>
     } />

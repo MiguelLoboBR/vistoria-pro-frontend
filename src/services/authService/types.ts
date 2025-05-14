@@ -7,6 +7,6 @@ export type { UserRole };
 
 // Add constants for available roles
 export const USER_ROLES = {
-  ADMIN: "admin" as const,
+  ADMIN: "admin_tenant" as const,
   INSPECTOR: "inspector" as const
 };

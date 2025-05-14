@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -177,7 +178,7 @@ export function useAuthGuard(requiredRole?: UserRole) {
   // Check if admin needs company setup
   // Only admins without companies need to set up a company
   const needsCompanySetup = 
-    (user?.role === "admin" || directCheck.userRole === "admin") &&
+    (user?.role === "admin_tenant" || directCheck.userRole === "admin_tenant") &&
     !user?.company_id &&
     !directCheck.hasCompany;
     

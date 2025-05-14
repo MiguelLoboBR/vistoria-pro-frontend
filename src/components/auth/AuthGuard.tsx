@@ -38,7 +38,7 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
   
   // If authenticated but doesn't have required role, redirect to appropriate dashboard
   if (!hasRequiredRole) {
-    if (userRole === "admin") {
+    if (userRole === "admin_tenant") {
       console.log("AuthGuard: User is admin, redirecting to admin dashboard");
       return <Navigate to="/admin/dashboard" replace />;
     } else {
