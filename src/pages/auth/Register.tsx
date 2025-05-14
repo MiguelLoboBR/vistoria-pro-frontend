@@ -104,44 +104,63 @@ export const Register = () => {
         }
       }
 
-      // Modified approach: First register the admin to create the user
-      const result = await authService.registerAdmin(
-        authEmail, 
-        values.password,
-        values.adminName || ""
+      console.log("Starting signup with email:", authEmail);
+      
+      // Simple signup that relies on trigger to create profile
+      const { data, error } = await supabase.auth.signUp({
+        email: authEmail,
+        password: values.password,
+        options: {
+          data: {
+            full_name: values.adminName,
+            role: "admin"
+          }
+        }
+      });
+      
+      if (error) {
+        console.error("Error during signup:", error);
+        throw error;
+      }
+      
+      if (!data.user) {
+        throw new Error("User creation failed");
+      }
+      
+      console.log("User created successfully:", data.user.id);
+      
+      // Sign in to get authenticated session
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: authEmail,
+        password: values.password,
+      });
+      
+      if (signInError) {
+        console.error("Error signing in after registration:", signInError);
+        throw signInError;
+      }
+      
+      console.log("Signed in successfully, creating company");
+      
+      // Now create company with the authenticated user
+      await authService.createCompanyWithAdmin(
+        values.companyName || "",
+        values.cnpj || "",
+        values.companyAddress,
+        values.companyPhone,
+        values.companyEmail || values.email,
+        logoUrl,
+        values.adminName,
+        values.adminCpf,
+        values.adminPhone,
+        values.adminEmail || values.email
       );
       
-      if (result) {
-        // After successful registration, sign in to get authenticated session
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: authEmail,
-          password: values.password,
-        });
-        
-        if (error) {
-          console.error("Error signing in after registration:", error);
-          throw error;
-        }
-        
-        // Now create company with the authenticated user
-        if (data.user) {
-          await authService.createCompanyWithAdmin(
-            values.companyName || "",
-            values.cnpj || "",
-            values.companyAddress,
-            values.companyPhone,
-            values.companyEmail || values.email,
-            logoUrl,
-            values.adminName,
-            values.adminCpf,
-            values.adminPhone,
-            values.adminEmail || values.email
-          );
-          
-          // Sign out after setting up everything so user can login properly
-          await supabase.auth.signOut();
-        }
-      }
+      console.log("Company created successfully");
+      
+      // Sign out after setting up everything so user can login properly
+      await supabase.auth.signOut();
+      console.log("Signed out successfully");
       
       setRegisteredEmail(authEmail);
       setRegistrationComplete(true);
@@ -154,7 +173,6 @@ export const Register = () => {
     }
   };
 
-  
   if (registrationComplete) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -242,7 +260,6 @@ export const Register = () => {
                     </FormItem>
                   )}
                 />
-                
                 
                 <FormField
                   control={form.control}

@@ -145,23 +145,8 @@ const signUp = async (email: string, password: string, fullName: string): Promis
       throw error;
     }
 
-    if (data.user) {
-      // Create a user profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: data.user.id,
-            email: email,
-            full_name: fullName,
-            role: 'admin', // Default role is admin for direct sign ups
-          },
-        ]);
-
-      if (profileError) {
-        throw profileError;
-      }
-    }
+    // Removed profile creation since it will be handled by the database trigger
+    // The profile will be automatically created by the database trigger
 
     return data;
   } catch (error) {
@@ -182,7 +167,7 @@ const signOut = async (): Promise<void> => {
   }
 };
 
-// Modified to work without requiring an authenticated user for the registration flow
+// Modified to work without creating a profile (that should be handled by the trigger)
 const createCompanyWithAdmin = async (
   name: string, 
   cnpj: string,
