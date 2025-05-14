@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { UserProfile } from "../types";
 import { USER_ROLES } from "./types";
@@ -9,7 +8,7 @@ export const registerAdmin = async (
   fullName: string
 ): Promise<UserProfile | null> => {
   try {
-    // 1. Create user in Supabase auth with role=admin_tenant in metadata
+    // 1. Cria usuário com metadata esperada pela trigger
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -31,23 +30,7 @@ export const registerAdmin = async (
       throw new Error("User ID not found after signup");
     }
 
-    // 2. Create user profile in Supabase DB with role=admin_tenant
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .insert({
-        id: userId,
-        email: email,
-        full_name: fullName,
-        role: USER_ROLES.ADMIN_TENANT,
-      });
-
-    if (profileError) {
-      // If profile creation fails, delete the user from auth
-      await supabase.auth.admin.deleteUser(userId);
-      throw new Error(profileError.message);
-    }
-
-    // 3. Return admin profile
+    // 2. Retorna perfil simulado (trigger criará o real)
     return {
       id: userId,
       email: email,
