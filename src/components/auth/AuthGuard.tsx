@@ -11,17 +11,19 @@ interface AuthGuardProps {
 }
 
 const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
-  const { session, user, isLoading } = useAuth();
+  const { session, user, isLoading, company, refreshUserProfile } = useAuth();
   const [directCheck, setDirectCheck] = useState<{
     isAuthenticated: boolean;
     matchesRole: boolean;
     checking: boolean;
     userRole?: string;
+    hasCompany: boolean;
   }>({
     isAuthenticated: false,
     matchesRole: false,
     checking: true,
-    userRole: undefined
+    userRole: undefined,
+    hasCompany: false
   });
 
   useEffect(() => {
@@ -38,78 +40,67 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
             isAuthenticated: false,
             matchesRole: false,
             checking: false,
-            userRole: undefined
+            userRole: undefined,
+            hasCompany: false
           });
           return;
         }
         
-        // Check if we have a required role
-        if (requiredRole) {
-          // Check metadata first for role
-          const userRole = sessionData.session.user.user_metadata.role;
+        // Check profile including role and company_id
+        try {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('role, company_id')
+            .eq('id', sessionData.session.user.id)
+            .maybeSingle();
           
-          if (userRole) {
-            setDirectCheck({
-              isAuthenticated: true,
-              matchesRole: userRole === requiredRole,
-              checking: false,
-              userRole: userRole
-            });
-            return;
-          }
-          
-          // If no role in metadata, check profile table
-          try {
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', sessionData.session.user.id)
-              .maybeSingle();
+          console.log("AuthGuard: Direct profile check:", 
+            profileData ? `Role: ${profileData.role}, Has company: ${!!profileData.company_id}` : "No profile", 
+            profileError ? `Error: ${profileError.message}` : "No error");
             
-            console.log("AuthGuard: Direct profile check:", 
-              profileData ? `Role: ${profileData.role}` : "No profile", 
-              profileError ? `Error: ${profileError.message}` : "No error");
-              
-            if (profileError) {
-              // On error, default to authenticated but no specific role
-              setDirectCheck({
-                isAuthenticated: true,
-                matchesRole: false,
-                checking: false,
-                userRole: undefined
-              });
-            } else if (profileData) {
-              setDirectCheck({
-                isAuthenticated: true,
-                matchesRole: profileData.role === requiredRole,
-                checking: false,
-                userRole: profileData.role
-              });
-            } else {
-              // No profile found, default to not matching role
-              setDirectCheck({
-                isAuthenticated: true,
-                matchesRole: false,
-                checking: false,
-                userRole: undefined
-              });
-            }
-          } catch (err) {
-            console.error("AuthGuard: Error checking profile:", err);
+          if (profileError) {
+            // On error, default to authenticated but no specific role
             setDirectCheck({
               isAuthenticated: true,
               matchesRole: false,
               checking: false,
-              userRole: undefined
+              userRole: undefined,
+              hasCompany: false
+            });
+          } else if (profileData) {
+            // Check if required role exists and matches
+            const matchesRole = requiredRole ? profileData.role === requiredRole : true;
+            
+            setDirectCheck({
+              isAuthenticated: true,
+              matchesRole: matchesRole,
+              checking: false,
+              userRole: profileData.role,
+              hasCompany: !!profileData.company_id
+            });
+            
+            // If the context doesn't have up-to-date profile data, refresh it
+            if (!user || user.role !== profileData.role || user.company_id !== profileData.company_id) {
+              refreshUserProfile();
+            }
+          } else {
+            // No profile found, default to not matching role
+            setDirectCheck({
+              isAuthenticated: true,
+              matchesRole: false,
+              checking: false,
+              userRole: undefined,
+              hasCompany: false
             });
           }
-        } else {
-          // No role required, just check auth
+        } catch (err) {
+          console.error("AuthGuard: Error checking profile:", err);
           setDirectCheck({
             isAuthenticated: true,
-            matchesRole: true,
+            matchesRole: false,
             checking: false,
-            userRole: undefined
+            userRole: undefined,
+            hasCompany: false
           });
         }
       } catch (err) {
@@ -118,13 +109,14 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
           isAuthenticated: false,
           matchesRole: false,
           checking: false,
-          userRole: undefined
+          userRole: undefined,
+          hasCompany: false
         });
       }
     };
     
     checkAuthentication();
-  }, [requiredRole]);
+  }, [requiredRole, user, refreshUserProfile]);
   
   // Don't show any content while loading
   if (isLoading || directCheck.checking) {
@@ -153,11 +145,21 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
       hasRequiredRole = directCheck.matchesRole;
     }
   }
+
+  // Check if user has company when needed
+  const hasCompany = !!company || directCheck.hasCompany;
+  const needsCompanySetup = user?.role === "admin" && !hasCompany;
   
   // Redirect if not authenticated
   if (!isAuthenticated) {
     console.log("AuthGuard: User not authenticated, redirecting to login");
     return <Navigate to="/login" replace />;
+  }
+  
+  // If admin without company, redirect to company setup
+  if (needsCompanySetup) {
+    console.log("AuthGuard: Admin without company, redirecting to company setup");
+    return <Navigate to="/setup/company" replace />;
   }
   
   // If authenticated but doesn't have required role, redirect to appropriate dashboard

@@ -44,6 +44,60 @@ export type Database = {
           },
         ]
       }
+      inspections: {
+        Row: {
+          address: string
+          company_id: string
+          created_at: string
+          date: string
+          id: string
+          inspector_id: string | null
+          status: string
+          time: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          company_id: string
+          created_at?: string
+          date: string
+          id?: string
+          inspector_id?: string | null
+          status?: string
+          time?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          company_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          inspector_id?: string | null
+          status?: string
+          time?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspections_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_inspector_id_fkey"
+            columns: ["inspector_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -96,6 +150,10 @@ export type Database = {
       }
       create_company_with_admin: {
         Args: { company_name: string; company_cnpj: string; admin_id: string }
+        Returns: string
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       get_user_company_id: {

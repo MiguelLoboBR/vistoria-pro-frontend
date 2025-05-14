@@ -3,19 +3,69 @@ import React, { useEffect, useState } from "react";
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Plus, Search, ListFilter, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { Calendar, Plus, Search, ListFilter, CheckCircle, Clock, AlertTriangle, Hourglass } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Inspection, inspectionService } from "@/services/inspectionService";
 import { useAuth } from "@/contexts/AuthContext";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const formSchema = z.object({
+  address: z.string().min(5, "Endereço deve ter no mínimo 5 caracteres"),
+  date: z.string().min(1, "Data é obrigatória"),
+  time: z.string().min(1, "Horário é obrigatório"),
+  type: z.string().min(1, "Tipo de vistoria é obrigatório"),
+  inspector_id: z.string().optional()
+});
 
 const Vistorias = () => {
   const [vistorias, setVistorias] = useState<Inspection[]>([]);
   const [filteredVistorias, setFilteredVistorias] = useState<Inspection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const { company } = useAuth();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [inspectors, setInspectors] = useState<{ id: string, name: string }[]>([]);
+  const { company, user } = useAuth();
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      address: "",
+      date: "",
+      time: "",
+      type: "",
+      inspector_id: undefined
+    },
+  });
+  
+  // Fetch inspectors for the company
+  useEffect(() => {
+    const fetchInspectors = async () => {
+      if (!company) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .eq("company_id", company.id)
+          .eq("role", "inspector");
+          
+        if (error) throw error;
+        
+        setInspectors(data.map(i => ({ id: i.id, name: i.full_name || "Sem nome" })));
+      } catch (error) {
+        console.error("Error fetching inspectors:", error);
+      }
+    };
+    
+    fetchInspectors();
+  }, [company]);
 
   useEffect(() => {
     const fetchVistorias = async () => {
@@ -59,21 +109,28 @@ const Vistorias = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "pending":
+      case "agendada":
         return (
-          <div className="flex items-center gap-1.5 text-amber-500 font-medium">
-            <Clock className="h-4 w-4" />
-            <span>Pendente</span>
+          <div className="flex items-center gap-1.5 text-blue-500 font-medium">
+            <Calendar className="h-4 w-4" />
+            <span>Agendada</span>
           </div>
         );
-      case "in_progress":
+      case "atrasada":
+        return (
+          <div className="flex items-center gap-1.5 text-amber-500 font-medium">
+            <Hourglass className="h-4 w-4" />
+            <span>Atrasada</span>
+          </div>
+        );
+      case "em_andamento":
         return (
           <div className="flex items-center gap-1.5 text-blue-500 font-medium">
             <AlertTriangle className="h-4 w-4" />
             <span>Em andamento</span>
           </div>
         );
-      case "completed":
+      case "concluida":
         return (
           <div className="flex items-center gap-1.5 text-green-500 font-medium">
             <CheckCircle className="h-4 w-4" />
@@ -85,7 +142,7 @@ const Vistorias = () => {
     }
   };
 
-  const formatDateTime = (dateString: string, timeString?: string) => {
+  const formatDateTime = (dateString: string, timeString?: string | null) => {
     if (!dateString) return "Data não informada";
     
     try {
@@ -111,6 +168,46 @@ const Vistorias = () => {
     }
   };
 
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!company || !user) {
+      toast.error("Você precisa estar vinculado a uma empresa");
+      return;
+    }
+    
+    try {
+      const inspectionData = {
+        address: values.address,
+        date: values.date,
+        time: values.time,
+        type: values.type,
+        status: "agendada" as const,
+        company_id: company.id,
+        inspector_id: values.inspector_id || null
+      };
+      
+      const newInspection = await inspectionService.createInspection(inspectionData);
+      
+      if (newInspection) {
+        // Add the inspector name if we have the inspector data
+        if (values.inspector_id) {
+          const inspector = inspectors.find(i => i.id === values.inspector_id);
+          if (inspector) {
+            newInspection.inspector_name = inspector.name;
+          }
+        }
+        
+        setVistorias(prev => [newInspection, ...prev]);
+        setFilteredVistorias(prev => [newInspection, ...prev]);
+        toast.success("Vistoria criada com sucesso!");
+        setDialogOpen(false);
+        form.reset();
+      }
+    } catch (error) {
+      console.error("Error creating inspection:", error);
+      toast.error("Erro ao criar vistoria");
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -124,17 +221,123 @@ const Vistorias = () => {
               <Calendar className="h-4 w-4" />
               <span className="hidden sm:inline">Ver Calendário</span>
             </Button>
-            <Button className="flex gap-2 items-center">
-              <Plus className="h-4 w-4" />
-              <span>Nova Vistoria</span>
-            </Button>
+            
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex gap-2 items-center">
+                  <Plus className="h-4 w-4" />
+                  <span>Nova Vistoria</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Agendar Nova Vistoria</DialogTitle>
+                  <DialogDescription>
+                    Preencha os dados para agendar uma nova vistoria.
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tipo de Vistoria</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Residencial, Comercial, etc." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Endereço</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Endereço completo" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="date"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Data</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="time"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Horário</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name="inspector_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Vistoriador</FormLabel>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione um vistoriador" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {inspectors.map(inspector => (
+                                <SelectItem key={inspector.id} value={inspector.id}>
+                                  {inspector.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <DialogFooter>
+                      <Button type="submit">Agendar Vistoria</Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
         <Card>
           <CardHeader className="pb-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <CardTitle>Vistorias Recentes</CardTitle>
+              <CardTitle>Vistorias</CardTitle>
               <div className="flex gap-2 w-full sm:w-auto">
                 <div className="relative flex-1 sm:w-64">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />

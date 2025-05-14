@@ -1,16 +1,18 @@
+
 import InspectorLayout from "@/components/layouts/InspectorLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Clock, MapPin, CalendarClock, CheckCircle, AlertTriangle, ChevronRight } from "lucide-react";
+import { Clock, MapPin, CalendarClock, CheckCircle, AlertTriangle, ChevronRight, Hourglass } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { inspectionService, Inspection } from "@/services/inspectionService";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export const InspectionList = () => {
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, company } = useAuth();
   
   useEffect(() => {
     const fetchInspections = async () => {
@@ -31,17 +33,19 @@ export const InspectionList = () => {
   }, [user]);
   
   // Group inspections by status
-  const pendingInspections = inspections.filter(i => i.status === "pending");
-  const inProgressInspections = inspections.filter(i => i.status === "in_progress");
-  const completedInspections = inspections.filter(i => i.status === "completed").slice(0, 3); // Only show 3 most recent completed
+  const pendingInspections = inspections.filter(i => i.status === "agendada" || i.status === "atrasada");
+  const inProgressInspections = inspections.filter(i => i.status === "em_andamento");
+  const completedInspections = inspections.filter(i => i.status === "concluida").slice(0, 3); // Only show 3 most recent completed
   
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "pending":
-        return <Clock className="h-5 w-5 text-amber-500" />;
-      case "in_progress":
+      case "agendada":
+        return <Calendar className="h-5 w-5 text-blue-500" />;
+      case "atrasada":
+        return <Hourglass className="h-5 w-5 text-amber-500" />;
+      case "em_andamento":
         return <AlertTriangle className="h-5 w-5 text-blue-500" />;
-      case "completed":
+      case "concluida":
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       default:
         return null;
@@ -50,14 +54,28 @@ export const InspectionList = () => {
   
   const getStatusText = (status: string) => {
     switch (status) {
-      case "pending":
-        return "Pendente";
-      case "in_progress":
+      case "agendada":
+        return "Agendada";
+      case "atrasada":
+        return "Atrasada";
+      case "em_andamento":
         return "Em andamento";
-      case "completed":
+      case "concluida":
         return "Concluída";
       default:
         return "";
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return dateStr;
+    } catch(e) {
+      return dateStr;
     }
   };
 
@@ -118,15 +136,22 @@ export const InspectionList = () => {
             {pendingInspections.length > 0 && (
               <div className="space-y-3">
                 <h2 className="font-semibold text-xl flex items-center">
-                  <Clock className="mr-2 h-5 w-5 text-amber-500" />
+                  <Calendar className="mr-2 h-5 w-5 text-blue-500" />
                   Pendentes
                 </h2>
                 {pendingInspections.map((inspection) => (
-                  <Card key={inspection.id} className="hover:bg-gray-50">
+                  <Card key={inspection.id} className={`hover:bg-gray-50 ${inspection.status === "atrasada" ? "border-amber-200" : ""}`}>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
                         <div className="space-y-1">
-                          <h3 className="font-medium">{inspection.type}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium">{inspection.type}</h3>
+                            {inspection.status === "atrasada" && (
+                              <span className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full">
+                                Atrasada
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-start space-x-2">
                             <MapPin className="h-4 w-4 text-gray-500 mt-0.5" />
                             <p className="text-sm">{inspection.address}</p>
@@ -134,7 +159,7 @@ export const InspectionList = () => {
                           <div className="flex items-center text-xs text-gray-500">
                             <CalendarClock className="h-3.5 w-3.5 mr-1" />
                             <span>
-                              {inspection.date} às {inspection.time}
+                              {formatDate(inspection.date)} às {inspection.time}
                             </span>
                           </div>
                         </div>
@@ -183,7 +208,7 @@ export const InspectionList = () => {
                           <div className="flex items-center text-xs text-gray-500">
                             <CalendarClock className="h-3.5 w-3.5 mr-1" />
                             <span>
-                              Concluída em {inspection.date}
+                              Concluída em {formatDate(inspection.date)}
                             </span>
                           </div>
                         </div>
