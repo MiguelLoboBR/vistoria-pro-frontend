@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import {
   type ToastActionElement,
@@ -144,7 +145,7 @@ function dispatch(action: Action) {
 
 export function toast({
   ...props
-}: Omit<ToasterToast, "id">) {
+}: Omit<ToasterToast, "id" | "open">) {
   const id = genId()
 
   const update = (props: Partial<ToasterToast>) =>
@@ -158,7 +159,6 @@ export function toast({
     type: actionTypes.ADD_TOAST,
     toast: {
       ...props,
-      id,
       open: true,
       onOpenChange: (open) => {
         if (!open) {
@@ -218,4 +218,5 @@ export function useToast() {
   }
 }
 
+// Only export toast once
 export { toast }

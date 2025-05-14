@@ -151,9 +151,9 @@ export const RegisterForm = () => {
       } catch (companyError) {
         console.error("Error creating company:", companyError);
         toast({
-          variant: "destructive",
           title: "Erro ao criar empresa",
-          description: "Seu usuário foi criado, mas houve um erro ao criar a empresa."
+          description: "Seu usuário foi criado, mas houve um erro ao criar a empresa.",
+          variant: "destructive"
         });
       }
       
@@ -168,9 +168,9 @@ export const RegisterForm = () => {
     } catch (error: any) {
       console.error("Registration error:", error);
       toast({
-        variant: "destructive",
         title: "Erro ao cadastrar",
-        description: error.message || "Ocorreu um erro durante o cadastro."
+        description: error.message || "Ocorreu um erro durante o cadastro.",
+        variant: "destructive"
       });
     } finally {
       setIsSubmitting(false);

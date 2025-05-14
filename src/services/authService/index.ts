@@ -1,18 +1,19 @@
 
-import { registerInspector } from "./registerInspector";
-import { registerAdmin } from "./registerAdmin";
-import { signUp } from "./signUp";
-import { signOut } from "./signOut";
+// Re-export individual service functions
 import { createCompanyWithAdmin } from "./createCompanyWithAdmin";
-import { UserRole } from "../types";
+import { registerAdmin } from "./registerAdmin";
+import { registerInspector } from "./registerInspector";
+import { signOut } from "./signOut";
+import { signUp } from "./signUp";
 
+// Re-export types using 'export type' for isolatedModules compatibility
+export type { UserRole } from './types';
+
+// Bundle all service functions into a single authService object
 export const authService = {
-  registerInspector,
+  createCompanyWithAdmin,
   registerAdmin,
-  signUp,
+  registerInspector,
   signOut,
-  createCompanyWithAdmin
+  signUp,
 };
-
-export { UserRole };
-export * from "../types";
