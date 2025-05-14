@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { USER_ROLES } from "./types";
 
 export const signUp = async (email: string, password: string, fullName: string): Promise<any> => {
   try {
@@ -10,7 +11,7 @@ export const signUp = async (email: string, password: string, fullName: string):
       options: {
         data: {
           full_name: fullName,
-          role: "admin_tenat", // Default role is admin for direct sign ups
+          role: USER_ROLES.ADMIN_TENANT, // Default role is admin_tenant for direct sign ups
         },
       },
     });

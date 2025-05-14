@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { UserProfile } from "../types";
+import { USER_ROLES } from "./types";
 
 export const registerInspector = async (
   email: string,
@@ -9,7 +10,7 @@ export const registerInspector = async (
   companyId: string
 ): Promise<UserProfile | null> => {
   try {
-    // 1. Create user in Supabase auth
+    // 1. Create user in Supabase auth with proper metadata
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -17,7 +18,7 @@ export const registerInspector = async (
         data: {
           full_name: fullName,
           company_id: companyId,
-          role: "inspector",
+          role: USER_ROLES.INSPECTOR,
         },
       },
     });
@@ -32,32 +33,13 @@ export const registerInspector = async (
       throw new Error("User ID not found after signup");
     }
 
-    // 2. Create user profile in Supabase DB
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .insert([
-        {
-          id: userId,
-          email: email,
-          full_name: fullName,
-          company_id: companyId,
-          role: "inspector",
-        },
-      ]);
-
-    if (profileError) {
-      // If profile creation fails, delete the user from auth
-      await supabase.auth.admin.deleteUser(userId);
-      throw new Error(profileError.message);
-    }
-
-    // 3. Return inspector profile
+    // Return inspector profile
     return {
       id: userId,
       email: email,
       full_name: fullName,
       company_id: companyId,
-      role: "inspector",
+      role: USER_ROLES.INSPECTOR,
     } as UserProfile;
   } catch (error: any) {
     console.error("Error registering inspector:", error.message);

@@ -72,9 +72,15 @@ export const useRegisterForm = () => {
               .createBucket('company_logos', { public: true });
           }
           
+          // Generate a unique ID for the company that will be used later
+          const tempCompanyId = crypto.randomUUID();
+          
+          // Upload with proper path structure
+          const filePath = `${tempCompanyId}/logo.png`;
+          
           const { data: storageData, error: storageError } = await supabase.storage
             .from('company_logos')
-            .upload(`${values.cnpj}/logo`, logoFile);
+            .upload(filePath, logoFile);
               
           if (storageError) {
             console.error("Error uploading logo:", storageError);
@@ -95,7 +101,7 @@ export const useRegisterForm = () => {
         options: {
           data: {
             full_name: values.adminName,
-            role: "admin"
+            role: "admin_tenant"
           }
         }
       });
