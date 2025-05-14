@@ -34,9 +34,11 @@ export const createCompanyWithAdmin = async (
     );
 
     if (error) {
+      console.error("Company creation error details:", error);
       throw error;
     }
 
+    console.log("Company creation response:", data);
     return data as string;
   } catch (error) {
     console.error("Error creating company:", error);

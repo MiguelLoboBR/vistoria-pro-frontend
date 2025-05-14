@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -87,6 +86,7 @@ export const RegisterForm = () => {
     try {
       // Use admin email for authentication
       const authEmail = values.adminEmail || values.email;
+      console.log("Starting registration with email:", authEmail);
       
       // Upload logo if selected
       let logoUrl = null;
@@ -100,6 +100,7 @@ export const RegisterForm = () => {
             console.error("Error uploading logo:", storageError);
           } else if (storageData) {
             logoUrl = supabase.storage.from('company_logos').getPublicUrl(storageData.path).data.publicUrl;
+            console.log("Logo uploaded successfully at:", logoUrl);
           }
         } catch (uploadError) {
           console.error("Logo upload failed:", uploadError);
@@ -107,9 +108,7 @@ export const RegisterForm = () => {
         }
       }
 
-      console.log("Starting signup with email:", authEmail);
-      
-      // Simple signup that relies on trigger to create profile
+      // Sign up the user first
       const { data, error } = await supabase.auth.signUp({
         email: authEmail,
         password: values.password,
@@ -136,7 +135,7 @@ export const RegisterForm = () => {
       let errorMessage = "";
       
       try {
-        // Create company immediately after signup without requiring email confirmation
+        // Try to create company but don't fail if this part fails
         await authService.createCompanyWithAdmin(
           values.companyName || "",
           values.cnpj || "",
@@ -150,26 +149,24 @@ export const RegisterForm = () => {
           values.adminEmail || values.email
         );
         
-        console.log("Company created successfully");
-        
-        // Save the company setup details for later use after email confirmation
-        localStorage.setItem('pendingCompanySetup', JSON.stringify({
-          type: 'company',
-          name: values.companyName,
-          cnpj: values.cnpj,
-          address: values.companyAddress,
-          phone: values.companyPhone,
-          email: values.companyEmail || values.email,
-        }));
-        
-        toast.success("Cadastro enviado com sucesso!");
+        console.log("Company creation attempted successfully");
       } catch (err: any) {
         console.error("Error creating company:", err);
         companyError = err;
         errorMessage = err.message || "Ocorreu um erro durante a criação da empresa.";
-        
-        toast.error("Seu usuário foi criado, mas houve um erro ao criar a empresa.");
       }
+      
+      // Save the company setup details for later use after email confirmation
+      localStorage.setItem('pendingCompanySetup', JSON.stringify({
+        type: 'company',
+        name: values.companyName,
+        cnpj: values.cnpj,
+        address: values.companyAddress,
+        phone: values.companyPhone,
+        email: values.companyEmail || values.email,
+      }));
+      
+      toast.success("Cadastro enviado com sucesso!");
       
       navigate('/register/success', { 
         state: { 
