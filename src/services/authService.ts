@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Company, UserProfile } from "@/contexts/types";
 
@@ -167,7 +166,7 @@ const signOut = async (): Promise<void> => {
   }
 };
 
-// Modified to work without creating a profile (that should be handled by the trigger)
+// Modified to work without requiring authenticated session
 const createCompanyWithAdmin = async (
   name: string, 
   cnpj: string,
@@ -181,22 +180,14 @@ const createCompanyWithAdmin = async (
   adminEmail?: string
 ): Promise<string | null> => {
   try {
-    // Get the current user's ID - this will be available now after signing in after registration
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      throw new Error("No authenticated user found");
-    }
-    
-    console.log("Creating company with admin ID:", user.id);
-
-    // Call the RPC function to create company and set up the admin with all the data
+    // Call the RPC function directly without requiring authentication
+    // The function will use the provided data to create the company
     const { data, error } = await supabase.rpc(
       "create_company_with_admin", 
       { 
         company_name: name, 
         company_cnpj: cnpj, 
-        admin_id: user.id,
+        admin_id: null, // Will be linked later when user confirms email
         company_address: address || null,
         company_phone: phone || null,
         company_email: email || null,

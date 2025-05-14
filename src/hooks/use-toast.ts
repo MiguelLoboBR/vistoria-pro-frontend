@@ -1,21 +1,12 @@
-
 import { useReducer, useEffect, useRef } from "react"
 import { toast as sonnerToast } from "sonner"
 
-const TOAST_LIMIT = 20
+const TOAST_LIMIT = 5
 const TOAST_REMOVE_DELAY = 1000000
 
-type ToastActionType =
-  | { type: "ADD_TOAST"; toast: Toast }
-  | { type: "UPDATE_TOAST"; toast: Partial<Toast> & { id: string } }
-  | { type: "DISMISS_TOAST"; toastId?: string }
-  | { type: "REMOVE_TOAST"; toastId?: string }
+export type ToastActionElement = React.ReactElement<HTMLButtonElement>
 
-interface State {
-  toasts: Toast[]
-}
-
-export interface Toast {
+export type ToastProps = {
   id: string
   title?: string
   description?: string
@@ -29,8 +20,18 @@ export interface Toast {
 let count = 0
 
 function genId() {
-  count = (count + 1) % Number.MAX_VALUE
+  count = (count + 1) % Number.MAX_SAFE_INTEGER
   return count.toString()
+}
+
+type ActionType =
+  | { type: "ADD_TOAST"; toast: ToastProps }
+  | { type: "UPDATE_TOAST"; toast: Partial<ToastProps> & { id: string } }
+  | { type: "DISMISS_TOAST"; toastId?: string }
+  | { type: "REMOVE_TOAST"; toastId?: string }
+
+interface State {
+  toasts: ToastProps[]
 }
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
@@ -51,7 +52,7 @@ const addToRemoveQueue = (toastId: string) => {
   toastTimeouts.set(toastId, timeout)
 }
 
-export const reducer = (state: State, action: ToastActionType): State => {
+export const reducer = (state: State, action: ActionType): State => {
   switch (action.type) {
     case "ADD_TOAST":
       return {
@@ -106,95 +107,129 @@ export const reducer = (state: State, action: ToastActionType): State => {
   }
 }
 
+const defaultState: State = {
+  toasts: [],
+}
+
 const listeners: Array<(state: State) => void> = []
 
-let memoryState: State = { toasts: [] }
+let state = defaultState
 
-function dispatch(action: ToastActionType) {
-  memoryState = reducer(memoryState, action)
+function dispatch(action: ActionType) {
+  state = reducer(state, action)
   listeners.forEach((listener) => {
-    listener(memoryState)
+    listener(state)
   })
 }
 
-// Helper function to create a toast reducer
-function toastReducer(state: State, action: ToastActionType): State {
-  return reducer(state, action)
-}
+function useToaster() {
+  const [state, setState] = useReducer(reducer, defaultState)
+  const toastsRef = useRef<ToastProps[]>([])
 
-function useToaster(initialState: State = { toasts: [] }) {
-  // Change from useState to useReducer for handling complex state updates
-  const [state, dispatch] = useReducer(toastReducer, initialState)
-
-  const dispatchRef = useRef(dispatch)
   useEffect(() => {
-    dispatchRef.current = dispatch
-  }, [dispatch])
+    listeners.push(setState)
+    return () => {
+      const index = listeners.indexOf(setState)
+      if (index > -1) {
+        listeners.splice(index, 1)
+      }
+    }
+  }, [state])
+
+  toastsRef.current = state.toasts
+
+  function toast(props: Omit<ToastProps, "id">) {
+    const id = genId()
+    
+    const newToast = {
+      ...props,
+      id,
+      open: true,
+      onOpenChange: (open: boolean) => {
+        if (!open) {
+          dismiss(id)
+        }
+      },
+    }
+
+    dispatch({
+      type: "ADD_TOAST",
+      toast: newToast,
+    })
+
+    return {
+      id: id,
+      dismiss: () => {
+        dispatch({
+          type: "DISMISS_TOAST",
+          toastId: id,
+        })
+      },
+      update: (newProps: Partial<ToastProps>) => {
+        dispatch({
+          type: "UPDATE_TOAST",
+          toast: {
+            ...newProps,
+            id,
+          },
+        })
+      },
+    }
+  }
+
+  function dismiss(toastId?: string) {
+    dispatch({
+      type: "DISMISS_TOAST",
+      toastId,
+    })
+  }
+
+  // Also expose Sonner's toast API for convenience
+  function success(title: string, description?: string) {
+    sonnerToast.success(title, {
+      description
+    })
+  }
+
+  function error(title: string, description?: string) {
+    sonnerToast.error(title, {
+      description
+    })
+  }
+
+  function warning(title: string, description?: string) {
+    sonnerToast.warning(title, {
+      description
+    })
+  }
+
+  function info(title: string, description?: string) {
+    sonnerToast.info(title, {
+      description
+    })
+  }
 
   return {
-    ...state,
-    toast: (props: Omit<Toast, "id">) => {
-      const id = genId()
-
-      const update = (props: Partial<Toast>) =>
-        dispatchRef.current({
-          type: "UPDATE_TOAST",
-          toast: { ...props, id },
-        })
-      const dismiss = () => dispatchRef.current({ type: "DISMISS_TOAST", toastId: id })
-
-      dispatchRef.current({
-        type: "ADD_TOAST",
-        toast: {
-          ...props,
-          id,
-          open: true,
-          onOpenChange: (open: boolean) => {
-            if (!open) dismiss()
-          },
-        },
-      })
-
-      return {
-        id: id,
-        dismiss,
-        update,
-      }
-    },
-    dismiss: (toastId?: string) => dispatchRef.current({ type: "DISMISS_TOAST", toastId }),
+    toasts: toastsRef.current,
+    toast,
+    dismiss,
+    success,
+    error, 
+    warning,
+    info,
   }
 }
 
 export function useToast() {
-  const { toast, dismiss, toasts } = useToaster()
+  const { toast, dismiss, toasts, success, error, warning, info } = useToaster()
   return {
     toasts,
     toast,
     dismiss,
-    success: (title: string, description?: string) => {
-      toast({ title, description, variant: "default" })
-      sonnerToast.success(title, {
-        description,
-      })
-    },
-    error: (title: string, description?: string) => {
-      toast({ title, description, variant: "destructive" })
-      sonnerToast.error(title, {
-        description,
-      })
-    },
-    warning: (title: string, description?: string) => {
-      toast({ title, description })
-      sonnerToast.warning(title, {
-        description,
-      })
-    },
-    info: (title: string, description?: string) => {
-      toast({ title, description })
-      sonnerToast.info(title, {
-        description,
-      })
-    },
+    success,
+    error, 
+    warning,
+    info
   }
 }
 

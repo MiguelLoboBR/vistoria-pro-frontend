@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -6,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 import { EyeIcon, EyeOffIcon, UploadCloud } from "lucide-react";
 import RegisterLogo from "@/components/auth/RegisterLogo";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -93,14 +94,19 @@ export const Register = () => {
       // Upload logo if selected
       let logoUrl = null;
       if (logoFile) {
-        const { data: storageData, error: storageError } = await supabase.storage
-          .from('company_logos')
-          .upload(`${values.cnpj}/logo`, logoFile);
-            
-        if (storageError) {
-          console.error("Error uploading logo:", storageError);
-        } else if (storageData) {
-          logoUrl = supabase.storage.from('company_logos').getPublicUrl(storageData.path).data.publicUrl;
+        try {
+          const { data: storageData, error: storageError } = await supabase.storage
+            .from('company_logos')
+            .upload(`${values.cnpj}/logo`, logoFile);
+              
+          if (storageError) {
+            console.error("Error uploading logo:", storageError);
+          } else if (storageData) {
+            logoUrl = supabase.storage.from('company_logos').getPublicUrl(storageData.path).data.publicUrl;
+          }
+        } catch (uploadError) {
+          console.error("Logo upload failed:", uploadError);
+          // Continue with registration even if logo upload fails
         }
       }
 
@@ -129,45 +135,44 @@ export const Register = () => {
       
       console.log("User created successfully:", data.user.id);
       
-      // Sign in to get authenticated session
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: authEmail,
-        password: values.password,
-      });
-      
-      if (signInError) {
-        console.error("Error signing in after registration:", signInError);
-        throw signInError;
+      try {
+        // Create company immediately after signup without requiring email confirmation
+        await authService.createCompanyWithAdmin(
+          values.companyName || "",
+          values.cnpj || "",
+          values.companyAddress,
+          values.companyPhone,
+          values.companyEmail || values.email,
+          logoUrl,
+          values.adminName,
+          values.adminCpf,
+          values.adminPhone,
+          values.adminEmail || values.email
+        );
+        
+        console.log("Company created successfully");
+      } catch (companyError) {
+        console.error("Error creating company:", companyError);
+        toast({
+          variant: "destructive",
+          title: "Erro ao criar empresa",
+          description: "Seu usuário foi criado, mas houve um erro ao criar a empresa."
+        });
       }
-      
-      console.log("Signed in successfully, creating company");
-      
-      // Now create company with the authenticated user
-      await authService.createCompanyWithAdmin(
-        values.companyName || "",
-        values.cnpj || "",
-        values.companyAddress,
-        values.companyPhone,
-        values.companyEmail || values.email,
-        logoUrl,
-        values.adminName,
-        values.adminCpf,
-        values.adminPhone,
-        values.adminEmail || values.email
-      );
-      
-      console.log("Company created successfully");
-      
-      // Sign out after setting up everything so user can login properly
-      await supabase.auth.signOut();
-      console.log("Signed out successfully");
       
       setRegisteredEmail(authEmail);
       setRegistrationComplete(true);
-      toast.success("Cadastro enviado com sucesso! Verifique seu email para confirmar sua conta.");
+      toast({
+        title: "Cadastro enviado com sucesso!",
+        description: "Verifique seu email para confirmar sua conta."
+      });
     } catch (error: any) {
       console.error("Registration error:", error);
-      toast.error(`Erro ao cadastrar: ${error.message}`);
+      toast({
+        variant: "destructive",
+        title: "Erro ao cadastrar",
+        description: error.message || "Ocorreu um erro durante o cadastro."
+      });
     } finally {
       setIsSubmitting(false);
     }
