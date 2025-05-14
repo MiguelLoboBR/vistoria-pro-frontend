@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -14,6 +13,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { authService, UserRole } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext"; // Add this import
 
 const formSchema = z.object({
   // User auth fields
