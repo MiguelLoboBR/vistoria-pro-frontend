@@ -1,8 +1,7 @@
 
 import { toast as sonnerToast, type ToastT } from "sonner";
 import { 
-  type ToastActionElement, 
-  ToastProps 
+  type ToastActionElement 
 } from "@/components/ui/toast";
 import * as React from "react";
 
@@ -38,12 +37,16 @@ export function toast(title: string, options?: ToastOptions) {
   }
 }
 
-// Define a proper type for Toast
-export interface Toast extends ToastProps {
+// Define a proper type for Toast without extending ToastProps
+export interface Toast {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: ToastActionElement;
+  variant?: "default" | "destructive";
+  // Add other necessary properties that were from ToastProps
+  className?: string;
+  duration?: number;
 }
 
 // Define a proper useToast hook that doesn't cause circular dependencies
