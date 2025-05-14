@@ -1,3 +1,4 @@
+
 import { useReducer, useEffect, useRef } from "react"
 import { toast as sonnerToast } from "sonner"
 
@@ -21,6 +22,8 @@ export interface Toast {
   action?: React.ReactNode
   variant?: "default" | "destructive"
   duration?: number
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 let count = 0
@@ -163,8 +166,9 @@ function useToaster(initialState: State = { toasts: [] }) {
 }
 
 export function useToast() {
-  const { toast, dismiss } = useToaster()
+  const { toast, dismiss, toasts } = useToaster()
   return {
+    toasts,
     toast,
     dismiss,
     success: (title: string, description?: string) => {
