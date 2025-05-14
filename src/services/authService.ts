@@ -69,6 +69,41 @@ export const authService = {
     return { session: data.session, user: data.user };
   },
 
+  async registerInspector(email: string, password: string, fullName: string, companyId: string) {
+    // First, create the user
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          role: "inspector",
+          company_id: companyId
+        }
+      }
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data.user) {
+      throw new Error("Erro ao criar usuário");
+    }
+
+    // Link inspector to the company
+    try {
+      await this.addInspectorToCompany(data.user.id, companyId);
+    } catch (error: any) {
+      console.error("Error linking inspector to company:", error);
+      // If adding to company fails, we should clean up the created user
+      // This would require admin privileges, which we don't have in the client
+      // We'll just log the error for now
+    }
+
+    return data.user;
+  },
+
   async signOut() {
     const { error } = await supabase.auth.signOut();
 
