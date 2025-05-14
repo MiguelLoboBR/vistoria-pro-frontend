@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -254,7 +253,7 @@ const CompanySetup = () => {
         }
       }
       
-      // Call the RPC function to create company with admin
+      // Call the updated RPC function to create company with admin
       const { data, error } = await supabase.rpc(
         "create_company_with_admin", 
         { 

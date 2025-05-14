@@ -9,4 +9,3 @@ prevent_recursion_depth = 20
 
 [storage.buckets]
 company_logos = { public = true }
-
