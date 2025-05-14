@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "@/components/Logo";
@@ -7,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 export const AdminLogin = () => {
-  const { session, isLoading, user } = useAuth();
+  const { session, isLoading } = useAuth();
   const navigate = useNavigate();
   const [checkingSession, setCheckingSession] = useState(true);
 
@@ -21,46 +20,17 @@ export const AdminLogin = () => {
         const { data } = await supabase.auth.getSession();
         console.log("AdminLogin: Sessão do Supabase:", data.session ? "Existe" : "Não existe");
         
-        // Se temos uma sessão ativa, verificar o perfil diretamente
+        // Se temos uma sessão ativa, redirecionar para o dashboard apropriado
         if (data.session) {
-          // Use try-catch here to properly handle any profile fetch errors
-          try {
-            const { data: profileData, error: profileError } = await supabase
-              .from("profiles")
-              .select("role, company_id")
-              .eq("id", data.session.user.id)
-              .maybeSingle(); // Use maybeSingle instead of single to prevent errors
-              
-            console.log("AdminLogin: Dados do perfil:", profileData, "Erro:", profileError);
-            
-            if (!profileError && profileData) {
-              console.log("AdminLogin: Usuário autenticado, redirecionando com base no papel:", profileData.role);
-              
-              // Force redirect to avoid any race conditions
-              if (profileData.role === "admin") {
-                window.location.href = "/admin/tenant/dashboard";
-                return;
-              } else {
-                window.location.href = "/app/inspector/dashboard";
-                return;
-              }
-            } else if (profileError) {
-              console.error("Erro ao buscar perfil:", profileError);
-            }
-          } catch (err) {
-            console.error("Erro durante verificação de perfil:", err);
-          }
+          console.log("AdminLogin: Usuário autenticado, redirecionando para o dashboard do admin");
+          window.location.href = "/admin/tenant/dashboard";
+          return;
         }
         
         // Usar o contexto de autenticação como fallback
-        if (session && user && !isLoading) {
+        if (session && !isLoading) {
           console.log("AdminLogin: Usuário autenticado via contexto, redirecionando...");
-          
-          if (user.role === "admin") {
-            window.location.href = "/admin/tenant/dashboard";
-          } else {
-            window.location.href = "/app/inspector/dashboard";
-          }
+          navigate("/admin/tenant/dashboard");
         }
       } catch (error) {
         console.error("AdminLogin: Erro ao verificar autenticação:", error);
@@ -70,7 +40,7 @@ export const AdminLogin = () => {
     };
     
     checkAuthentication();
-  }, [session, user, isLoading, navigate]);
+  }, [session, isLoading, navigate]);
 
   if (isLoading || checkingSession) {
     return (

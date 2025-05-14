@@ -61,28 +61,23 @@ export const LoginForm = ({ userType }: LoginFormProps) => {
     
     try {
       console.log("Tentando fazer login com:", values.email);
-      await signIn(values.email, values.password);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
+      
+      if (error) throw error;
       
       toast.success("Login bem-sucedido!");
       console.log("Login bem-sucedido, redirecionando...");
       
-      // Wait a moment for auth state to propagate
-      setTimeout(async () => {
-        try {
-          // Force redirection based on user type even if profile fetch fails
-          if (userType === "admin") {
-            window.location.href = "/admin/tenant/dashboard";
-          } else {
-            window.location.href = "/app/inspector/dashboard";
-          }
-        } catch (err) {
-          console.error("Erro durante redirecionamento:", err);
-          setIsLoading(false);
-          
-          // Show a message to the user that they can try to navigate manually
-          toast.error("Redirecionamento automático falhou. Tente navegar para o dashboard manualmente.");
-        }
-      }, 1000);
+      // Force redirection based on user type
+      if (userType === "admin") {
+        window.location.href = "/admin/tenant/dashboard";
+      } else {
+        window.location.href = "/app/inspector/dashboard";
+      }
       
     } catch (error: any) {
       console.error("Erro de login:", error);
