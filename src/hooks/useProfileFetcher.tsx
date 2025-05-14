@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { UserProfile, Company } from "@/contexts/types";
 import { Session } from "@supabase/supabase-js";
+import { UserRole } from "@/services/types";
 
 export function useProfileFetcher() {
   const [fetchProfileFailed, setFetchProfileFailed] = useState(false);
@@ -74,7 +75,7 @@ export function useProfileFetcher() {
     const fallbackUser: UserProfile = {
       id: userId,
       email: session?.user?.email || "user@example.com",
-      role: "admin", // Default to admin role to ensure access
+      role: "admin_tenant" as UserRole, // Default to admin_tenant role to ensure access
       company_id: null,
       full_name: session?.user?.user_metadata?.full_name || "User",
       avatar_url: null
@@ -143,7 +144,7 @@ export function useProfileFetcher() {
         full_name: profileData.full_name,
         avatar_url: profileData.avatar_url,
         company_id: profileData.company_id,
-        role: profileData.role,
+        role: profileData.role as UserRole, // Ensure type safety
         cpf: profileData.cpf,
         phone: profileData.phone
       };

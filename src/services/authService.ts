@@ -1,8 +1,9 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Company, UserProfile } from "@/contexts/types";
 
 // Define and export the UserRole type
-export type UserRole = "admin" | "inspector";
+export type UserRole = "admin_master" | "admin_tenant" | "inspector";
 
 const registerInspector = async (
   email: string,
@@ -73,14 +74,14 @@ const registerAdmin = async (
   fullName: string
 ): Promise<UserProfile | null> => {
   try {
-    // 1. Create user in Supabase auth with role=admin in metadata
+    // 1. Create user in Supabase auth with role=admin_tenant in metadata
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
-          role: "admin",
+          role: "admin_tenant", // Updated from "admin" to "admin_tenant"
         },
       },
     });
@@ -95,7 +96,7 @@ const registerAdmin = async (
       throw new Error("User ID not found after signup");
     }
 
-    // 2. Create user profile in Supabase DB with role=admin
+    // 2. Create user profile in Supabase DB with role=admin_tenant
     const { error: profileError } = await supabase
       .from("profiles")
       .insert([
@@ -103,7 +104,7 @@ const registerAdmin = async (
           id: userId,
           email: email,
           full_name: fullName,
-          role: "admin",
+          role: "admin_tenant", // Updated from "admin" to "admin_tenant"
         },
       ]);
 
@@ -118,7 +119,7 @@ const registerAdmin = async (
       id: userId,
       email: email,
       full_name: fullName,
-      role: "admin",
+      role: "admin_tenant" as UserRole, // Type assertion to ensure compatibility
     } as UserProfile;
   } catch (error: any) {
     console.error("Error registering admin:", error.message);
@@ -128,14 +129,14 @@ const registerAdmin = async (
 
 const signUp = async (email: string, password: string, fullName: string): Promise<any> => {
   try {
-    // By default, sign up creates an admin user
+    // By default, sign up creates an admin_tenant user (was admin before)
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
-          role: "admin", // Default role is admin for direct sign ups
+          role: "admin_tenant", // Updated from "admin" to "admin_tenant"
         },
       },
     });

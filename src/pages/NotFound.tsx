@@ -20,10 +20,12 @@ const NotFound = () => {
   const getHomeRoute = () => {
     if (!user) return "/";
     
-    if (user.role === "admin") {
-      return "/admin/tenant/dashboard";
+    if (user.role === "admin_tenant") {
+      return "/admin/dashboard";
     } else if (user.role === "inspector") {
-      return "/app/inspector/dashboard";
+      return "/inspector/dashboard";
+    } else if (user.role === "admin_master") {
+      return "/admin/dashboard"; // Redirect admin_master to admin dashboard for now
     }
     
     return "/";

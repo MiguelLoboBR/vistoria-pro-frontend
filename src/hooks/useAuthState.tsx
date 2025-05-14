@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { UserProfile, Company } from "@/contexts/types";
+import { UserRole } from "@/services/types";
 
 export function useAuthState() {
   const [session, setSession] = useState<Session | null>(null);
@@ -133,7 +134,7 @@ export function useAuthState() {
     const fallbackUser: UserProfile = {
       id: userId,
       email: session?.user?.email || "user@example.com",
-      role: "admin", // Default to admin role to ensure access
+      role: "admin_tenant", // Updated from "admin" to "admin_tenant"
       company_id: null,
       full_name: session?.user?.user_metadata?.full_name || "User",
       avatar_url: null

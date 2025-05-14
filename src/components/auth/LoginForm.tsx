@@ -1,9 +1,11 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/use-toast"
+import { UserRole } from '@/services/types';
 
 interface LoginFormProps {
   userType: 'admin' | 'inspector';
@@ -22,24 +24,19 @@ const LoginForm: React.FC<LoginFormProps> = ({ userType }) => {
 
     try {
       if (signIn) {
-        const success = await signIn(email, password, userType);
-        if (success) {
-          // Redirect based on user type
-          const redirectPath = userType === 'inspector' ? '/inspector/dashboard' : '/admin/dashboard';
-          navigate(redirectPath);
-        } else {
-          toast({
-            title: "Falha ao fazer login",
-            description: "Por favor, verifique suas credenciais.",
-            variant: "destructive",
-          })
-        }
+        // Map userType to actual role
+        const role: UserRole = userType === 'admin' ? 'admin_tenant' : 'inspector';
+        await signIn(email, password);
+        
+        // Redirect based on user type
+        const redirectPath = userType === 'inspector' ? '/inspector/dashboard' : '/admin/dashboard';
+        navigate(redirectPath);
       } else {
         toast({
           title: "Erro",
           description: "signIn function is not available.",
           variant: "destructive",
-        })
+        });
       }
     } catch (error: any) {
       console.error("Login failed:", error);
@@ -47,7 +44,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ userType }) => {
         title: "Falha ao fazer login",
         description: error.message || "Ocorreu um erro ao tentar fazer login.",
         variant: "destructive",
-      })
+      });
     } finally {
       setLoading(false);
     }

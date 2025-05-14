@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { UserProfile } from "../types";
+import { UserProfile, UserRole } from "../types";
 
 export const registerAdmin = async (
   email: string,
@@ -8,14 +8,14 @@ export const registerAdmin = async (
   fullName: string
 ): Promise<UserProfile | null> => {
   try {
-    // 1. Create user in Supabase auth with role=admin in metadata
+    // 1. Create user in Supabase auth with role=admin_tenant in metadata
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
-          role: "admin",
+          role: "admin_tenant", // Updated from "admin" to "admin_tenant"
         },
       },
     });
@@ -30,7 +30,7 @@ export const registerAdmin = async (
       throw new Error("User ID not found after signup");
     }
 
-    // 2. Create user profile in Supabase DB with role=admin
+    // 2. Create user profile in Supabase DB with role=admin_tenant
     const { error: profileError } = await supabase
       .from("profiles")
       .insert([
@@ -38,7 +38,7 @@ export const registerAdmin = async (
           id: userId,
           email: email,
           full_name: fullName,
-          role: "admin",
+          role: "admin_tenant", // Updated from "admin" to "admin_tenant"
         },
       ]);
 
@@ -53,7 +53,7 @@ export const registerAdmin = async (
       id: userId,
       email: email,
       full_name: fullName,
-      role: "admin",
+      role: "admin_tenant" as UserRole, // Type assertion to ensure compatibility
     } as UserProfile;
   } catch (error: any) {
     console.error("Error registering admin:", error.message);

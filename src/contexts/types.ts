@@ -16,7 +16,7 @@ export interface UserProfile {
   full_name?: string;
   avatar_url?: string;
   company_id?: string;
-  role: "admin_tenant" | "inspector"; // Updated to match the role in services/types.ts
+  role: "admin_master" | "admin_tenant" | "inspector"; // Updated roles
   cpf?: string;
   phone?: string;
 }

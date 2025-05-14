@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { UserRole } from "@/services/authService"; // Import from authService
+import { UserRole } from "@/services/types"; // Import from services/types for consistency
 import { supabase } from "@/integrations/supabase/client";
 
 interface AuthGuardState {
@@ -175,7 +176,7 @@ export function useAuthGuard(requiredRole?: UserRole) {
   }
 
   // Check if admin needs company setup
-  // Only admins without companies need to set up a company
+  // Only admin_tenant without companies need to set up a company
   const needsCompanySetup = 
     (user?.role === "admin_tenant" || directCheck.userRole === "admin_tenant") &&
     !user?.company_id &&
