@@ -5,5 +5,4 @@ project_id = "eujzafdofbznzfomqxcu"
 verify_jwt = true
 
 [postgres.policies]
-prevent_recursion_depth = 10
-
+prevent_recursion_depth = 20

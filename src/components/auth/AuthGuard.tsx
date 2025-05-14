@@ -30,6 +30,8 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
   
   // Add state to track attempts
   const [checkAttempts, setCheckAttempts] = useState(0);
+  // Max number of attempts to prevent excessive recursion
+  const maxAttempts = 3;
 
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -51,7 +53,7 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
           return;
         }
         
-        // Check profile including role and company_id using the function RPC que criamos
+        // Use the safer RPC function to get role
         try {
           const { data: roleData, error: roleError } = await supabase
             .rpc('get_user_role_safely');
@@ -59,7 +61,7 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
           if (roleError) {
             console.error("AuthGuard: Error getting role:", roleError.message);
             // Default to inspector role if there's an error
-            const assumedRole = "inspector";
+            const assumedRole = sessionData.session.user.user_metadata?.role || "inspector";
             const matchesRole = requiredRole ? requiredRole === assumedRole : true;
             
             setDirectCheck({
@@ -73,20 +75,31 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
             return;
           }
           
-          // Now get the profile data to check for company_id
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('company_id')
-            .eq('id', sessionData.session.user.id)
-            .maybeSingle();
+          // Use user metadata to avoid profile query that might cause recursion
+          const hasCompanyInMetadata = !!sessionData.session.user.user_metadata?.company_id;
           
-          console.log("AuthGuard: Direct profile check:", 
-            profileData ? `Has company: ${!!profileData.company_id}` : "No profile", 
-            profileError ? `Error: ${profileError.message}` : "No error");
-            
+          // Fallback to profile query only if metadata doesn't have the info
+          let hasCompany = hasCompanyInMetadata;
+          
+          if (!hasCompanyInMetadata && checkAttempts < maxAttempts) {
+            try {
+              const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('company_id')
+                .eq('id', sessionData.session.user.id)
+                .maybeSingle();
+                
+              if (!profileError && profileData) {
+                hasCompany = !!profileData.company_id;
+              }
+            } catch (err) {
+              console.warn("AuthGuard: Error checking company in profile:", err);
+              // Continue with what we know from metadata
+            }
+          }
+          
           // Check if required role exists and matches
           const matchesRole = requiredRole ? roleData === requiredRole : true;
-          const hasCompany = profileData ? !!profileData.company_id : false;
           
           setDirectCheck({
             isAuthenticated: true,
@@ -97,7 +110,9 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
           });
           
           // If the context doesn't have up-to-date profile data, refresh it
-          if (!user || user.role !== roleData || (profileData && user.company_id !== profileData.company_id)) {
+          // But only if we haven't reached max attempts to avoid loops
+          if (checkAttempts < maxAttempts && (!user || user.role !== roleData)) {
+            setCheckAttempts(prev => prev + 1);
             refreshUserProfile();
           }
         } catch (err) {
@@ -124,7 +139,7 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
     };
     
     checkAuthentication();
-  }, [requiredRole, user, refreshUserProfile, checkAttempts]);
+  }, [requiredRole, refreshUserProfile, checkAttempts]);
   
   // Don't show any content while loading
   if (isLoading || directCheck.checking) {
@@ -154,9 +169,12 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
     }
   }
 
-  // Bypass company check for now to avoid blank screens
-  const hasCompany = true; // Always assume company exists
-  const needsCompanySetup = false; // Disable company setup requirement
+  // Check if admin needs company setup
+  // Only admins without companies need to set up a company
+  const needsCompanySetup = 
+    (user?.role === "admin" || directCheck.userRole === "admin") &&
+    !user?.company_id &&
+    !directCheck.hasCompany;
   
   // Redirect if not authenticated
   if (!isAuthenticated) {

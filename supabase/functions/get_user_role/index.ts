@@ -1,4 +1,3 @@
-
 // Follow this setup guide to integrate the Deno language server with your editor:
 // https://deno.land/manual/getting_started/setup_your_environment
 // This enables autocomplete, go to definition, etc.
@@ -25,7 +24,6 @@ serve(async (req) => {
       // Supabase API ANON KEY - env var exported by default.
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       // Create client with Auth context of the user that called the function.
-      // This way your row-level-security (RLS) policies are applied.
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
@@ -44,28 +42,30 @@ serve(async (req) => {
       )
     }
 
-    // Use the security definer function we created to safely get the user role
-    const { data, error } = await supabaseClient.rpc('get_user_role_safely')
-
-    if (error) {
-      // Se tivermos um erro, retornamos um papel padrão
-      return new Response(
-        JSON.stringify({ 
-          role: 'inspector',
-          userId: user.id,
-          error: error.message
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      )
+    // Acessa diretamente os metadados do usuário para evitar recursão
+    // Se não existir na metadata, consulta a tabela com SECURITY DEFINER
+    let role;
+    
+    if (user.user_metadata && user.user_metadata.role) {
+      // Use a role from user metadata if available
+      role = user.user_metadata.role;
+    } else {
+      // Otherwise, use the SECURITY DEFINER function
+      const { data, error } = await supabaseClient.rpc('get_user_role_safely')
+      
+      if (error) {
+        console.error("Error getting role:", error);
+        // Fallback to a default role if there's an error
+        role = 'inspector';
+      } else {
+        role = data || 'inspector';
+      }
     }
 
-    // Retornamos o papel do usuário
+    // Return the user's role
     return new Response(
       JSON.stringify({ 
-        role: data || 'inspector',
+        role,
         userId: user.id
       }),
       {

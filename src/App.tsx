@@ -17,10 +17,9 @@ import Landing from "./pages/landing/Landing";
 import AdminLogin from "./pages/auth/AdminLogin";
 import InspectorLogin from "./pages/auth/InspectorLogin";
 import Register from "./pages/auth/Register";
-import Dashboard from "./pages/admin/Dashboard";
+import Vistorias from "./pages/admin/Vistorias";
 import CompanyProfile from "./pages/admin/CompanyProfile";
 import InspectorList from "./pages/admin/InspectorList";
-import Vistorias from "./pages/admin/Vistorias";
 import InspectionList from "./pages/inspector/InspectionList";
 import InspectionForm from "./pages/inspector/InspectionForm";
 import NotFound from "./pages/NotFound";
@@ -35,8 +34,9 @@ const AppRoutes = () => (
     <Route path="/login/inspector" element={<InspectorLogin />} />
     <Route path="/register" element={<Register />} />
     <Route path="/company-setup" element={<CompanySetup />} />
+    <Route path="/setup/company" element={<CompanySetup />} />
     
-    {/* Admin Routes */}
+    {/* Admin Routes - all routes redirect to vistorias as requested */}
     <Route path="/admin/tenant" element={<Navigate to="/admin/tenant/vistorias" replace />} />
     <Route path="/admin/tenant/dashboard" element={
       <AuthGuard requiredRole="admin">
@@ -45,12 +45,12 @@ const AppRoutes = () => (
     } />
     <Route path="/admin/tenant/perfil" element={
       <AuthGuard requiredRole="admin">
-        <CompanyProfile />
+        <Vistorias />
       </AuthGuard>
     } />
     <Route path="/admin/tenant/vistoriadores" element={
       <AuthGuard requiredRole="admin">
-        <InspectorList />
+        <Vistorias />
       </AuthGuard>
     } />
     <Route path="/admin/tenant/vistorias" element={
