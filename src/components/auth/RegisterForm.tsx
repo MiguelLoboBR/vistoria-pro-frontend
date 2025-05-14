@@ -134,6 +134,22 @@ export const RegisterForm = () => {
       let companyError = null;
       let errorMessage = "";
       
+      // Save the company setup details for later use after email confirmation
+      localStorage.setItem('pendingCompanySetup', JSON.stringify({
+        type: 'company',
+        name: values.companyName,
+        cnpj: values.cnpj,
+        address: values.companyAddress,
+        phone: values.companyPhone,
+        email: values.companyEmail || values.email,
+        admin: {
+          name: values.adminName,
+          cpf: values.adminCpf,
+          phone: values.adminPhone,
+          email: values.adminEmail || values.email
+        }
+      }));
+      
       try {
         // Try to create company but don't fail if this part fails
         await authService.createCompanyWithAdmin(
@@ -155,16 +171,6 @@ export const RegisterForm = () => {
         companyError = err;
         errorMessage = err.message || "Ocorreu um erro durante a criação da empresa.";
       }
-      
-      // Save the company setup details for later use after email confirmation
-      localStorage.setItem('pendingCompanySetup', JSON.stringify({
-        type: 'company',
-        name: values.companyName,
-        cnpj: values.cnpj,
-        address: values.companyAddress,
-        phone: values.companyPhone,
-        email: values.companyEmail || values.email,
-      }));
       
       toast.success("Cadastro enviado com sucesso!");
       

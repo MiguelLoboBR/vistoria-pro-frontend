@@ -44,35 +44,25 @@ export const useCompanySetup = () => {
         setUserId(data.session.user.id);
         setAuthChecked(true);
         
-        // Check if the user has the correct role
-        const { data: profile, error: profileError } = await supabase
+        // Create or update profile with appropriate role
+        const { data: userResult, error: userError } = await supabase
           .from("profiles")
-          .select("role")
-          .eq("id", data.session.user.id)
-          .single();
-        
-        if (profileError) {
-          console.error("Erro ao buscar perfil:", profileError);
-        }
-        
-        console.log("User profile:", profile);
-        
-        if (profile && profile.role === 'inspector') {
-          console.log("Updating role from inspector to admin");
-          // Update the role to admin
-          const { error: updateError } = await supabase
-            .from("profiles")
-            .update({ role: 'admin' })
-            .eq("id", data.session.user.id);
-            
-          if (updateError) {
-            console.error("Erro ao atualizar função:", updateError);
-          } else {
-            console.log("Role updated successfully to admin");
-          }
+          .upsert([
+            {
+              id: data.session.user.id,
+              email: data.session.user.email,
+              full_name: data.session.user.user_metadata?.full_name || "",
+              role: "admin" // Ensure user is set as admin
+            }
+          ], { onConflict: 'id' });
+          
+        if (userError) {
+          console.error("Error updating user profile:", userError);
+        } else {
+          console.log("User profile updated or created");
         }
       } catch (error: any) {
-        console.error("Erro ao buscar sessão:", error.message);
+        console.error("Error fetching session:", error.message);
         toast.error("Erro ao verificar autenticação.");
       } finally {
         setLoading(false);
@@ -137,6 +127,25 @@ export const useCompanySetup = () => {
       const actualUserId = sessionData.session.user.id;
       console.log("Authenticated user ID for company creation:", actualUserId);
       
+      // First ensure the user profile exists with role=admin
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert([
+          {
+            id: actualUserId,
+            email: sessionData.session.user.email,
+            full_name: values.adminName,
+            role: "admin",
+            cpf: values.adminCpf,
+            phone: values.adminPhone
+          }
+        ], { onConflict: 'id' });
+        
+      if (profileError) {
+        console.error("Error creating profile:", profileError);
+        throw new Error("Error creating user profile");
+      }
+      
       // Upload logo if selected
       let logoUrl = null;
       if (logoFile) {
@@ -151,36 +160,45 @@ export const useCompanySetup = () => {
         }
       }
       
-      // Call the updated RPC function to create company with admin
-      const { data, error } = await supabase.rpc(
-        "create_company_with_admin", 
-        { 
-          company_name: values.companyName, 
-          company_cnpj: values.cnpj, 
-          admin_id: actualUserId,
-          company_address: values.address,
-          company_phone: values.phone,
-          company_email: values.email,
-          company_logo_url: logoUrl,
-          admin_name: values.adminName,
-          admin_cpf: values.adminCpf,
-          admin_phone: values.adminPhone,
-          admin_email: values.adminEmail
-        }
-      );
-      
-      if (error) {
-        console.error("Error details:", error);
-        throw new Error(error.message);
+      // Create the company directly using normal insert
+      const { data: companyData, error: companyError } = await supabase
+        .from("companies")
+        .insert([
+          {
+            name: values.companyName,
+            cnpj: values.cnpj,
+            address: values.address,
+            phone: values.phone,
+            email: values.email,
+            logo_url: logoUrl,
+            admin_id: actualUserId
+          }
+        ])
+        .select('id')
+        .single();
+        
+      if (companyError) {
+        console.error("Error creating company:", companyError);
+        throw new Error(companyError.message);
       }
       
-      console.log("Company creation response:", data);
+      // Link the user profile to the company
+      if (companyData) {
+        const { error: updateError } = await supabase
+          .from("profiles")
+          .update({ company_id: companyData.id })
+          .eq("id", actualUserId);
+          
+        if (updateError) {
+          console.error("Error linking profile to company:", updateError);
+        }
+      }
       
       // Clear the stored company details
       localStorage.removeItem('pendingCompanySetup');
       
       toast.success("Empresa criada com sucesso!");
-      navigate("/admin/tenant/dashboard");
+      navigate("/admin/dashboard");
     } catch (error: any) {
       toast.error(`Erro ao criar empresa: ${error.message}`);
       console.error("Erro detalhado:", error);

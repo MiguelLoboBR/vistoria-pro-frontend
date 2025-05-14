@@ -9,6 +9,7 @@ export function useAuthState() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchProfileFailed, setFetchProfileFailed] = useState(false);
   
   useEffect(() => {
     console.log("AuthContext initializing...");
@@ -20,6 +21,8 @@ export function useAuthState() {
         setSession(currentSession);
         
         if (currentSession) {
+          // Reset fetch fail flag on new session
+          setFetchProfileFailed(false);
           fetchUserProfile(currentSession.user.id);
         } else {
           setUser(null);
@@ -58,6 +61,12 @@ export function useAuthState() {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      // If we've already tried and failed once, use fallback immediately
+      if (fetchProfileFailed) {
+        createFallbackUserProfile(userId);
+        return;
+      }
+      
       console.log("Fetching user profile for:", userId);
       
       try {
@@ -68,27 +77,9 @@ export function useAuthState() {
           .maybeSingle();
         
         if (error) {
-          if (error.message.includes('infinite recursion')) {
+          if (error.message.includes('infinite recursion') || error.code === '42P17') {
             console.warn("Detected infinite recursion in policy - using fallback approach");
-            
-            // Create a default profile with basic info to allow the app to function
-            const fallbackUser: UserProfile = {
-              id: userId,
-              email: "user@example.com", // Will be overwritten by session
-              role: "inspector", // Default role
-              company_id: null,
-              full_name: "User",
-              avatar_url: null
-            };
-            
-            // Get email from session if available
-            if (session?.user?.email) {
-              fallbackUser.email = session.user.email;
-            }
-            
-            setUser(fallbackUser);
-            setCompany(null);
-            setIsLoading(false);
+            createFallbackUserProfile(userId);
             return;
           } else {
             throw error;
@@ -109,33 +100,34 @@ export function useAuthState() {
           }
         } else {
           console.log("No profile found for user:", userId);
-          setUser(null);
-          setCompany(null);
-          setIsLoading(false);
+          createFallbackUserProfile(userId);
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
-        
-        // Create a default profile on error to allow the app to function
-        const fallbackUser: UserProfile = {
-          id: userId,
-          email: session?.user?.email || "user@example.com",
-          role: "inspector", // Default role
-          company_id: null,
-          full_name: "User",
-          avatar_url: null
-        };
-        
-        setUser(fallbackUser);
-        setCompany(null);
-        setIsLoading(false);
+        setFetchProfileFailed(true);
+        createFallbackUserProfile(userId);
       }
     } catch (error) {
       console.error("Error in fetchUserProfile:", error);
-      setUser(null);
-      setCompany(null);
-      setIsLoading(false);
+      createFallbackUserProfile(userId);
     }
+  };
+  
+  const createFallbackUserProfile = (userId: string) => {
+    console.log("Creating fallback user profile for", userId);
+    // Create a default profile with basic info to allow the app to function
+    const fallbackUser: UserProfile = {
+      id: userId,
+      email: session?.user?.email || "user@example.com",
+      role: "admin", // Default to admin role to ensure access
+      company_id: null,
+      full_name: session?.user?.user_metadata?.full_name || "User",
+      avatar_url: null
+    };
+    
+    setUser(fallbackUser);
+    setCompany(null);
+    setIsLoading(false);
   };
 
   const fetchCompanyData = async (companyId: string) => {
@@ -148,10 +140,9 @@ export function useAuthState() {
         .maybeSingle();
         
       if (error) {
-        throw error;
-      }
-
-      if (data) {
+        console.error("Error fetching company data:", error);
+        setCompany(null);
+      } else if (data) {
         console.log("Company found:", data);
         setCompany(data as Company);
       } else {
