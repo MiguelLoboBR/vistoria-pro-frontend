@@ -1,9 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Company, UserProfile } from "@/contexts/types";
+import { USER_ROLES } from "./authService/types";
 
 // Define and export the UserRole type
-export type UserRole = "admin_master" | "admin_tenant" | "inspector";
+export type { UserRole } from './types';
 
 const registerInspector = async (
   email: string,
@@ -20,7 +21,7 @@ const registerInspector = async (
         data: {
           full_name: fullName,
           company_id: companyId,
-          role: "inspector",
+          role: USER_ROLES.INSPECTOR,
         },
       },
     });
@@ -38,15 +39,13 @@ const registerInspector = async (
     // 2. Create user profile in Supabase DB
     const { error: profileError } = await supabase
       .from("profiles")
-      .insert([
-        {
-          id: userId,
-          email: email,
-          full_name: fullName,
-          company_id: companyId,
-          role: "inspector",
-        },
-      ]);
+      .insert({
+        id: userId,
+        email: email,
+        full_name: fullName,
+        company_id: companyId,
+        role: USER_ROLES.INSPECTOR,
+      });
 
     if (profileError) {
       // If profile creation fails, delete the user from auth
@@ -60,7 +59,7 @@ const registerInspector = async (
       email: email,
       full_name: fullName,
       company_id: companyId,
-      role: "inspector",
+      role: USER_ROLES.INSPECTOR,
     } as UserProfile;
   } catch (error: any) {
     console.error("Error registering inspector:", error.message);
@@ -81,7 +80,7 @@ const registerAdmin = async (
       options: {
         data: {
           full_name: fullName,
-          role: "admin_tenant", // Updated from "admin" to "admin_tenant"
+          role: USER_ROLES.ADMIN_TENANT,
         },
       },
     });
@@ -99,14 +98,12 @@ const registerAdmin = async (
     // 2. Create user profile in Supabase DB with role=admin_tenant
     const { error: profileError } = await supabase
       .from("profiles")
-      .insert([
-        {
-          id: userId,
-          email: email,
-          full_name: fullName,
-          role: "admin_tenant", // Updated from "admin" to "admin_tenant"
-        },
-      ]);
+      .insert({
+        id: userId,
+        email: email,
+        full_name: fullName,
+        role: USER_ROLES.ADMIN_TENANT,
+      });
 
     if (profileError) {
       // If profile creation fails, delete the user from auth
@@ -119,7 +116,7 @@ const registerAdmin = async (
       id: userId,
       email: email,
       full_name: fullName,
-      role: "admin_tenant" as UserRole, // Type assertion to ensure compatibility
+      role: USER_ROLES.ADMIN_TENANT,
     } as UserProfile;
   } catch (error: any) {
     console.error("Error registering admin:", error.message);
@@ -136,7 +133,7 @@ const signUp = async (email: string, password: string, fullName: string): Promis
       options: {
         data: {
           full_name: fullName,
-          role: "admin_tenant", // Updated from "admin" to "admin_tenant"
+          role: USER_ROLES.ADMIN_TENANT,
         },
       },
     });

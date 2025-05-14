@@ -12,11 +12,12 @@ interface ToastOptions {
   type?: ToastType;
   duration?: number;
   position?: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "top-center" | "bottom-center";
+  variant?: "default" | "destructive";
 }
 
 // We'll use sonner toast for consistency across the application
 export function toast(title: string, options?: ToastOptions) {
-  const { description, type = "default", duration = 5000 } = options || {};
+  const { description, type = "default", duration = 5000, variant } = options || {};
   
   switch (type) {
     case "success":

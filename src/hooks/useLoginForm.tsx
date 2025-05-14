@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { UserRole } from "@/services/authService";
+import { UserRole } from "@/services/types";
 
 const formSchema = z.object({
   email: z.string().email("Digite um e-mail válido"),
@@ -65,7 +65,7 @@ export function useLoginForm(userType: UserRole) {
       const role = data.user?.user_metadata?.role || "inspector";
       
       // Direct redirects to ensure no race conditions with context
-      if (role === "admin") {
+      if (role === "admin_tenant") {
         window.location.href = "/admin/dashboard";
       } else {
         window.location.href = "/inspector/dashboard";

@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { UserProfile, UserRole } from "../types";
+import { UserProfile } from "../types";
+import { USER_ROLES } from "./types";
 
 export const registerAdmin = async (
   email: string,
@@ -15,7 +16,7 @@ export const registerAdmin = async (
       options: {
         data: {
           full_name: fullName,
-          role: "admin_tenant", // Updated from "admin" to "admin_tenant"
+          role: USER_ROLES.ADMIN_TENANT,
         },
       },
     });
@@ -33,14 +34,12 @@ export const registerAdmin = async (
     // 2. Create user profile in Supabase DB with role=admin_tenant
     const { error: profileError } = await supabase
       .from("profiles")
-      .insert([
-        {
-          id: userId,
-          email: email,
-          full_name: fullName,
-          role: "admin_tenant", // Updated from "admin" to "admin_tenant"
-        },
-      ]);
+      .insert({
+        id: userId,
+        email: email,
+        full_name: fullName,
+        role: USER_ROLES.ADMIN_TENANT,
+      });
 
     if (profileError) {
       // If profile creation fails, delete the user from auth
@@ -53,7 +52,7 @@ export const registerAdmin = async (
       id: userId,
       email: email,
       full_name: fullName,
-      role: "admin_tenant" as UserRole, // Type assertion to ensure compatibility
+      role: USER_ROLES.ADMIN_TENANT,
     } as UserProfile;
   } catch (error: any) {
     console.error("Error registering admin:", error.message);

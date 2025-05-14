@@ -2,9 +2,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { toast } from "@/components/ui/use-toast"
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
 import { UserRole } from '@/services/types';
 
 interface LoginFormProps {
@@ -32,18 +32,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ userType }) => {
         const redirectPath = userType === 'inspector' ? '/inspector/dashboard' : '/admin/dashboard';
         navigate(redirectPath);
       } else {
-        toast({
-          title: "Erro",
+        toast("Erro", { 
           description: "signIn function is not available.",
-          variant: "destructive",
+          type: "error"
         });
       }
     } catch (error: any) {
       console.error("Login failed:", error);
-      toast({
-        title: "Falha ao fazer login",
+      toast("Falha ao fazer login", {
         description: error.message || "Ocorreu um erro ao tentar fazer login.",
-        variant: "destructive",
+        type: "error"
       });
     } finally {
       setLoading(false);
