@@ -1,5 +1,9 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Company, UserProfile } from "@/contexts/types";
+
+// Define and export the UserRole type
+export type UserRole = "admin" | "inspector";
 
 const registerInspector = async (
   email: string,
@@ -123,9 +127,93 @@ const registerAdmin = async (
   }
 };
 
+// Add missing methods used by the app
+const signUp = async (email: string, password: string, fullName: string): Promise<any> => {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    if (data.user) {
+      // Create a user profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: data.user.id,
+            email: email,
+            full_name: fullName,
+            role: 'inspector',
+          },
+        ]);
+
+      if (profileError) {
+        throw profileError;
+      }
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error signing up:", error);
+    throw error;
+  }
+};
+
+const signOut = async (): Promise<void> => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
+    console.error("Error signing out:", error);
+    throw error;
+  }
+};
+
+const createCompanyWithAdmin = async (name: string, cnpj: string): Promise<string | null> => {
+  try {
+    // Get the current user's ID
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error("No authenticated user found");
+    }
+
+    // Call the RPC function to create company and set up the admin
+    const { data, error } = await supabase.rpc('create_company_with_admin', {
+      company_name: name,
+      company_cnpj: cnpj,
+      admin_id: user.id
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return data as string;
+  } catch (error) {
+    console.error("Error creating company:", error);
+    throw error;
+  }
+};
+
 export const authService = {
   registerInspector,
   registerAdmin,
+  signUp,
+  signOut,
+  createCompanyWithAdmin
 };
 
 export { type Company, type UserProfile };
