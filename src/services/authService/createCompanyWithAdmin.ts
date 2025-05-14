@@ -35,13 +35,17 @@ export const createCompanyWithAdmin = async (
 
     if (error) {
       console.error("Company creation error details:", error);
-      throw error;
+      // Don't fail the registration process if company creation fails
+      // The user will be able to create the company after confirming their email
+      console.log("Company creation failed, but user was created. Will continue with registration.");
+      return null;
     }
 
     console.log("Company creation response:", data);
     return data as string;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating company:", error);
-    throw error;
+    // Don't fail the registration process if company creation fails
+    return null;
   }
 };

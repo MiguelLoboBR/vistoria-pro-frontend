@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { UserProfile, Company } from "@/services/authService";
+import { UserProfile, Company } from "@/contexts/types";
 
 export function useAuthState() {
   const [session, setSession] = useState<Session | null>(null);
@@ -23,7 +23,11 @@ export function useAuthState() {
         if (currentSession) {
           // Reset fetch fail flag on new session
           setFetchProfileFailed(false);
-          fetchUserProfile(currentSession.user.id);
+          
+          // Use a timeout to prevent potential lock issues when fetching profile
+          setTimeout(() => {
+            fetchUserProfile(currentSession.user.id);
+          }, 0);
         } else {
           setUser(null);
           setCompany(null);
@@ -70,11 +74,21 @@ export function useAuthState() {
       console.log("Fetching user profile for:", userId);
       
       try {
+        // Try using RPC function to avoid RLS issues
         const { data, error } = await supabase
-          .from("profiles")
-          .select("id, email, full_name, role, company_id, avatar_url")
-          .eq("id", userId)
-          .maybeSingle();
+          .rpc('get_current_user_role')
+          .then(async (roleResult) => {
+            if (roleResult.error) {
+              throw roleResult.error;
+            }
+            
+            // If we successfully got the role, we can now try to fetch the full profile
+            return supabase
+              .from("profiles")
+              .select("id, email, full_name, role, company_id, avatar_url, cpf, phone")
+              .eq("id", userId)
+              .maybeSingle();
+          });
         
         if (error) {
           if (error.message.includes('infinite recursion') || error.code === '42P17') {
