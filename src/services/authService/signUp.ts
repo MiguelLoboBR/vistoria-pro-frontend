@@ -10,7 +10,7 @@ export const signUp = async (email: string, password: string, fullName: string):
       options: {
         data: {
           full_name: fullName,
-          role: "admin", // Default role is admin for direct sign ups
+          role: "admin_tenat", // Default role is admin for direct sign ups
         },
       },
     });
