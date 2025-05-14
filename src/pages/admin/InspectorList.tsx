@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Pencil, Plus, Search, Trash2, UserPlus } from "lucide-react";
@@ -59,10 +58,7 @@ export const InspectorList = () => {
       try {
         const { data, error } = await supabase
           .from("profiles")
-          .select(`
-            *,
-            inspections:inspections(count)
-          `)
+          .select("*")
           .eq("company_id", company.id)
           .eq("role", "inspector");
 
@@ -78,7 +74,7 @@ export const InspectorList = () => {
           avatar_url: profile.avatar_url || "",
           company_id: profile.company_id || "",
           role: "inspector",
-          inspections_count: profile.inspections?.length || 0
+          inspections_count: 0 // We'll leave this at 0 until we create the inspections table
         }));
 
         setInspectors(inspectorsData);
