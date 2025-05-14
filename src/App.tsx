@@ -35,6 +35,9 @@ const AppRoutes = () => (
     <Route path="/login/inspector" element={<InspectorLogin />} />
     <Route path="/register" element={<Register />} />
     
+    {/* Company Setup Route - Move to standalone route for better accessibility */}
+    <Route path="/setup/company" element={<CompanySetup />} />
+    
     {/* Admin Routes - redirect to dashboard as primary entry point */}
     <Route path="/admin/tenant" element={<Navigate to="/admin/tenant/dashboard" replace />} />
     <Route path="/admin/tenant/dashboard" element={
@@ -55,13 +58,6 @@ const AppRoutes = () => (
     <Route path="/admin/tenant/vistorias" element={
       <AuthGuard requiredRole="admin">
         <Vistorias />
-      </AuthGuard>
-    } />
-    
-    {/* Move company setup to be protected and part of admin section */}
-    <Route path="/admin/tenant/setup" element={
-      <AuthGuard requiredRole="admin">
-        <CompanySetup />
       </AuthGuard>
     } />
     
