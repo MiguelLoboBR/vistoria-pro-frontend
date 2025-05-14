@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { authService } from "@/services/authService";
@@ -132,6 +132,9 @@ export const RegisterForm = () => {
       
       console.log("User created successfully:", data.user.id);
       
+      let companyError = null;
+      let errorMessage = "";
+      
       try {
         // Create company immediately after signup without requiring email confirmation
         await authService.createCompanyWithAdmin(
@@ -148,30 +151,36 @@ export const RegisterForm = () => {
         );
         
         console.log("Company created successfully");
-      } catch (companyError) {
-        console.error("Error creating company:", companyError);
-        toast({
-          title: "Erro ao criar empresa",
-          description: "Seu usuário foi criado, mas houve um erro ao criar a empresa.",
-          variant: "destructive"
-        });
+        
+        // Save the company setup details for later use after email confirmation
+        localStorage.setItem('pendingCompanySetup', JSON.stringify({
+          type: 'company',
+          name: values.companyName,
+          cnpj: values.cnpj,
+          address: values.companyAddress,
+          phone: values.companyPhone,
+          email: values.companyEmail || values.email,
+        }));
+        
+        toast.success("Cadastro enviado com sucesso!");
+      } catch (err: any) {
+        console.error("Error creating company:", err);
+        companyError = err;
+        errorMessage = err.message || "Ocorreu um erro durante a criação da empresa.";
+        
+        toast.error("Seu usuário foi criado, mas houve um erro ao criar a empresa.");
       }
       
       navigate('/register/success', { 
-        state: { email: authEmail } 
-      });
-      
-      toast({
-        title: "Cadastro enviado com sucesso!",
-        description: "Verifique seu email para confirmar sua conta."
+        state: { 
+          email: authEmail,
+          error: !!companyError,
+          errorMessage: errorMessage
+        } 
       });
     } catch (error: any) {
       console.error("Registration error:", error);
-      toast({
-        title: "Erro ao cadastrar",
-        description: error.message || "Ocorreu um erro durante o cadastro.",
-        variant: "destructive"
-      });
+      toast.error(error.message || "Ocorreu um erro durante o cadastro.");
     } finally {
       setIsSubmitting(false);
     }

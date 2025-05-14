@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +17,9 @@ import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import RegisterSuccess from "./pages/auth/RegisterSuccess";
 import NotFound from "./pages/NotFound";
+
+// Company Setup
+import CompanySetup from "./pages/company-setup/CompanySetup";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -38,6 +42,13 @@ const AppRoutes = () => (
     <Route path="/login/inspector" element={<Login role="inspector" />} />
     <Route path="/register" element={<Register />} />
     <Route path="/register/success" element={<RegisterSuccess />} />
+    
+    {/* Company Setup Route - Protected but no role needed */}
+    <Route path="/setup/company" element={
+      <AuthGuard>
+        <CompanySetup />
+      </AuthGuard>
+    } />
     
     {/* Admin Routes */}
     <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />

@@ -8,6 +8,8 @@ import RegisterLogo from "@/components/auth/RegisterLogo";
 export const RegisterSuccess = () => {
   const location = useLocation();
   const registeredEmail = location.state?.email || "";
+  const hasError = location.state?.error || false;
+  const errorMessage = location.state?.errorMessage || "";
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -28,6 +30,17 @@ export const RegisterSuccess = () => {
             Você precisa confirmar seu email antes de poder fazer login. Por favor, verifique sua caixa de entrada e clique no link de confirmação.
           </AlertDescription>
         </Alert>
+        
+        {hasError && (
+          <Alert className="mb-6 bg-red-50 border-red-200">
+            <InfoIcon className="h-5 w-5 text-red-500" />
+            <AlertTitle className="text-red-700">Atenção</AlertTitle>
+            <AlertDescription className="text-red-600">
+              Seu usuário foi criado, mas houve um erro ao criar a empresa. Você poderá configurar sua empresa após confirmar seu email e fazer login.
+              {errorMessage && <div className="mt-2 text-sm">{errorMessage}</div>}
+            </AlertDescription>
+          </Alert>
+        )}
         
         <div className="space-y-4">
           <Button 
