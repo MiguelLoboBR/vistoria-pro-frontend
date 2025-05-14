@@ -1,182 +1,95 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
-export interface CompanyFormValues {
-  companyName: string;
-  cnpj: string;
-  address: string;
-  phone: string;
-  email: string;
-  adminName: string;
-  adminCpf: string;
-  adminPhone: string;
-  adminEmail: string;
-  logoFile?: File; // Add logoFile property
+interface CompanyCreationResult {
+  success: boolean;
+  companyId?: string;
+  error?: string;
 }
 
-export interface IndividualFormValues {
-  fullName: string;
-  cpf: string;
-  address: string;
-  phone: string;
-  email: string;
-}
-
-export const useCompanyCreation = (userId: string | null) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
+export const useCompanyCreation = () => {
   
-  const createCompany = async (values: CompanyFormValues) => {
-    setIsSubmitting(true);
-    
+  // Create company function
+  const createCompany = async (
+    name: string,
+    cnpj: string,
+    adminId: string,
+    address?: string,
+    phone?: string,
+    email?: string,
+    logoUrl?: string,
+    adminName?: string,
+    adminCpf?: string,
+    adminPhone?: string,
+    adminEmail?: string
+  ): Promise<CompanyCreationResult> => {
     try {
-      // Double-check authentication status before proceeding
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (!sessionData.session) {
-        toast.error("Sessão expirada. Por favor, faça login novamente.");
-        navigate("/login");
-        setIsSubmitting(false);
-        return;
-      }
-      
-      const actualUserId = sessionData.session.user.id;
-      console.log("Authenticated user ID for company creation:", actualUserId);
-      
-      // First ensure the user profile exists with role=admin
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert([
-          {
-            id: actualUserId,
-            email: sessionData.session.user.email,
-            full_name: values.adminName,
-            role: "admin",
-            cpf: values.adminCpf,
-            phone: values.adminPhone
-          }
-        ], { onConflict: 'id' });
-        
-      if (profileError) {
-        console.error("Error creating profile:", profileError);
-        throw new Error("Error creating user profile");
-      }
-      
-      // Upload logo if selected
-      let logoUrl = null;
-      if (values.logoFile) {
-        const { data: storageData, error: storageError } = await supabase.storage
-          .from('company_logos')
-          .upload(`${values.cnpj}/logo`, values.logoFile);
-          
-        if (storageError) {
-          console.error("Error uploading logo:", storageError);
-        } else if (storageData) {
-          logoUrl = supabase.storage.from('company_logos').getPublicUrl(storageData.path).data.publicUrl;
-        }
-      }
-      
-      // Create the company directly using normal insert
-      const { data: companyData, error: companyError } = await supabase
-        .from("companies")
-        .insert([
-          {
-            name: values.companyName,
-            cnpj: values.cnpj,
-            address: values.address,
-            phone: values.phone,
-            email: values.email,
-            logo_url: logoUrl,
-            admin_id: actualUserId
-          }
-        ])
-        .select('id')
-        .single();
-        
-      if (companyError) {
-        console.error("Error creating company:", companyError);
-        throw new Error(companyError.message);
-      }
-      
-      // Link the user profile to the company
-      if (companyData) {
-        const { error: updateError } = await supabase
-          .from("profiles")
-          .update({ company_id: companyData.id })
-          .eq("id", actualUserId);
-          
-        if (updateError) {
-          console.error("Error linking profile to company:", updateError);
-        }
-      }
-      
-      // Clear the stored company details
-      localStorage.removeItem('pendingCompanySetup');
-      
-      toast.success("Empresa criada com sucesso!");
-      navigate("/admin/dashboard");
-    } catch (error: any) {
-      toast.error(`Erro ao criar empresa: ${error.message}`);
-      console.error("Erro detalhado:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  
-  const createIndividualProfile = async (values: IndividualFormValues) => {
-    setIsSubmitting(true);
-    
-    try {
-      // Double-check authentication status before proceeding
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (!sessionData.session) {
-        toast.error("Sessão expirada. Por favor, faça login novamente.");
-        navigate("/login");
-        setIsSubmitting(false);
-        return;
-      }
-      
-      const actualUserId = sessionData.session.user.id;
-      
-      // Create individual profile (treated as a company but with individual flag)
+      // Use RPC function to create company with admin
       const { data, error } = await supabase.rpc(
-        "create_individual_profile", 
-        { 
-          full_name: values.fullName, 
-          cpf: values.cpf, 
-          user_id: actualUserId,
-          address: values.address,
-          phone: values.phone,
-          email: values.email
+        'create_company_with_admin',
+        {
+          company_name: name,
+          company_cnpj: cnpj,
+          admin_id: adminId,
+          company_address: address || null,
+          company_phone: phone || null,
+          company_email: email || null,
+          company_logo_url: logoUrl || null,
+          admin_name: adminName || null,
+          admin_cpf: adminCpf || null,
+          admin_phone: adminPhone || null,
+          admin_email: adminEmail || null
         }
       );
       
       if (error) {
-        console.error("Error details:", error);
-        throw new Error(error.message);
+        console.error("Error creating company:", error);
+        return { success: false, error: error.message };
       }
       
-      console.log("Individual profile creation response:", data);
-      
-      // Clear the stored details
-      localStorage.removeItem('pendingCompanySetup');
-      
-      toast.success("Perfil criado com sucesso!");
-      navigate("/admin/tenant/dashboard");
+      return { success: true, companyId: data as string };
     } catch (error: any) {
-      toast.error(`Erro ao criar perfil: ${error.message}`);
-      console.error("Erro detalhado:", error);
-    } finally {
-      setIsSubmitting(false);
+      console.error("Error in createCompany:", error);
+      return { success: false, error: error.message };
     }
   };
-
+  
+  // Create individual profile function
+  const createIndividualProfile = async (
+    fullName: string,
+    cpf: string,
+    userId: string,
+    address?: string,
+    phone?: string,
+    email?: string
+  ): Promise<CompanyCreationResult> => {
+    try {
+      // Use RPC function to create individual profile
+      const { data, error } = await supabase.rpc(
+        'create_individual_profile',
+        {
+          full_name: fullName,
+          cpf: cpf,
+          user_id: userId,
+          address: address || null,
+          phone: phone || null,
+          email: email || null
+        }
+      );
+      
+      if (error) {
+        console.error("Error creating individual profile:", error);
+        return { success: false, error: error.message };
+      }
+      
+      return { success: true, companyId: data as string };
+    } catch (error: any) {
+      console.error("Error in createIndividualProfile:", error);
+      return { success: false, error: error.message };
+    }
+  };
+  
   return {
-    isSubmitting,
     createCompany,
     createIndividualProfile
   };

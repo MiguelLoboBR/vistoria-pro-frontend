@@ -68,7 +68,7 @@ export function useAuthGuard(requiredRole?: UserRole) {
             refreshUserProfile();
           }
         } else {
-          // Otherwise, try the safer RPC function to get role
+          // Otherwise, use the safer RPC function to get role
           try {
             const { data: roleData, error: roleError } = await supabase
               .rpc('get_user_role_safely');
