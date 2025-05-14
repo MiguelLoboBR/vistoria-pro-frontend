@@ -13,7 +13,6 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { authService, UserRole } from "@/services/authService";
-import { useAuth } from "@/contexts/AuthContext"; // Add this import
 
 const formSchema = z.object({
   // User auth fields
@@ -48,7 +47,6 @@ export const Register = () => {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   
   const navigate = useNavigate();
-  const { signUp } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -106,8 +104,7 @@ export const Register = () => {
         }
       }
 
-      const role: UserRole = "admin";
-      // Register the admin
+      // Modified approach: First register the admin to create the user
       const result = await authService.registerAdmin(
         authEmail, 
         values.password,
@@ -115,19 +112,35 @@ export const Register = () => {
       );
       
       if (result) {
-        // Create company directly with the registered user
-        await authService.createCompanyWithAdmin(
-          values.companyName || "",
-          values.cnpj || "",
-          values.companyAddress,
-          values.companyPhone,
-          values.companyEmail || values.email,
-          logoUrl,
-          values.adminName,
-          values.adminCpf,
-          values.adminPhone,
-          values.adminEmail || values.email
-        );
+        // After successful registration, sign in to get authenticated session
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: authEmail,
+          password: values.password,
+        });
+        
+        if (error) {
+          console.error("Error signing in after registration:", error);
+          throw error;
+        }
+        
+        // Now create company with the authenticated user
+        if (data.user) {
+          await authService.createCompanyWithAdmin(
+            values.companyName || "",
+            values.cnpj || "",
+            values.companyAddress,
+            values.companyPhone,
+            values.companyEmail || values.email,
+            logoUrl,
+            values.adminName,
+            values.adminCpf,
+            values.adminPhone,
+            values.adminEmail || values.email
+          );
+          
+          // Sign out after setting up everything so user can login properly
+          await supabase.auth.signOut();
+        }
       }
       
       setRegisteredEmail(authEmail);
@@ -141,6 +154,7 @@ export const Register = () => {
     }
   };
 
+  
   if (registrationComplete) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -228,6 +242,7 @@ export const Register = () => {
                     </FormItem>
                   )}
                 />
+                
                 
                 <FormField
                   control={form.control}

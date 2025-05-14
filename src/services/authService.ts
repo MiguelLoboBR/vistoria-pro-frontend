@@ -182,7 +182,7 @@ const signOut = async (): Promise<void> => {
   }
 };
 
-// Modified to directly create company entry and update admin profile
+// Modified to work without requiring an authenticated user for the registration flow
 const createCompanyWithAdmin = async (
   name: string, 
   cnpj: string,
@@ -196,12 +196,14 @@ const createCompanyWithAdmin = async (
   adminEmail?: string
 ): Promise<string | null> => {
   try {
-    // Get the current user's ID
+    // Get the current user's ID - this will be available now after signing in after registration
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       throw new Error("No authenticated user found");
     }
+    
+    console.log("Creating company with admin ID:", user.id);
 
     // Call the RPC function to create company and set up the admin with all the data
     const { data, error } = await supabase.rpc(
