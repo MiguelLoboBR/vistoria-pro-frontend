@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -5,8 +6,7 @@ import InspectorLayout from "@/components/layouts/InspectorLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Import hooks from our refactored structure
-import { useInspectionData } from "@/hooks/inspection";
-import { useInspectionActions } from "@/hooks/useInspectionActions";
+import { useInspectionData, useInspectionActions } from "@/hooks/inspection";
 
 // Import custom components
 import { HeaderInfoSection } from "@/components/inspection/HeaderInfoSection";
