@@ -21,6 +21,7 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
   
   // Don't show any content while loading
   if (isCheckingAuth) {
+    console.log("AuthGuard: Checking authentication...");
     return <LoadingAuthentication />;
   }
   
@@ -38,16 +39,16 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
   
   // If authenticated but doesn't have required role, redirect to appropriate dashboard
   if (!hasRequiredRole) {
+    console.log(`AuthGuard: User has role ${userRole} but needs ${requiredRole}, redirecting`);
     if (userRole === "admin_tenant" || userRole === "admin_master") {
-      console.log("AuthGuard: User is admin, redirecting to admin dashboard");
       return <Navigate to="/admin/dashboard" replace />;
     } else {
-      console.log("AuthGuard: User is inspector, redirecting to inspector dashboard");
       return <Navigate to="/inspector/dashboard" replace />;
     }
   }
   
   // If all checks pass, render the children
+  console.log("AuthGuard: All checks passed, rendering children");
   return <>{children}</>;
 };
 

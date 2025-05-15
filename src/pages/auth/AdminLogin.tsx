@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { USER_ROLES } from "@/services/authService/types";
 
 export const AdminLogin = () => {
-  const { session, isLoading } = useAuth();
+  const { session, isLoading, user } = useAuth();
   const navigate = useNavigate();
   const [checkingSession, setCheckingSession] = useState(true);
 
@@ -24,15 +24,29 @@ export const AdminLogin = () => {
         
         // Se temos uma sessão ativa, redirecionar para o dashboard apropriado
         if (data.session) {
-          console.log("AdminLogin: Usuário autenticado, redirecionando para o dashboard do admin");
-          navigate("/admin/dashboard", { replace: true });
+          // Fetch user role from user context or metadata
+          const userRole = user?.role || data.session.user.user_metadata?.role;
+          
+          console.log("AdminLogin: Usuário autenticado com role:", userRole);
+          
+          if (userRole === 'admin_tenant' || userRole === 'admin_master') {
+            console.log("AdminLogin: Redirecionando admin para dashboard");
+            navigate("/admin/dashboard", { replace: true });
+          } else {
+            console.log("AdminLogin: Redirecionando inspetor para dashboard");
+            navigate("/inspector/dashboard", { replace: true });
+          }
           return;
         }
         
         // Usar o contexto de autenticação como fallback
         if (session && !isLoading) {
-          console.log("AdminLogin: Usuário autenticado via contexto, redirecionando...");
-          navigate("/admin/dashboard", { replace: true });
+          console.log("AdminLogin: Usuário autenticado via contexto");
+          if (user?.role === 'admin_tenant' || user?.role === 'admin_master') {
+            navigate("/admin/dashboard", { replace: true });
+          } else if (user?.role === 'inspector') {
+            navigate("/inspector/dashboard", { replace: true });
+          }
         }
       } catch (error) {
         console.error("AdminLogin: Erro ao verificar autenticação:", error);
@@ -42,7 +56,7 @@ export const AdminLogin = () => {
     };
     
     checkAuthentication();
-  }, [session, isLoading, navigate]);
+  }, [session, isLoading, navigate, user]);
 
   if (isLoading || checkingSession) {
     return (

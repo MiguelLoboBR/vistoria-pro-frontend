@@ -14,9 +14,12 @@ export const useAuthGuard = (requiredRole?: UserRole) => {
     if (!isLoading) {
       // Check if user is authenticated
       if (isAuthenticated && user) {
+        console.log("useAuthGuard: User authenticated with role:", user.role);
+        
         // Check if admin user needs to set up company
         const isAdmin = user.role === "admin_tenant" || user.role === "admin_master";
         if (isAdmin && !user.company_id) {
+          console.log("useAuthGuard: Admin without company, needs setup");
           setNeedsCompanySetup(true);
         } else {
           setNeedsCompanySetup(false);
@@ -24,7 +27,7 @@ export const useAuthGuard = (requiredRole?: UserRole) => {
         
         // Check if user has required role
         if (requiredRole) {
-          // Special case: if required role is admin, allow both admin_tenant and admin_master
+          // Special case: if required role is admin_tenant, allow both admin_tenant and admin_master
           if (requiredRole === "admin_tenant" && 
               (user.role === "admin_tenant" || user.role === "admin_master")) {
             setHasRequiredRole(true);
@@ -35,6 +38,10 @@ export const useAuthGuard = (requiredRole?: UserRole) => {
           // If no specific role is required, allow access
           setHasRequiredRole(true);
         }
+      } else {
+        console.log("useAuthGuard: User not authenticated");
+        setHasRequiredRole(false);
+        setNeedsCompanySetup(false);
       }
       setIsCheckingAuth(false);
     }

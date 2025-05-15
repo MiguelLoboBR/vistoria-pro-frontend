@@ -10,6 +10,8 @@ export const registerInspector = async (
   companyId: string
 ): Promise<UserProfile | null> => {
   try {
+    console.log("registerInspector: Creating inspector for company", companyId);
+
     // 1. Create user in Supabase auth with proper metadata
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
@@ -32,6 +34,8 @@ export const registerInspector = async (
     if (!userId) {
       throw new Error("User ID not found after signup");
     }
+
+    console.log("registerInspector: Inspector created with ID", userId);
 
     // Return inspector profile
     return {

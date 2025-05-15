@@ -19,9 +19,14 @@ export function useInspectors(companyId: string | undefined) {
   const { registerInspector } = useAuthMethods();
 
   const fetchInspectors = async () => {
-    if (!companyId) return;
+    if (!companyId) {
+      console.log("useInspectors: No companyId provided, cannot fetch inspectors");
+      return;
+    }
     
     setIsLoadingInspectors(true);
+    console.log("useInspectors: Fetching inspectors for company", companyId);
+    
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -32,6 +37,8 @@ export function useInspectors(companyId: string | undefined) {
       if (error) {
         throw error;
       }
+      
+      console.log("useInspectors: Found", data?.length || 0, "inspectors");
       
       // Convert to Inspector type
       const inspectorData = data?.map(profile => ({
@@ -55,7 +62,9 @@ export function useInspectors(companyId: string | undefined) {
       return;
     }
     
+    console.log("useInspectors: Creating inspector for company", companyId);
     setIsCreatingInspector(true);
+    
     try {
       const { fullName, email, password } = values;
       
@@ -95,9 +104,10 @@ export function useInspectors(companyId: string | undefined) {
     }
   };
 
-  // Fixed: Changed from useState to useEffect for loading inspectors when companyId changes
+  // Fetch inspectors when companyId changes
   useEffect(() => {
     if (companyId) {
+      console.log("useInspectors: CompanyId changed, fetching inspectors");
       fetchInspectors();
     }
   }, [companyId]);
