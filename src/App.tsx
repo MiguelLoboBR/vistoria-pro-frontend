@@ -26,6 +26,8 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import AdminInspections from "./pages/admin/Inspections";
 import AdminProfile from "./pages/admin/Profile";
 import AdminInspectors from "./pages/admin/Inspectors";
+import Vistorias from "./pages/admin/Vistorias";
+import UnderConstruction from "./pages/admin/UnderConstruction";
 
 // Inspector pages
 import InspectorDashboard from "./pages/inspector/Dashboard";
@@ -70,6 +72,25 @@ const AppRoutes = () => (
     <Route path="/admin/inspections" element={
       <AuthGuard requiredRole="admin_tenant">
         <AdminInspections />
+      </AuthGuard>
+    } />
+    
+    {/* Rota para a página Vistorias (alternativa para Inspections) */}
+    <Route path="/admin/vistorias" element={
+      <AuthGuard requiredRole="admin_tenant">
+        <Vistorias />
+      </AuthGuard>
+    } />
+    
+    {/* Rotas adicionais para páginas futuras */}
+    <Route path="/admin/financeiro" element={
+      <AuthGuard requiredRole="admin_tenant">
+        <UnderConstruction pageName="Financeiro" />
+      </AuthGuard>
+    } />
+    <Route path="/admin/relatorios" element={
+      <AuthGuard requiredRole="admin_tenant">
+        <UnderConstruction pageName="Relatórios" />
       </AuthGuard>
     } />
     

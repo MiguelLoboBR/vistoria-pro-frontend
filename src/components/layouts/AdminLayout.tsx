@@ -38,12 +38,12 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
   const { user, signOut } = useAuth();
   
   const sidebarItems: SidebarItem[] = [
-    { title: "Dashboard", icon: <Home size={20} />, path: "/admin/tenant/dashboard" },
-    { title: "Vistorias", icon: <Calendar size={20} />, path: "/admin/tenant/vistorias" },
-    { title: "Vistoriadores", icon: <Users size={20} />, path: "/admin/tenant/vistoriadores" },
-    { title: "Financeiro", icon: <CreditCard size={20} />, path: "/admin/tenant/financeiro" },
-    { title: "Relatórios", icon: <FileText size={20} />, path: "/admin/tenant/relatorios" },
-    { title: "Configurações", icon: <Settings size={20} />, path: "/admin/tenant/configuracoes" },
+    { title: "Dashboard", icon: <Home size={20} />, path: "/admin/dashboard" },
+    { title: "Vistorias", icon: <Calendar size={20} />, path: "/admin/inspections" },
+    { title: "Vistoriadores", icon: <Users size={20} />, path: "/admin/inspectors" },
+    { title: "Financeiro", icon: <CreditCard size={20} />, path: "/admin/financeiro" },
+    { title: "Relatórios", icon: <FileText size={20} />, path: "/admin/relatorios" },
+    { title: "Configurações", icon: <Settings size={20} />, path: "/admin/profile" },
   ];
 
   const handleLogout = async () => {
