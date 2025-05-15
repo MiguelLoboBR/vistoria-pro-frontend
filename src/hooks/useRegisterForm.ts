@@ -59,7 +59,7 @@ export const useRegisterForm = () => {
       console.log("Starting registration with email:", authEmail);
       
       // IDs temporários para referência
-      let tempCompanyId = crypto.randomUUID();
+      const tempCompanyId = crypto.randomUUID();
       let logoUrl = null;
       
       // Primeiro enviar a logo, se houver
@@ -105,20 +105,23 @@ export const useRegisterForm = () => {
       
       if (companyError) {
         console.error("Error creating company:", companyError);
-      } else {
-        tempCompanyId = companyData;
-        console.log("Empresa criada com sucesso, ID:", tempCompanyId);
-      }
+        throw companyError;
+      } 
+
+      console.log("Empresa criada com sucesso, ID:", companyData);
       
       // Cadastrar o usuário no Auth com o papel correto
+      // Usando o enum diretamente para evitar problemas de tipo
+      const userRole = USER_ROLES.ADMIN_TENANT;
+      
       const { data, error } = await supabase.auth.signUp({
         email: authEmail,
         password: values.password,
         options: {
           data: {
             full_name: values.adminName,
-            role: USER_ROLES.ADMIN_TENANT, // Usar a constante para garantir tipo correto
-            company_id: tempCompanyId // Adicionar company_id aos metadados
+            role: userRole,
+            company_id: companyData // Usar o ID retornado da criação da empresa
           },
           emailRedirectTo: window.location.origin + '/login'
         }
@@ -129,15 +132,9 @@ export const useRegisterForm = () => {
         throw error;
       }
       
-      if (!data.user) {
-        throw new Error("User creation failed");
-      }
-      
-      console.log("User created successfully:", data.user.id);
-      
       // Salvar detalhes para uso posterior (caso precise)
       localStorage.setItem('pendingCompanySetup', JSON.stringify({
-        id: tempCompanyId,
+        id: companyData,
         name: values.companyName,
         cnpj: values.cnpj,
         logoUrl: logoUrl

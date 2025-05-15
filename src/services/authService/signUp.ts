@@ -13,6 +13,7 @@ export const signUp = async (email: string, password: string, fullName: string):
           full_name: fullName,
           role: USER_ROLES.ADMIN_TENANT, // Usar a constante para garantir tipo correto
         },
+        emailRedirectTo: window.location.origin + '/login'
       },
     });
 
