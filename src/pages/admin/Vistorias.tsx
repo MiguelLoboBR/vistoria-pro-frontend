@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import AdminLayout from "@/components/layouts/AdminLayout";
@@ -11,10 +12,10 @@ import { SearchHeader } from "@/components/admin/inspections/SearchHeader";
 import { InspectionList } from "@/components/admin/inspections/InspectionList";
 import { VistoriaDialog } from "@/components/admin/inspections/VistoriaDialog";
 import { InspectionFormValues } from "@/components/admin/inspections/NewInspectionForm";
+import { useInspectors } from "@/hooks/useInspectors";
 
 const Vistorias = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [inspectors, setInspectors] = useState<{ id: string, name: string }[]>([]);
   const { company, user } = useAuth();
   const { 
     filteredVistorias, 
@@ -25,28 +26,14 @@ const Vistorias = () => {
     setFilteredVistorias
   } = useVistorias();
   
-  // Fetch inspectors for the company
-  useEffect(() => {
-    const fetchInspectors = async () => {
-      if (!company) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("id, full_name")
-          .eq("company_id", company.id)
-          .eq("role", "inspector");
-          
-        if (error) throw error;
-        
-        setInspectors(data.map(i => ({ id: i.id, name: i.full_name || "Sem nome" })));
-      } catch (error) {
-        console.error("Error fetching inspectors:", error);
-      }
-    };
-    
-    fetchInspectors();
-  }, [company]);
+  // Use the useInspectors hook to fetch inspectors for the current company
+  const { inspectors: companyInspectors, isLoadingInspectors } = useInspectors(company?.id);
+  
+  // Format inspectors for the dropdown
+  const formattedInspectors = companyInspectors.map(inspector => ({
+    id: inspector.id,
+    name: inspector.full_name || inspector.email || "Sem nome"
+  }));
 
   const handleSubmit = async (values: InspectionFormValues) => {
     if (!company || !user) {
@@ -70,9 +57,9 @@ const Vistorias = () => {
       if (newInspection) {
         // Add the inspector name if we have the inspector data
         if (values.inspector_id) {
-          const inspector = inspectors.find(i => i.id === values.inspector_id);
+          const inspector = companyInspectors.find(i => i.id === values.inspector_id);
           if (inspector) {
-            newInspection.inspector_name = inspector.name;
+            newInspection.inspector_name = inspector.full_name || inspector.email;
           }
         }
         
@@ -86,6 +73,10 @@ const Vistorias = () => {
       toast.error("Erro ao criar vistoria");
     }
   };
+
+  console.log("Vistorias page: Company ID:", company?.id);
+  console.log("Vistorias page: Number of inspectors:", formattedInspectors.length);
+  console.log("Vistorias page: Inspectors data:", formattedInspectors);
 
   return (
     <AdminLayout>
@@ -126,7 +117,7 @@ const Vistorias = () => {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSubmit={handleSubmit}
-        inspectors={inspectors}
+        inspectors={formattedInspectors}
       />
     </AdminLayout>
   );

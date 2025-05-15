@@ -38,7 +38,7 @@ export function useInspectors(companyId: string | undefined) {
         throw error;
       }
       
-      console.log("useInspectors: Found", data?.length || 0, "inspectors");
+      console.log("useInspectors: Found", data?.length || 0, "inspectors", data);
       
       // Convert to Inspector type
       const inspectorData = data?.map(profile => ({
