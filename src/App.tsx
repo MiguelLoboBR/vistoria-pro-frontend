@@ -1,10 +1,5 @@
-import {
-  Route,
-  Routes,
-  Outlet,
-} from "react-router-dom";
+import { Route, Routes, Outlet } from "react-router-dom";
 import AuthGuard from "./components/auth/AuthGuard";
-import Index from "./pages/Index";
 import Landing from "./pages/landing/Landing";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -25,16 +20,16 @@ import InstallPWA from "./pages/InstallPWA";
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/landing" element={<Landing />} />
+      {/* Landing Page agora é a raiz "/" */}
+      <Route path="/" element={<Landing />} />
       <Route path="/install-pwa" element={<InstallPWA />} />
 
-      {/* Auth Routes */}
+      {/* Auth */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/register/success" element={<RegisterSuccess />} />
 
-      {/* Admin Routes */}
+      {/* Admin Tenant */}
       <Route path="/admin" element={<AuthGuard requiredRole="admin_tenant"><Outlet /></AuthGuard>}>
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="vistorias" element={<Vistorias />} />
@@ -44,7 +39,7 @@ function App() {
         <Route path="company-profile" element={<CompanyProfile />} />
       </Route>
 
-      {/* Inspector Routes */}
+      {/* Inspector */}
       <Route path="/inspector" element={<AuthGuard requiredRole="inspector"><Outlet /></AuthGuard>}>
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="inspection/:id" element={<Inspection />} />
@@ -55,12 +50,8 @@ function App() {
         <Route path="profile" element={<Profile />} />
       </Route>
 
-      {/* Company Setup */}
-      <Route path="/setup/company" element={
-        <AuthGuard>
-          <CompanySetup />
-        </AuthGuard>
-      } />
+      {/* Setup */}
+      <Route path="/setup/company" element={<AuthGuard><CompanySetup /></AuthGuard>} />
 
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
