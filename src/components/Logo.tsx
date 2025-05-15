@@ -21,7 +21,7 @@ export const Logo = ({ className, size = 'md', showText = true }: LogoProps) => 
   };
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex items-center gap-2 ${className}`} aria-label="Logo VistoriaPro">
       <div className={`${sizes[size]}`}>
         <img 
           src="/lovable-uploads/5f177951-9411-4feb-ab50-3e454df28a29.png" 
