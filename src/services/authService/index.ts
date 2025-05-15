@@ -3,6 +3,7 @@
 import { createCompanyWithAdmin } from "./createCompanyWithAdmin";
 import { registerAdmin } from "./registerAdmin";
 import { registerInspector } from "./registerInspector";
+import { signIn } from "./signIn";
 import { signOut } from "./signOut";
 import { signUp } from "./signUp";
 
@@ -15,6 +16,7 @@ export const authService = {
   createCompanyWithAdmin,
   registerAdmin,
   registerInspector,
+  signIn,
   signOut,
   signUp,
 };
