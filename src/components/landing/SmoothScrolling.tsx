@@ -1,32 +1,36 @@
-
 import { useEffect } from "react";
 
 export const useSmoothScrolling = () => {
   useEffect(() => {
-    // Implementation of smooth scrolling
     const handleAnchorClick = (e: MouseEvent) => {
+      // Somente clique com botão esquerdo
+      if (e.button !== 0) return;
+
       const target = e.target as HTMLElement;
-      const anchorElement = target.closest('a[href^="#"]');
-      
-      if (anchorElement) {
-        e.preventDefault();
-        const targetId = anchorElement.getAttribute('href');
-        if (targetId) {
-          const targetElement = document.querySelector(targetId);
-          if (targetElement) {
-            window.scrollTo({
-              top: targetElement.getBoundingClientRect().top + window.scrollY - 100,
-              behavior: 'smooth',
-            });
-          }
+      const anchor = target.closest("a[href^='#']");
+
+      if (anchor instanceof HTMLAnchorElement) {
+        const href = anchor.getAttribute("href");
+        if (!href || href === "#") return;
+
+        const targetElement = document.querySelector(href);
+        if (targetElement) {
+          e.preventDefault();
+          window.scrollTo({
+            top: targetElement.getBoundingClientRect().top + window.scrollY - 100,
+            behavior: "smooth",
+          });
+
+          // Atualiza o hash na URL sem recarregar
+          history.replaceState(null, "", href);
         }
       }
     };
 
-    document.addEventListener('click', handleAnchorClick);
-    
+    document.addEventListener("click", handleAnchorClick);
+
     return () => {
-      document.removeEventListener('click', handleAnchorClick);
+      document.removeEventListener("click", handleAnchorClick);
     };
   }, []);
 };
