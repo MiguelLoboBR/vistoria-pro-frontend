@@ -1,9 +1,10 @@
 
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useEffect } from "react";
 import Sidebar from "../admin/Sidebar";
 import MobileSidebar from "../admin/MobileSidebar";
 import Header from "../admin/Header";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -13,6 +14,14 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { signOut } = useAuth();
+  const isMobile = useIsMobile();
+  
+  // Auto collapse sidebar on mobile screens
+  useEffect(() => {
+    if (isMobile) {
+      setIsCollapsed(true);
+    }
+  }, [isMobile]);
   
   const handleLogout = async () => {
     try {
@@ -38,7 +47,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
       />
       
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col w-full">
         {/* Top Header */}
         <Header onMobileMenuToggle={() => setIsMobileMenuOpen(true)} />
         

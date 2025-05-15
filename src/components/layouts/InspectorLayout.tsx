@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,20 +11,27 @@ import {
   User,
   LogOut,
   X,
+  ChevronLeft,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface InspectorLayoutProps {
   children: React.ReactNode;
+  pageTitle?: string;
 }
 
-const InspectorLayout: React.FC<InspectorLayoutProps> = ({ children }) => {
+const InspectorLayout: React.FC<InspectorLayoutProps> = ({ 
+  children,
+  pageTitle,
+}) => {
   const location = useLocation();
   const { signOut } = useAuth();
   const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const isActive = (path: string) => {
     return location.pathname.includes(path);
@@ -33,39 +40,48 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({ children }) => {
   const navigation = [
     {
       name: "Dashboard",
-      href: "/app/inspector/dashboard",
+      href: "/inspector/dashboard",
       icon: LayoutDashboard,
       current: isActive("/dashboard"),
     },
     {
       name: "Vistorias",
-      href: "/app/inspector/inspections",
+      href: "/inspector/inspections",
       icon: ClipboardList,
       current: isActive("/inspections"),
     },
     {
       name: "Agenda",
-      href: "/app/inspector/schedule",
+      href: "/inspector/schedule",
       icon: CalendarDays,
       current: isActive("/schedule"),
     },
     {
       name: "Histórico",
-      href: "/app/inspector/history",
+      href: "/inspector/history",
       icon: Clock,
       current: isActive("/history"),
     },
     {
       name: "Perfil",
-      href: "/app/inspector/profile",
+      href: "/inspector/profile",
       icon: User,
       current: isActive("/profile"),
     },
   ];
 
+  // Close sidebar when navigating on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setOpen(false);
+    }
+  }, [location.pathname, isMobile]);
+
   const handleSignOut = () => {
     signOut();
   };
+
+  const currentPage = navigation.find((item) => item.current)?.name || pageTitle;
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -114,10 +130,20 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({ children }) => {
       </div>
 
       {/* Mobile header and menu */}
-      <div className="flex flex-col flex-1 md:pl-64">
+      <div className="flex flex-col flex-1 w-full md:pl-64">
         <div className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 bg-white border-b md:hidden">
-          <div className="flex items-center">
-            <Logo />
+          <div className="flex items-center space-x-4">
+            {location.pathname !== "/inspector/dashboard" && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => window.history.back()} 
+                className="md:hidden"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            )}
+            <span className="font-medium truncate max-w-[200px]">{currentPage}</span>
           </div>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
@@ -126,7 +152,7 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({ children }) => {
                 <span className="sr-only">Open menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[240px] p-0">
+            <SheetContent side="left" className="w-[280px] p-0">
               <div className="flex items-center justify-between p-4 border-b">
                 <Logo />
                 <Button
@@ -147,7 +173,7 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({ children }) => {
                       item.current
                         ? "bg-gray-100 text-primary"
                         : "text-gray-600 hover:bg-gray-50",
-                      "group flex items-center px-3 py-2.5 text-sm font-medium rounded-md"
+                      "group flex items-center px-3 py-3 text-sm font-medium rounded-md"
                     )}
                   >
                     <item.icon

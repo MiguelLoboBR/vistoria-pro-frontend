@@ -7,6 +7,7 @@ import HowItWorksSection from "@/components/landing/HowItWorksSection";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import CTASection from "@/components/landing/CTASection";
 import FooterSection from "@/components/landing/FooterSection";
+import PWAInstallButton from "@/components/landing/PWAInstallButton";
 
 export const Landing = () => {
   // Enable smooth scrolling for anchor links
@@ -34,6 +35,9 @@ export const Landing = () => {
       
       {/* Footer */}
       <FooterSection />
+
+      {/* PWA Install Button (fixed position) */}
+      <PWAInstallButton />
     </div>
   );
 };

@@ -23,6 +23,7 @@ import NotFound from "./pages/NotFound";
 import Inspection from "./pages/inspector/Inspection";
 import InspectionList from "./pages/inspector/InspectionList";
 import InspectionExecute from "./pages/inspector/InspectionExecute";
+import InstallPWA from "./pages/InstallPWA";
 import { USER_ROLES } from "@/services/authService/types";
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/landing" element={<Landing />} />
+        <Route path="/install-pwa" element={<InstallPWA />} />
         
         {/* Auth Routes - Fixed paths */}
         <Route path="/login" element={<Login role={USER_ROLES.ADMIN_TENANT} />} />
@@ -48,7 +50,7 @@ function App() {
           <Route path="company-profile" element={<CompanyProfile />} />
         </Route>
         
-        {/* Inspector Routes - Fixed path from /app/inspector to /inspector */}
+        {/* Inspector Routes */}
         <Route path="/inspector" element={<AuthGuard requiredRole="inspector"><Outlet /></AuthGuard>}>
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="inspection/:id" element={<Inspection />} />
@@ -59,7 +61,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
         </Route>
         
-        {/* Company Setup - Fixed path */}
+        {/* Company Setup */}
         <Route path="/setup/company" element={
           <AuthGuard>
             <CompanySetup />

@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { Menu, X } from "lucide-react";
 
 export const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -44,8 +45,8 @@ export const Header = () => {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
           <a href="#features" className="text-gray-700 hover:text-vistoria-blue transition-colors">Recursos</a>
-          <a href="#how-it-works" className="text-gray-700 hover:text-vistoria-blue transition-colors">Como Funciona</a>
-          <a href="#testimonials" className="text-gray-700 hover:text-vistoria-blue transition-colors">Clientes</a>
+          <a href="#como-funciona" className="text-gray-700 hover:text-vistoria-blue transition-colors">Como Funciona</a>
+          <a href="#depoimentos" className="text-gray-700 hover:text-vistoria-blue transition-colors">Clientes</a>
           <Link to={getLoginUrl()} className="text-vistoria-blue font-medium hover:underline">
             {isAuthenticated ? "Ir para Dashboard" : "Entrar"}
           </Link>
@@ -62,20 +63,23 @@ export const Header = () => {
         <button 
           className="md:hidden text-gray-700"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle menu"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+          {mobileMenuOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
         </button>
       </div>
       
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white shadow-md pt-2 pb-4 absolute w-full">
+        <div className="md:hidden bg-white shadow-md pt-2 pb-4 absolute w-full animate-fade-in">
           <div className="container mx-auto px-4 flex flex-col space-y-4">
             <a href="#features" className="text-gray-700 py-2" onClick={() => setMobileMenuOpen(false)}>Recursos</a>
-            <a href="#how-it-works" className="text-gray-700 py-2" onClick={() => setMobileMenuOpen(false)}>Como Funciona</a>
-            <a href="#testimonials" className="text-gray-700 py-2" onClick={() => setMobileMenuOpen(false)}>Clientes</a>
+            <a href="#como-funciona" className="text-gray-700 py-2" onClick={() => setMobileMenuOpen(false)}>Como Funciona</a>
+            <a href="#depoimentos" className="text-gray-700 py-2" onClick={() => setMobileMenuOpen(false)}>Clientes</a>
             <Link 
               to={getLoginUrl()} 
               className="text-vistoria-blue font-medium py-2"
@@ -84,12 +88,17 @@ export const Header = () => {
               {isAuthenticated ? "Ir para Dashboard" : "Entrar"}
             </Link>
             {!isAuthenticated && (
-              <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
+              <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="py-2">
                 <Button className="w-full bg-vistoria-blue hover:bg-vistoria-darkBlue">
                   Cadastre-se
                 </Button>
               </Link>
             )}
+            <Link to="/install-pwa" onClick={() => setMobileMenuOpen(false)} className="py-2">
+              <Button variant="outline" className="w-full border-vistoria-blue text-vistoria-blue">
+                Instalar App
+              </Button>
+            </Link>
           </div>
         </div>
       )}
