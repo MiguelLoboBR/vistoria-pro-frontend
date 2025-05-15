@@ -65,7 +65,7 @@ const networkStatusService = {
   }
 };
 
-// Offline service with improved error handling
+// Expose the methods directly on offlineService
 const offlineService = {
   db: null as any,
   networkStatus: networkStatusService.init(),
@@ -79,7 +79,7 @@ const offlineService = {
       
       // Set up network change handlers
       this.networkStatus.onOnline(() => {
-        this.syncQueue.processPendingOperations(this.db);
+        this.syncQueue.processSyncQueue();
       });
       
       // Initialize sub-services
@@ -91,6 +91,43 @@ const offlineService = {
       console.error('Failed to initialize offline service:', error);
       return false;
     }
+  },
+  
+  // Initialize the offline service
+  initOfflineService() {
+    this.init().catch(error => {
+      console.error('Failed to initialize offline service:', error);
+    });
+  },
+  
+  // Process sync queue
+  async processSyncQueue() {
+    return await syncQueue.processSyncQueue();
+  },
+  
+  // Save inspection locally
+  async saveInspectionLocally(inspection: any, isSynced = false) {
+    return await inspectionDataService.saveInspectionLocally(inspection, isSynced);
+  },
+  
+  // Get complete inspection locally
+  async getCompleteInspectionLocally(inspectionId: string) {
+    return await inspectionDataService.getCompleteInspectionLocally(inspectionId);
+  },
+  
+  // Save room locally
+  async saveRoomLocally(room: any, isSynced = false) {
+    return await inspectionDataService.saveRoomLocally(room, isSynced);
+  },
+  
+  // Save item locally
+  async saveItemLocally(item: any, isSynced = false) {
+    return await inspectionDataService.saveItemLocally(item, isSynced);
+  },
+  
+  // Save signature locally
+  async saveSignatureLocally(signature: any, isSynced = false) {
+    return await inspectionDataService.saveSignatureLocally(signature, isSynced);
   },
   
   async clearAllData() {

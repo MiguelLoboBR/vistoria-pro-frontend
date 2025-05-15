@@ -164,3 +164,22 @@ export const getCompleteInspectionLocally = async (inspectionId: string): Promis
     signatures,
   };
 };
+
+// Create an inspectionDataService object to export
+export const inspectionDataService = {
+  getInspectionLocally,
+  saveInspectionLocally,
+  getRoomsLocallyByInspectionId,
+  saveRoomLocally,
+  getItemsLocallyByRoomId,
+  saveItemLocally,
+  getMediaLocallyByItemId,
+  saveMediaLocally,
+  getSignaturesLocallyByInspectionId,
+  saveSignatureLocally,
+  getCompleteInspectionLocally,
+  init: async (db: any) => {
+    console.log('Initializing inspection data service');
+    return true;
+  }
+};

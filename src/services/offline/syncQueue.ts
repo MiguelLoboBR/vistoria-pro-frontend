@@ -150,3 +150,13 @@ const syncSignature = async (action: SyncAction): Promise<void> => {
     await inspectionService.createSignature(action.data);
   }
 };
+
+// Create a syncQueue object to export
+export const syncQueue = {
+  addToSyncQueue,
+  processSyncQueue,
+  init: async (db: any) => {
+    console.log('Initializing sync queue service');
+    return true;
+  }
+};
