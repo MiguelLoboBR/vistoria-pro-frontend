@@ -155,3 +155,5 @@ const offlineService = {
 };
 
 export { offlineService, initializeDB, networkStatusService };
+export { inspectionDataService };
+ 

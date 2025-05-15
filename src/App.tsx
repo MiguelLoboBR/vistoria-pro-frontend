@@ -25,21 +25,23 @@ import InspectionList from "./pages/inspector/InspectionList";
 import InspectionExecute from "./pages/inspector/InspectionExecute";
 import InstallPWA from "./pages/InstallPWA";
 import { USER_ROLES } from "@/services/authService/types";
+import { AuthProvider } from "./contexts/AuthContext";
 
 function App() {
   return (
+    <AuthProvider>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/landing" element={<Landing />} />
         <Route path="/install-pwa" element={<InstallPWA />} />
-        
+
         {/* Auth Routes - Fixed paths */}
         <Route path="/login" element={<Login role={USER_ROLES.ADMIN_TENANT} />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/inspector/login" element={<InspectorLogin />} />
         <Route path="/register" element={<Register />} />
         <Route path="/register/success" element={<RegisterSuccess />} />
-        
+
         {/* Admin Routes */}
         <Route path="/admin" element={<AuthGuard requiredRole="admin_tenant"><Outlet /></AuthGuard>}>
           <Route path="dashboard" element={<Dashboard />} />
@@ -49,7 +51,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="company-profile" element={<CompanyProfile />} />
         </Route>
-        
+
         {/* Inspector Routes */}
         <Route path="/inspector" element={<AuthGuard requiredRole="inspector"><Outlet /></AuthGuard>}>
           <Route path="dashboard" element={<Dashboard />} />
@@ -60,17 +62,18 @@ function App() {
           <Route path="history" element={<InspectionList />} />
           <Route path="profile" element={<Profile />} />
         </Route>
-        
+
         {/* Company Setup */}
         <Route path="/setup/company" element={
           <AuthGuard>
             <CompanySetup />
           </AuthGuard>
         } />
-        
+
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+    </AuthProvider>
   );
 }
 
