@@ -23,6 +23,7 @@ import NotFound from "./pages/NotFound";
 import Inspection from "./pages/inspector/Inspection";
 import InspectionList from "./pages/inspector/InspectionList";
 import InspectionExecute from "./pages/inspector/InspectionExecute";
+import { USER_ROLES } from "@/services/authService/types";
 
 function App() {
   return (
@@ -31,7 +32,7 @@ function App() {
         <Route path="/landing" element={<Landing />} />
         
         {/* Auth Routes */}
-        <Route path="/auth/login" element={<Login />} />
+        <Route path="/auth/login" element={<Login role={USER_ROLES.ADMIN_TENANT} />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/inspector/login" element={<InspectorLogin />} />
         <Route path="/auth/register" element={<Register />} />
