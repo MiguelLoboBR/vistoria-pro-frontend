@@ -1,18 +1,8 @@
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useSessionManager } from "./useSessionManager";
 import { useProfileFetcher } from "./useProfileFetcher";
 
 export function useAuthProvider() {
-  const navigateFromRouter = useNavigate(); // ✅ chamada correta de hook no topo
-  const [navigate, setNavigate] = useState<(path: string) => void>(() => () => {});
-
-  useEffect(() => {
-    // Agora já é seguro usar navigateFromRouter dentro do useEffect
-    setNavigate(() => navigateFromRouter);
-  }, [navigateFromRouter]);
-
   const {
     user,
     setUser,
@@ -50,6 +40,5 @@ export function useAuthProvider() {
     session,
     refreshUserProfile: handleRefreshUserProfile,
     fetchUserProfile: handleFetchUserProfile,
-    navigate,
   };
 }
