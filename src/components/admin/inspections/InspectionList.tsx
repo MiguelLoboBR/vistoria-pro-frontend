@@ -1,9 +1,9 @@
-
 import React from "react";
 import { StatusBadge } from "./StatusBadge";
-import { formatDateTime } from "@/utils/dateUtils";
+import { formatDate } from "@/utils/dateUtils";
 import { Inspection } from "@/services/inspectionService";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface InspectionListProps {
   inspections: Inspection[];
@@ -63,7 +63,7 @@ export const InspectionList = ({
               </div>
               <div className="text-sm text-gray-500">{vistoria.address}</div>
               <div className="md:hidden text-xs text-gray-500 flex items-center gap-1 mt-1">
-                <span>{formatDateTime(vistoria.date, vistoria.time)}</span>
+                <span>{formatDate(vistoria.date)}</span>
               </div>
               <div className="md:hidden mt-2">
                 <StatusBadge status={vistoria.status} />
@@ -71,7 +71,7 @@ export const InspectionList = ({
               <div className="md:hidden text-xs text-gray-500 mt-1">{vistoria.inspector_name || "Não atribuído"}</div>
             </div>
             <div className="hidden md:flex md:items-center text-sm">
-              {formatDateTime(vistoria.date, vistoria.time)}
+              {formatDate(vistoria.date)}
             </div>
             <div className="hidden md:flex md:items-center text-sm">
               {vistoria.inspector_name || "Não atribuído"}

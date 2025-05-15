@@ -1,6 +1,6 @@
-
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import InspectorLayout from "@/components/layouts/InspectorLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -17,6 +17,7 @@ import { FloatingActions } from "@/components/inspection/FloatingActions";
 import { QRCodeScanner } from "@/components/inspection/QRCodeScanner";
 import { InspectionLoadingState } from "@/components/inspection/InspectionLoadingState";
 import { InspectionNotFound } from "@/components/inspection/InspectionNotFound";
+import { ReportGenerator } from "@/components/inspection/ReportGenerator";
 
 export const InspectionExecute = () => {
   const { id } = useParams<{ id: string }>();

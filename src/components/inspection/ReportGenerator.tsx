@@ -1,32 +1,56 @@
+
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { FileText } from "lucide-react";
-import { Inspection, InspectionRoom } from "@/services/inspectionService/types";
+import { Inspection, InspectionRoom } from '@/services/inspectionService/types';
 
 export interface ReportGeneratorProps {
   inspection: Inspection;
   rooms: InspectionRoom[];
-  inspectorSignature: string | null;
-  responsibleSignature: string | null;
+  inspectorSignature: string;
+  responsibleSignature: string;
   responsibleName: string;
 }
 
-export function ReportGenerator({
-  inspection,
-  rooms,
-  inspectorSignature,
+export const ReportGenerator = ({ 
+  inspection, 
+  rooms, 
+  inspectorSignature, 
   responsibleSignature,
-  responsibleName,
-}: ReportGeneratorProps) {
+  responsibleName 
+}: ReportGeneratorProps) => {
+  const [isGenerating, setIsGenerating] = useState(false);
+  
   const handleGenerateReport = async () => {
-    // Implementation details for report generation
+    setIsGenerating(true);
+    
+    try {
+      // Implement report generation logic
+      console.log("Generating report with data:", { 
+        inspection, 
+        rooms, 
+        inspectorSignature, 
+        responsibleSignature,
+        responsibleName 
+      });
+      
+      // Simulate report generation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      console.log("Report generated successfully!");
+    } catch (error) {
+      console.error("Error generating report:", error);
+    } finally {
+      setIsGenerating(false);
+    }
   };
-
+  
   return (
-    <div className="text-center">
-      <Button onClick={handleGenerateReport} className="gap-2">
-        <FileText className="h-4 w-4" />
-        Gerar Relatório PDF
-      </Button>
-    </div>
+    <Button 
+      onClick={handleGenerateReport} 
+      className="w-full" 
+      disabled={isGenerating}
+    >
+      {isGenerating ? "Gerando..." : "Gerar Relatório"}
+    </Button>
   );
-}
+};

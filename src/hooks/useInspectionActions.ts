@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { inspectionService } from "@/services/inspectionService";
-import { offlineService } from "@/services/offlineService";
+import { offlineService } from "@/services/offline";
 import { Inspection, InspectionRoom, InspectionItem } from "@/services/inspectionService/types";
 
 export const useInspectionActions = (
