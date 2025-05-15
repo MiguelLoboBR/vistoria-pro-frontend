@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { UserProfile, Company } from "@/contexts/types";
 
 export function useProfileFetcher() {
+  // Function to fetch user profile by ID
   const fetchUserProfile = async (userId: string) => {
     let profile: UserProfile | null = null;
     let company: Company | null = null;
@@ -46,5 +47,10 @@ export function useProfileFetcher() {
     }
   };
 
-  return { fetchUserProfile };
+  // Function to refresh user profile (basically an alias to fetchUserProfile)
+  const refreshUserProfile = async (userId: string) => {
+    return await fetchUserProfile(userId);
+  };
+
+  return { fetchUserProfile, refreshUserProfile };
 }

@@ -22,7 +22,7 @@ export function useAuthProvider() {
   const handleRefreshUserProfile = async () => {
     if (!session?.user?.id) return;
     
-    const { profile, company: fetchedCompany } = await refreshUserProfile(session.user.id, session);
+    const { profile, company: fetchedCompany } = await refreshUserProfile(session.user.id);
     
     if (profile) {
       setUser(profile);
@@ -35,7 +35,7 @@ export function useAuthProvider() {
 
   // Wrapper for fetchUserProfile that updates state
   const handleFetchUserProfile = async (userId: string) => {
-    const { profile, company: fetchedCompany } = await fetchUserProfile(userId, session);
+    const { profile, company: fetchedCompany } = await fetchUserProfile(userId);
     
     if (profile) {
       setUser(profile);
