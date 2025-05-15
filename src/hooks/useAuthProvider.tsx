@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useSessionManager } from "./useSessionManager";
 import { useProfileFetcher } from "./useProfileFetcher";
+import { useNavigate } from "react-router-dom";
 
 export function useAuthProvider() {
-  // Estado seguro para navegação
   const [navigate, setNavigate] = useState<(path: string) => void>(() => () => {});
 
   useEffect(() => {
@@ -12,7 +11,7 @@ export function useAuthProvider() {
       const nav = useNavigate();
       setNavigate(() => nav);
     } catch {
-      console.warn("useNavigate falhou — fallback para window.location");
+      console.warn("❗ useNavigate() falhou: usando fallback para window.location");
       setNavigate(() => (path: string) => {
         if (path) window.location.href = path;
       });
