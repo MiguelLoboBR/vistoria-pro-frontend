@@ -55,3 +55,7 @@ export const formatTime = (timeString: string | null): string => {
     return "--:--";
   }
 };
+
+export const formatDateTime = (dateString: string, timeString: string | null): string => {
+  return `${formatDate(dateString)} ${formatTime(timeString)}`;
+};

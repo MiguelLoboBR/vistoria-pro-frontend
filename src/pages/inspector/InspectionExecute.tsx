@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import InspectorLayout from "@/components/layouts/InspectorLayout";
@@ -139,10 +138,10 @@ export const InspectionExecute = () => {
       // If no rooms exist, create default rooms
       if (roomsData.length === 0) {
         const defaultRooms = [
-          { name: "Sala", inspection_id: inspectionId, order_index: 0 },
-          { name: "Cozinha", inspection_id: inspectionId, order_index: 1 },
-          { name: "Quarto", inspection_id: inspectionId, order_index: 2 },
-          { name: "Banheiro", inspection_id: inspectionId, order_index: 3 },
+          { name: "Sala", inspection_id: inspectionId, order_index: 0, id: "", created_at: new Date().toISOString() },
+          { name: "Cozinha", inspection_id: inspectionId, order_index: 1, id: "", created_at: new Date().toISOString() },
+          { name: "Quarto", inspection_id: inspectionId, order_index: 2, id: "", created_at: new Date().toISOString() },
+          { name: "Banheiro", inspection_id: inspectionId, order_index: 3, id: "", created_at: new Date().toISOString() },
         ];
         
         const createdRooms = await Promise.all(
@@ -155,11 +154,11 @@ export const InspectionExecute = () => {
             if (!room) return null;
             
             const defaultItems = [
-              { label: "Paredes", room_id: room.id, state: null, observation: null, transcription: null },
-              { label: "Piso", room_id: room.id, state: null, observation: null, transcription: null },
-              { label: "Teto", room_id: room.id, state: null, observation: null, transcription: null },
-              { label: "Portas", room_id: room.id, state: null, observation: null, transcription: null },
-              { label: "Janelas", room_id: room.id, state: null, observation: null, transcription: null },
+              { label: "Paredes", room_id: room.id, state: null, observation: null, transcription: null, id: "", created_at: new Date().toISOString() },
+              { label: "Piso", room_id: room.id, state: null, observation: null, transcription: null, id: "", created_at: new Date().toISOString() },
+              { label: "Teto", room_id: room.id, state: null, observation: null, transcription: null, id: "", created_at: new Date().toISOString() },
+              { label: "Portas", room_id: room.id, state: null, observation: null, transcription: null, id: "", created_at: new Date().toISOString() },
+              { label: "Janelas", room_id: room.id, state: null, observation: null, transcription: null, id: "", created_at: new Date().toISOString() },
             ];
             
             await Promise.all(defaultItems.map(item => 
@@ -313,10 +312,17 @@ export const InspectionExecute = () => {
     if (!inspection) return;
     
     try {
-      const newRoom = {
+      const newRoomBase = {
         name: "Novo Ambiente",
         inspection_id: inspection.id,
         order_index: rooms.length
+      };
+      
+      // Create a properly typed new room object with required fields
+      const newRoom: InspectionRoom = {
+        ...newRoomBase,
+        id: "",
+        created_at: new Date().toISOString()
       };
       
       let roomId: string;
@@ -332,9 +338,9 @@ export const InspectionExecute = () => {
         
         // Create default items for the new room
         const defaultItems = [
-          { label: "Paredes", room_id: roomId, state: null, observation: null, transcription: null },
-          { label: "Piso", room_id: roomId, state: null, observation: null, transcription: null },
-          { label: "Teto", room_id: roomId, state: null, observation: null, transcription: null },
+          { label: "Paredes", room_id: roomId, state: null, observation: null, transcription: null, id: "", created_at: new Date().toISOString() } as InspectionItem,
+          { label: "Piso", room_id: roomId, state: null, observation: null, transcription: null, id: "", created_at: new Date().toISOString() } as InspectionItem,
+          { label: "Teto", room_id: roomId, state: null, observation: null, transcription: null, id: "", created_at: new Date().toISOString() } as InspectionItem,
         ];
         
         await Promise.all(defaultItems.map(item => 
@@ -362,9 +368,9 @@ export const InspectionExecute = () => {
         
         // Create default items locally
         const defaultItems = [
-          { label: "Paredes", room_id: roomId, state: null, observation: null, transcription: null },
-          { label: "Piso", room_id: roomId, state: null, observation: null, transcription: null },
-          { label: "Teto", room_id: roomId, state: null, observation: null, transcription: null },
+          { label: "Paredes", room_id: roomId, state: null, observation: null, transcription: null, id: "", created_at: new Date().toISOString() } as InspectionItem,
+          { label: "Piso", room_id: roomId, state: null, observation: null, transcription: null, id: "", created_at: new Date().toISOString() } as InspectionItem,
+          { label: "Teto", room_id: roomId, state: null, observation: null, transcription: null, id: "", created_at: new Date().toISOString() } as InspectionItem,
         ];
         
         const createdItems = [];
@@ -377,7 +383,7 @@ export const InspectionExecute = () => {
         const newRoomWithItems: InspectionRoom = {
           ...newRoom,
           id: roomId,
-          items: createdItems as InspectionItem[],
+          items: createdItems,
           created_at: new Date().toISOString()
         };
         
@@ -819,7 +825,7 @@ export const InspectionExecute = () => {
                 {/* Report Generator */}
                 <div className="pt-2">
                   <ReportGenerator
-                    inspection={inspection}
+                    inspection={inspection!}
                     rooms={rooms}
                     inspectorSignature={inspectorSignature}
                     responsibleSignature={responsibleSignature}

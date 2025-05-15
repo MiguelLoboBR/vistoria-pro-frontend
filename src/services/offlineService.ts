@@ -279,7 +279,8 @@ const processSyncQueue = async (): Promise<void> => {
   const db = await initDB();
   const tx = db.transaction(STORES.SYNC_QUEUE, 'readonly');
   const index = tx.store.index('is_synced');
-  const unsyncedItems = await index.getAll(false);
+  // Fix: Using false as IDBKeyRange
+  const unsyncedItems = await index.getAll(0); // 0 is falsy, so it will get all non-synced items
   await tx.done;
   
   // Sort by timestamp to process in order
@@ -301,7 +302,7 @@ const syncItem = async (item: SyncQueueItem): Promise<void> => {
       case STORES.ROOMS:
         if (item.action === 'create') {
           const { id, is_synced, ...roomData } = item.data;
-          const newId = await inspectionService.createRoom(roomData);
+          const newId = await inspectionService.createRoom(item.data);
           await updateSyncedItem(item.id, true);
           await updateLocalItemId(STORES.ROOMS, id, newId);
         } else if (item.action === 'update') {
@@ -318,7 +319,7 @@ const syncItem = async (item: SyncQueueItem): Promise<void> => {
       case STORES.ITEMS:
         if (item.action === 'create') {
           const { id, is_synced, ...itemData } = item.data;
-          const newId = await inspectionService.createItem(itemData);
+          const newId = await inspectionService.createItem(item.data);
           await updateSyncedItem(item.id, true);
           await updateLocalItemId(STORES.ITEMS, id, newId);
         } else if (item.action === 'update') {
@@ -357,7 +358,7 @@ const syncItem = async (item: SyncQueueItem): Promise<void> => {
             }
           }
           
-          const newId = await inspectionService.createMedia(mediaData);
+          const newId = await inspectionService.createMedia(item.data);
           await updateSyncedItem(item.id, true);
           await updateLocalItemId(STORES.MEDIAS, id, newId);
           
@@ -376,7 +377,7 @@ const syncItem = async (item: SyncQueueItem): Promise<void> => {
       case STORES.SIGNATURES:
         if (item.action === 'create') {
           const { id, is_synced, ...signatureData } = item.data;
-          const newId = await inspectionService.createSignature(signatureData);
+          const newId = await inspectionService.createSignature(item.data);
           await updateSyncedItem(item.id, true);
           await updateLocalItemId(STORES.SIGNATURES, id, newId);
         }
@@ -398,7 +399,7 @@ const updateSyncedItem = async (id: string, synced: boolean): Promise<void> => {
   const item = await tx.store.get(id);
   
   if (item) {
-    item.is_synced = synced;
+    item.is_synced = synced ? 1 : 0; // Use 1/0 for boolean values
     await tx.store.put(item);
   }
   

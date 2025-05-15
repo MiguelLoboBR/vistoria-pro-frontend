@@ -11,7 +11,6 @@ import {
   User,
   LogOut,
   X,
-  Settings,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { cn } from "@/lib/utils";
@@ -74,7 +73,7 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({ children }) => {
       <div className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 bg-white border-r">
         <div className="flex-1 flex flex-col min-h-0 pt-5">
           <div className="flex items-center justify-center h-16">
-            <Logo height={40} />
+            <Logo />
           </div>
           <nav className="flex-1 px-3 mt-6 space-y-1">
             {navigation.map((item) => (
@@ -118,7 +117,7 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({ children }) => {
       <div className="flex flex-col flex-1 md:pl-64">
         <div className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 bg-white border-b md:hidden">
           <div className="flex items-center">
-            <Logo height={30} />
+            <Logo />
           </div>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
@@ -129,7 +128,7 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({ children }) => {
             </SheetTrigger>
             <SheetContent side="left" className="w-[240px] p-0">
               <div className="flex items-center justify-between p-4 border-b">
-                <Logo height={30} />
+                <Logo />
                 <Button
                   variant="ghost"
                   size="icon"
