@@ -59,6 +59,152 @@ export type Database = {
           },
         ]
       }
+      inspection_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          label: string | null
+          observation: string | null
+          room_id: string | null
+          state: string | null
+          transcription: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          label?: string | null
+          observation?: string | null
+          room_id?: string | null
+          state?: string | null
+          transcription?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          label?: string | null
+          observation?: string | null
+          room_id?: string | null
+          state?: string | null
+          transcription?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_items_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "inspection_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspection_medias: {
+        Row: {
+          created_at: string | null
+          edited_url: string | null
+          id: string
+          item_id: string | null
+          latitude: number | null
+          longitude: number | null
+          timestamp: string | null
+          type: string | null
+          url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          edited_url?: string | null
+          id?: string
+          item_id?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          timestamp?: string | null
+          type?: string | null
+          url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          edited_url?: string | null
+          id?: string
+          item_id?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          timestamp?: string | null
+          type?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_medias_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inspection_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspection_rooms: {
+        Row: {
+          created_at: string | null
+          id: string
+          inspection_id: string | null
+          name: string
+          order_index: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          inspection_id?: string | null
+          name: string
+          order_index?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          inspection_id?: string | null
+          name?: string
+          order_index?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_rooms_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspection_signatures: {
+        Row: {
+          created_at: string | null
+          id: string
+          inspection_id: string | null
+          signature_data: string | null
+          signer: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          inspection_id?: string | null
+          signature_data?: string | null
+          signer?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          inspection_id?: string | null
+          signature_data?: string | null
+          signer?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_signatures_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspections: {
         Row: {
           address: string
