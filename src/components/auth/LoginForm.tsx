@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useLoginForm } from "@/hooks/useLoginForm";
 import { UserRole } from "@/services/authService/types";
 import { supabase } from "@/integrations/supabase/client";
+import { loginAndRedirect } from "@/services/loginFlow";
 
 interface LoginFormProps {
   role: UserRole;
@@ -26,38 +27,15 @@ export const LoginForm = ({ role }: LoginFormProps) => {
     onSubmit
   } = useLoginForm({
     role,
-    onSuccess: async () => {
-      try {
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        if (userError || !userData.user) {
-          throw new Error("Erro ao obter usuário autenticado");
-        }
-
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", userData.user.id)
-          .single();
-
-        if (profileError || !profile?.role) {
-          throw new Error("Erro ao buscar perfil do usuário");
-        }
-
-        const role = profile.role;
-
-        if (role === "admin_tenant" || role === "admin_master") {
-          navigate("/admin/dashboard", { replace: true });
-        } else if (role === "inspector") {
-          navigate("/inspector/dashboard", { replace: true });
-        } else {
-          throw new Error(`Papel desconhecido: ${role}`);
-        }
-      } catch (err: any) {
-        toast.error("Erro ao redirecionar", {
-          description: err.message || "Não foi possível determinar o destino"
-        });
-      }
-    },
+ onSuccess: async () => {
+  try {
+    await loginAndRedirect((path, options) => navigate(path, options));
+  } catch (err: any) {
+    toast.error("Erro ao redirecionar", {
+      description: err.message || "Erro inesperado ao redirecionar Contate o Suporte"
+    });
+  }
+},
     onError: (error) => {
       if (error.message.includes("Email not confirmed")) {
         setResendEmail(form.getValues("email"));
