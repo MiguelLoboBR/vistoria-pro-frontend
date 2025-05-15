@@ -26,7 +26,17 @@ export const useAuth = () => {
     const context = useContext(AuthContext);
     if (context === undefined) {
       console.warn("useAuth must be used within an AuthProvider");
-      return null;
+      return {
+        user: null,
+        company: null,
+        isAuthenticated: false,
+        isLoading: false,
+        session: null,
+        signIn: async () => ({ error: new Error("Auth context not available") }),
+        signUp: async () => ({ error: new Error("Auth context not available") }),
+        signOut: async () => { console.warn("Auth context not available"); },
+        refreshUserProfile: async () => { console.warn("Auth context not available"); }
+      } as AuthContextType;
     }
     return context;
   } catch (error) {

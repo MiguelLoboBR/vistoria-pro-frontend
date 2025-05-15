@@ -4,16 +4,14 @@ import { useSessionManager } from "./useSessionManager";
 import { useProfileFetcher } from "./useProfileFetcher";
 
 export function useAuthProvider() {
-  // This hook must be used within a Router context (BrowserRouter in main.tsx)
   // Creating a safe navigation function that checks if we're in a Router context
   let navigate;
   try {
     navigate = useNavigate();
   } catch (error) {
-    // If useNavigate fails, provide a dummy function
-    console.warn("useAuthProvider: useNavigate hook failed, navigation might not work");
+    console.warn("useAuthProvider: Router context not found, navigation will be handled via window.location");
     navigate = (path: string) => {
-      console.warn(`Navigation to ${path} attempted but Router context is not available`);
+      console.warn(`Navigation to ${path} attempted without Router context`);
       // Use window.location as a fallback if absolutely necessary
       if (path) {
         window.location.href = path;
