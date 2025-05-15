@@ -151,7 +151,7 @@ const syncSignature = async (action: SyncAction): Promise<void> => {
   }
 };
 
-// Create a syncQueue object to export
+// Create and properly export the syncQueue object
 export const syncQueue = {
   addToSyncQueue,
   processSyncQueue,
