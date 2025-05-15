@@ -1,4 +1,3 @@
-
 import {
   Route,
   Routes,
@@ -8,8 +7,6 @@ import AuthGuard from "./components/auth/AuthGuard";
 import Index from "./pages/Index";
 import Landing from "./pages/landing/Landing";
 import Login from "./pages/auth/Login";
-import AdminLogin from "./pages/auth/AdminLogin";
-import InspectorLogin from "./pages/auth/InspectorLogin";
 import Register from "./pages/auth/Register";
 import RegisterSuccess from "./pages/auth/RegisterSuccess";
 import Dashboard from "./pages/admin/Dashboard";
@@ -24,7 +21,6 @@ import Inspection from "./pages/inspector/Inspection";
 import InspectionList from "./pages/inspector/InspectionList";
 import InspectionExecute from "./pages/inspector/InspectionExecute";
 import InstallPWA from "./pages/InstallPWA";
-import { USER_ROLES } from "@/services/authService/types";
 
 function App() {
   return (
@@ -33,10 +29,8 @@ function App() {
       <Route path="/landing" element={<Landing />} />
       <Route path="/install-pwa" element={<InstallPWA />} />
 
-      {/* Auth Routes - Fixed paths */}
-      <Route path="/login" element={<Login role={USER_ROLES.ADMIN_TENANT} />} />
-      <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/inspector/login" element={<InspectorLogin />} />
+      {/* Auth Routes */}
+      <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/register/success" element={<RegisterSuccess />} />
 
