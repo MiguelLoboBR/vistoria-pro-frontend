@@ -24,10 +24,10 @@ export const InspectorLayout = ({ children }: InspectorLayoutProps) => {
   const { user, signOut } = useAuth();
   
   const navItems: NavItem[] = [
-    { title: "Início", icon: <Home size={20} />, path: "/app/inspector/dashboard", active: true },
-    { title: "Agenda", icon: <Calendar size={20} />, path: "/app/inspector/schedule" },
-    { title: "Histórico", icon: <FileText size={20} />, path: "/app/inspector/history" },
-    { title: "Perfil", icon: <Settings size={20} />, path: "/app/inspector/profile" },
+    { title: "Início", icon: <Home size={20} />, path: "/inspector/dashboard", active: true },
+    { title: "Agenda", icon: <Calendar size={20} />, path: "/inspector/schedule" },
+    { title: "Histórico", icon: <FileText size={20} />, path: "/inspector/history" },
+    { title: "Perfil", icon: <Settings size={20} />, path: "/inspector/profile" },
   ];
 
   const handleLogout = async () => {

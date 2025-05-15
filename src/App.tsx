@@ -34,15 +34,18 @@ import UnderConstruction from "./pages/admin/UnderConstruction";
 import InspectorDashboard from "./pages/inspector/Dashboard";
 import InspectorInspection from "./pages/inspector/Inspection";
 import InspectorProfile from "./pages/inspector/Profile";
+import AdminLogin from "./pages/auth/AdminLogin";
+import InspectorLogin from "./pages/auth/InspectorLogin";
 
 const queryClient = new QueryClient();
 
 const AppRoutes = () => (
   <Routes>
     {/* Public Routes */}
-    <Route path="/" element={<Landing />} />
-    <Route path="/login" element={<Login role="admin_tenant" />} />
-    <Route path="/login/inspector" element={<Login role="inspector" />} />
+    <Route path="/" element={<Navigate to="/landing" replace />} />
+    <Route path="/landing" element={<Landing />} />
+    <Route path="/login" element={<AdminLogin />} />
+    <Route path="/login/inspector" element={<InspectorLogin />} />
     <Route path="/register" element={<Register />} />
     <Route path="/register/success" element={<RegisterSuccess />} />
     
@@ -115,6 +118,18 @@ const AppRoutes = () => (
     <Route path="/inspector/profile" element={
       <AuthGuard requiredRole="inspector">
         <InspectorProfile />
+      </AuthGuard>
+    } />
+    
+    {/* Add the missing inspector routes */}
+    <Route path="/inspector/schedule" element={
+      <AuthGuard requiredRole="inspector">
+        <UnderConstruction pageName="Agenda" />
+      </AuthGuard>
+    } />
+    <Route path="/inspector/history" element={
+      <AuthGuard requiredRole="inspector">
+        <UnderConstruction pageName="Histórico" />
       </AuthGuard>
     } />
     
