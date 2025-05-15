@@ -1,52 +1,31 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LoginForm } from "@/components/auth/LoginForm";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import LoginForm from "@/components/auth/LoginForm";
+import { loginAndRedirect } from "@/services/loginFlow";
 
 const InspectorLogin = () => {
-  const { session, isLoading, user } = useAuth();
   const navigate = useNavigate();
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    const checkAuthentication = async () => {
-      setCheckingSession(true);
-
+    const checkSession = async () => {
       try {
         const { data } = await supabase.auth.getSession();
-        const currentSession = data.session;
-
-        if (currentSession) {
-          const userRole = user?.role || currentSession.user.user_metadata?.role;
-
-          if (userRole === "inspector") {
-            navigate("/inspector/dashboard", { replace: true });
-          } else if (userRole === "admin_tenant" || userRole === "admin_master") {
-            navigate("/admin/dashboard", { replace: true });
-          }
-          return;
+        if (data.session) {
+          await loginAndRedirect((path, options) => navigate(path, options));
         }
-
-        // fallback para contexto
-        if (session && !isLoading) {
-          if (user?.role === "inspector") {
-            navigate("/inspector/dashboard", { replace: true });
-          } else if (user?.role === "admin_tenant" || user?.role === "admin_master") {
-            navigate("/admin/dashboard", { replace: true });
-          }
-        }
-      } catch (error) {
-        console.error("InspectorLogin: erro ao verificar sessão", error);
+      } catch (err: any) {
+        console.error("Erro ao verificar sessão:", err.message);
       } finally {
         setCheckingSession(false);
       }
     };
 
-    checkAuthentication();
-  }, [session, isLoading, navigate, user]);
+    checkSession();
+  }, [navigate]);
 
-  if (isLoading || checkingSession) {
+  if (checkingSession) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
