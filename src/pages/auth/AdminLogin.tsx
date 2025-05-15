@@ -25,14 +25,14 @@ export const AdminLogin = () => {
         // Se temos uma sessão ativa, redirecionar para o dashboard apropriado
         if (data.session) {
           console.log("AdminLogin: Usuário autenticado, redirecionando para o dashboard do admin");
-          window.location.href = "/admin/tenant/dashboard";
+          navigate("/admin/dashboard", { replace: true });
           return;
         }
         
         // Usar o contexto de autenticação como fallback
         if (session && !isLoading) {
           console.log("AdminLogin: Usuário autenticado via contexto, redirecionando...");
-          navigate("/admin/tenant/dashboard");
+          navigate("/admin/dashboard", { replace: true });
         }
       } catch (error) {
         console.error("AdminLogin: Erro ao verificar autenticação:", error);

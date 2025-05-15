@@ -28,10 +28,10 @@ export const LoginForm = ({ role }: LoginFormProps) => {
     role,
     onSuccess: () => {
       // Redirect to appropriate dashboard
-      if (role === "admin_tenant") {
-        navigate("/admin/dashboard");
+      if (role === "admin_tenant" || role === "admin_master") {
+        navigate("/admin/dashboard", { replace: true });
       } else {
-        navigate("/inspector/dashboard");
+        navigate("/inspector/dashboard", { replace: true });
       }
     },
     onError: (error) => {

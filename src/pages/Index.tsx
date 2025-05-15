@@ -1,22 +1,9 @@
 
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import RegisterLogo from '@/components/auth/RegisterLogo';
+import { Navigate } from 'react-router-dom';
 
 const Index = () => {
-  const navigate = useNavigate();
-  
-  useEffect(() => {
-    navigate('/landing', { replace: true });
-  }, [navigate]);
-
-  // Componente de carregamento enquanto o redirecionamento acontece
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-      <RegisterLogo size="lg" className="mb-6" />
-      <div className="text-gray-500">Carregando...</div>
-    </div>
-  );
+  // Use Navigate component for immediate redirection without loading state
+  return <Navigate to="/landing" replace />;
 };
 
 export default Index;

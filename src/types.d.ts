@@ -2,7 +2,7 @@
 // Types for use-toast and Login components
 
 export interface LoginProps {
-  role?: "admin" | "inspector" | string;
+  role?: "admin_tenant" | "admin_master" | "inspector" | string;
 }
 
 export interface ToastProps {

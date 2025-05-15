@@ -17,7 +17,7 @@ export const signIn = async (email: string, password: string) => {
     
     console.log("User role:", role);
     
-    if (role === "admin") {
+    if (role.includes("admin")) {
       window.location.href = "/admin/dashboard";
     } else {
       window.location.href = "/inspector/dashboard";

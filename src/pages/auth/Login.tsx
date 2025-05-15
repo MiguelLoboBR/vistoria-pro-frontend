@@ -1,10 +1,11 @@
+
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "@/components/Logo";
 import LoginForm from "@/components/auth/LoginForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { USER_ROLES, UserRole } from "@/services/authService/types"; // Import from services/authService/types
+import { USER_ROLES, UserRole } from "@/services/authService/types";
 
 interface LoginProps {
   role: UserRole;
@@ -30,7 +31,7 @@ const Login = ({ role = USER_ROLES.ADMIN_TENANT }: LoginProps) => {
           // If we have an active session, redirect to the appropriate dashboard
           const redirectPath = isInspector ? "/inspector/dashboard" : "/admin/dashboard";
           console.log(`Login: User authenticated, redirecting to ${redirectPath}`);
-          window.location.href = redirectPath;
+          navigate(redirectPath, { replace: true });
           return;
         }
         
@@ -38,7 +39,7 @@ const Login = ({ role = USER_ROLES.ADMIN_TENANT }: LoginProps) => {
         if (session && !isLoading) {
           console.log("Login: User authenticated via context, redirecting...");
           const redirectPath = isInspector ? "/inspector/dashboard" : "/admin/dashboard";
-          navigate(redirectPath);
+          navigate(redirectPath, { replace: true });
         }
       } catch (error) {
         console.error("Login: Error checking authentication:", error);

@@ -4,7 +4,7 @@ import {
   Routes,
   Outlet,
 } from "react-router-dom";
-import { AuthGuard } from "./components/AuthGuard";
+import AuthGuard from "./components/auth/AuthGuard";
 import Index from "./pages/Index";
 import Landing from "./pages/landing/Landing";
 import Login from "./pages/auth/Login";
@@ -31,15 +31,15 @@ function App() {
         <Route path="/" element={<Index />} />
         <Route path="/landing" element={<Landing />} />
         
-        {/* Auth Routes */}
-        <Route path="/auth/login" element={<Login role={USER_ROLES.ADMIN_TENANT} />} />
+        {/* Auth Routes - Fixed paths */}
+        <Route path="/login" element={<Login role={USER_ROLES.ADMIN_TENANT} />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/inspector/login" element={<InspectorLogin />} />
-        <Route path="/auth/register" element={<Register />} />
-        <Route path="/auth/register/success" element={<RegisterSuccess />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/register/success" element={<RegisterSuccess />} />
         
         {/* Admin Routes */}
-        <Route path="/admin/*" element={<AuthGuard requiredRole="admin"><Outlet /></AuthGuard>}>
+        <Route path="/admin" element={<AuthGuard requiredRole="admin_tenant"><Outlet /></AuthGuard>}>
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="vistorias" element={<Vistorias />} />
           <Route path="inspections" element={<Inspections />} />
@@ -48,8 +48,8 @@ function App() {
           <Route path="company-profile" element={<CompanyProfile />} />
         </Route>
         
-        {/* Inspector Routes */}
-        <Route path="/app/inspector/*" element={<AuthGuard requiredRole="inspector"><Outlet /></AuthGuard>}>
+        {/* Inspector Routes - Fixed path from /app/inspector to /inspector */}
+        <Route path="/inspector" element={<AuthGuard requiredRole="inspector"><Outlet /></AuthGuard>}>
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="inspection/:id" element={<Inspection />} />
           <Route path="execute/:id" element={<InspectionExecute />} />
@@ -59,8 +59,8 @@ function App() {
           <Route path="profile" element={<Profile />} />
         </Route>
         
-        {/* Company Setup */}
-        <Route path="/company-setup" element={
+        {/* Company Setup - Fixed path */}
+        <Route path="/setup/company" element={
           <AuthGuard>
             <CompanySetup />
           </AuthGuard>
