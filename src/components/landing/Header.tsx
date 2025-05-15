@@ -9,8 +9,22 @@ import { Menu, X } from "lucide-react";
 export const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  
+  // Use optional chaining with the auth context in case it's not available
+  const auth = useAuth();
+  const isAuthenticated = auth?.isAuthenticated || false;
+  const user = auth?.user || null;
+  
+  // Create safe navigation function
+  let navigate;
+  try {
+    navigate = useNavigate();
+  } catch (error) {
+    console.warn("Header: Router context not available");
+    navigate = (path: string) => {
+      window.location.href = path;
+    };
+  }
 
   useEffect(() => {
     const handleScroll = () => {

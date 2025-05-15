@@ -22,51 +22,60 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Export the useAuth hook that will be used in components to access the context
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+  try {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+      console.warn("useAuth must be used within an AuthProvider");
+      return null;
+    }
+    return context;
+  } catch (error) {
+    console.error("Error in useAuth:", error);
+    return null;
   }
-  return context;
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const {
-    user,
-    company,
-    isAuthenticated,
-    isLoading,
-    session,
-    setUser,
-    setCompany,
-    fetchUserProfile
-  } = useAuthProvider();
-  
-  const {
-    signIn,
-    signUp,
-    signOut,
-    refreshUserProfile: refreshUserProfileHook
-  } = useAuthMethods();
-  
-  const refreshUserProfile = async () => {
-    await refreshUserProfileHook();
-  };
-  
-  const value: AuthContextType = {
-    user,
-    company,
-    isAuthenticated,
-    isLoading,
-    session,
-    signIn,
-    signUp,
-    signOut,
-    refreshUserProfile
-  };
-  
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  try {
+    const {
+      user,
+      company,
+      isAuthenticated,
+      isLoading,
+      session,
+      fetchUserProfile
+    } = useAuthProvider();
+    
+    const {
+      signIn,
+      signUp,
+      signOut,
+      refreshUserProfile: refreshUserProfileHook
+    } = useAuthMethods();
+    
+    const refreshUserProfile = async () => {
+      await refreshUserProfileHook();
+    };
+    
+    const value: AuthContextType = {
+      user,
+      company,
+      isAuthenticated,
+      isLoading,
+      session,
+      signIn,
+      signUp,
+      signOut,
+      refreshUserProfile
+    };
+    
+    return (
+      <AuthContext.Provider value={value}>
+        {children}
+      </AuthContext.Provider>
+    );
+  } catch (error) {
+    console.error("Error rendering AuthProvider:", error);
+    return <>{children}</>; // Fallback to render children without context
+  }
 };

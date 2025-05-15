@@ -5,7 +5,22 @@ import { useProfileFetcher } from "./useProfileFetcher";
 
 export function useAuthProvider() {
   // This hook must be used within a Router context (BrowserRouter in main.tsx)
-  const navigate = useNavigate();
+  // Creating a safe navigation function that checks if we're in a Router context
+  let navigate;
+  try {
+    navigate = useNavigate();
+  } catch (error) {
+    // If useNavigate fails, provide a dummy function
+    console.warn("useAuthProvider: useNavigate hook failed, navigation might not work");
+    navigate = (path: string) => {
+      console.warn(`Navigation to ${path} attempted but Router context is not available`);
+      // Use window.location as a fallback if absolutely necessary
+      if (path) {
+        window.location.href = path;
+      }
+    };
+  }
+  
   const { 
     user, 
     setUser, 
@@ -57,6 +72,7 @@ export function useAuthProvider() {
     setIsLoading,
     session,
     refreshUserProfile: handleRefreshUserProfile,
-    fetchUserProfile: handleFetchUserProfile
+    fetchUserProfile: handleFetchUserProfile,
+    navigate
   };
 }
