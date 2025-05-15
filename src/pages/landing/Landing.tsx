@@ -1,4 +1,3 @@
-
 import { useSmoothScrolling } from "@/components/landing/SmoothScrolling";
 import Header from "@/components/landing/Header";
 import HeroSection from "@/components/landing/HeroSection";
@@ -10,35 +9,26 @@ import FooterSection from "@/components/landing/FooterSection";
 import PWAInstallButton from "@/components/landing/PWAInstallButton";
 
 export const Landing = () => {
-  // Enable smooth scrolling for anchor links
-  useSmoothScrolling();
+  useSmoothScrolling(); // Ativa rolagem suave para âncoras
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header/Navigation */}
+    <>
       <Header />
-      
-      {/* Hero Section */}
-      <HeroSection />
-      
-      {/* Features Section */}
-      <FeaturesSection />
-      
-      {/* How It Works */}
-      <HowItWorksSection />
 
-      {/* Testimonials Section */}
-      <TestimonialsSection />
-      
-      {/* CTA Section */}
-      <CTASection />
-      
-      {/* Footer */}
-      <FooterSection />
+      <main className="flex-1">
+        <HeroSection />
+        <FeaturesSection />
+        <HowItWorksSection />
+        <TestimonialsSection />
+        <CTASection />
+      </main>
 
-      {/* PWA Install Button (fixed position) */}
+      <footer>
+        <FooterSection />
+      </footer>
+
       <PWAInstallButton />
-    </div>
+    </>
   );
 };
 
