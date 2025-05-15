@@ -24,3 +24,7 @@ export interface UserProfile {
   cpf?: string;
   phone?: string;
 }
+
+export interface Inspector extends UserProfile {
+  // Inspectors are just user profiles with the role "inspector"
+}

@@ -1,22 +1,27 @@
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { UserProfile } from "@/services/types";
-import { InspectorFormValues } from "@/components/admin/inspectors/InspectorForm";
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { UserProfile } from '@/services/types';
+import { useAuth } from '@/hooks/useAuth';
 
-export const useInspectors = (companyId?: string) => {
-  const queryClient = useQueryClient();
-  
-  // Query to fetch inspectors
-  const inspectorsQuery = useQuery({
-    queryKey: ['inspectors', companyId],
-    queryFn: async () => {
-      if (!companyId) {
-        return [];
-      }
-      
+export type InspectorFormValues = {
+  fullName: string;
+  email: string;
+  password: string;
+};
+
+export function useInspectors(companyId: string | undefined) {
+  const [inspectors, setInspectors] = useState<UserProfile[]>([]);
+  const [isLoadingInspectors, setIsLoadingInspectors] = useState(false);
+  const [isCreatingInspector, setIsCreatingInspector] = useState(false);
+  const { registerInspector } = useAuth();
+
+  const fetchInspectors = async () => {
+    if (!companyId) return;
+    
+    setIsLoadingInspectors(true);
+    try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -24,69 +29,77 @@ export const useInspectors = (companyId?: string) => {
         .eq('role', 'inspector');
       
       if (error) {
-        throw new Error(error.message);
+        throw error;
       }
       
-      return data as UserProfile[];
-    },
-    enabled: !!companyId
-  });
-  
-  // Mutation to create inspector
-  const createInspectorMutation = useMutation({
-    mutationFn: async (values: InspectorFormValues) => {
-      if (!companyId) {
-        throw new Error("Company ID not found");
-      }
-      
-      const { data, error } = await supabase.functions.invoke('add_inspector_to_company', {
-        body: {
-          company_id: companyId,
-          email: values.email,
-          password: values.password,
-          full_name: values.fullName
-        }
-      });
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inspectors', companyId] });
-      toast.success("Inspetor criado com sucesso!");
-    },
-    onError: (error: any) => {
-      toast.error("Erro ao criar inspetor", {
-        description: error.message
-      });
-    },
-  });
-  
-  // Function to delete inspector
-  const deleteInspector = async (inspectorId: string) => {
-    const confirmDelete = window.confirm("Tem certeza que deseja excluir este inspetor?");
-    if (!confirmDelete) return;
-    
-    const { error } = await supabase.from('profiles').delete().eq('id', inspectorId);
-    if (error) {
-      toast.error("Erro ao excluir inspetor", {
-        description: error.message
-      });
-    } else {
-      queryClient.invalidateQueries({ queryKey: ['inspectors', companyId] });
-      toast.success("Inspetor excluído com sucesso!");
+      setInspectors(data || []);
+    } catch (error: any) {
+      toast.error('Failed to load inspectors: ' + error.message);
+      console.error('Error fetching inspectors:', error);
+    } finally {
+      setIsLoadingInspectors(false);
     }
   };
-  
+
+  const createInspector = async (values: InspectorFormValues, options?: { onSuccess?: () => void }) => {
+    if (!companyId) {
+      toast.error('No company ID available');
+      return;
+    }
+    
+    setIsCreatingInspector(true);
+    try {
+      const { fullName, email, password } = values;
+      
+      const inspector = await registerInspector(email, password, fullName, companyId);
+      
+      if (inspector) {
+        toast.success('Inspector created successfully');
+        await fetchInspectors(); // Refresh the list
+        options?.onSuccess?.();
+        return inspector;
+      }
+    } catch (error: any) {
+      toast.error('Error creating inspector: ' + error.message);
+      console.error('Error creating inspector:', error);
+    } finally {
+      setIsCreatingInspector(false);
+    }
+  };
+
+  const deleteInspector = async (inspectorId: string) => {
+    try {
+      // Note: This requires a Supabase function or admin privileges
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', inspectorId)
+        .eq('role', 'inspector');
+      
+      if (error) throw error;
+      
+      toast.success('Inspector deleted successfully');
+      // Update the local state
+      setInspectors(inspectors.filter(inspector => inspector.id !== inspectorId));
+    } catch (error: any) {
+      toast.error('Failed to delete inspector: ' + error.message);
+      console.error('Error deleting inspector:', error);
+    }
+  };
+
+  // Load inspectors when companyId changes
+  useState(() => {
+    if (companyId) {
+      fetchInspectors();
+    }
+  });
+
   return {
-    inspectors: inspectorsQuery.data || [],
-    isLoadingInspectors: inspectorsQuery.isLoading,
-    inspectorsError: inspectorsQuery.error,
-    createInspector: createInspectorMutation.mutate,
-    isCreatingInspector: createInspectorMutation.isPending,
+    inspectors,
+    isLoadingInspectors,
+    fetchInspectors,
+    createInspector,
+    isCreatingInspector,
     deleteInspector
   };
-};
+}

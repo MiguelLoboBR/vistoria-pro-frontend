@@ -4,67 +4,66 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { authService } from "@/services/authService";
+import { USER_ROLES } from "@/services/authService/types";
 
-export function useAuthMethods(fetchUserProfile: (userId: string) => Promise<void>) {
+export function useAuth(fetchUserProfile?: (userId: string) => Promise<void>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
+  /**
+   * Sign in a user with email and password
+   */
   const signIn = async (email: string, password: string) => {
-    console.log("Iniciando login para:", email);
     try {
       setIsSubmitting(true);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      console.log("Signing in user:", email);
       
-      if (error) throw error;
-      console.log("Login bem-sucedido:", data.session ? "Session obtida" : "Sem session");
-      
-      // Check user role from metadata and redirect accordingly
-      const role = data.user?.user_metadata?.role || "inspector";
-      
-      console.log("User role:", role);
-      
-      if (role === "admin") {
-        window.location.href = "/admin/dashboard";
-      } else {
-        window.location.href = "/inspector/dashboard";
-      }
+      const data = await authService.signIn(email, password);
       
       return data;
-    } catch (error) {
-      console.error("Erro no login:", error);
+    } catch (error: any) {
+      console.error("Error signing in:", error);
+      toast.error("Login failed: " + error.message);
       throw error;
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  /**
+   * Sign up a new user with email, password and name
+   */
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       setIsSubmitting(true);
       return await authService.signUp(email, password, fullName);
-    } catch (error) {
-      throw error;
+    } catch (error: any) {
+      toast.error("Registration failed: " + error.message);
+      return { error };
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  /**
+   * Sign out the current user and redirect to login page
+   */
   const signOut = async () => {
     try {
       setIsSubmitting(true);
       await authService.signOut();
       navigate("/login");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error signing out:", error);
+      toast.error("Sign out failed: " + error.message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Modified to directly create company and admin profile
+  /**
+   * Create a company with an admin user
+   */
   const createCompanyWithAdmin = async (
     name: string, 
     cnpj: string,
@@ -92,15 +91,51 @@ export function useAuthMethods(fetchUserProfile: (userId: string) => Promise<voi
         adminEmail
       );
       return companyId;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating company:", error);
+      toast.error("Company creation failed: " + error.message);
       throw error;
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  /**
+   * Register a new admin user
+   */
+  const registerAdmin = async (email: string, password: string, fullName: string) => {
+    try {
+      setIsSubmitting(true);
+      return await authService.registerAdmin(email, password, fullName);
+    } catch (error: any) {
+      toast.error("Admin registration failed: " + error.message);
+      throw error;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /**
+   * Register a new inspector user
+   */
+  const registerInspector = async (email: string, password: string, fullName: string, companyId: string) => {
+    try {
+      setIsSubmitting(true);
+      return await authService.registerInspector(email, password, fullName, companyId);
+    } catch (error: any) {
+      toast.error("Inspector registration failed: " + error.message);
+      throw error;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /**
+   * Refresh the user profile
+   */
   const refreshUserProfile = async () => {
+    if (!fetchUserProfile) return;
+    
     const { data: { session } } = await supabase.auth.getSession();
     if (session && session.user) {
       await fetchUserProfile(session.user.id);
@@ -111,8 +146,11 @@ export function useAuthMethods(fetchUserProfile: (userId: string) => Promise<voi
     signIn,
     signUp,
     signOut,
+    registerAdmin,
+    registerInspector,
     createCompanyWithAdmin,
     refreshUserProfile,
-    isSubmitting
+    isSubmitting,
+    USER_ROLES
   };
 }

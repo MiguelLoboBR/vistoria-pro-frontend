@@ -3,7 +3,7 @@ import React, { createContext, useContext, ReactNode } from "react";
 import { Session } from "@supabase/supabase-js";
 import { Company, UserProfile } from "./types";
 import { useAuthProvider } from "@/hooks/useAuthProvider";
-import { useAuthActions } from "@/hooks/useAuthActions";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -11,10 +11,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   session: Session | null;
-  login: (email: string, password: string) => Promise<{ error: any } | undefined>;
-  logout: () => Promise<void>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any } | undefined>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<any>;
+  signUp: (email: string, password: string, fullName: string) => Promise<any>;
   signOut: () => Promise<void>;
   refreshUserProfile: () => Promise<void>;
 }
@@ -38,17 +36,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isAuthenticated,
     isLoading,
     session,
-    refreshUserProfile,
+    setUser,
+    setCompany,
     fetchUserProfile
   } = useAuthProvider();
   
   const {
-    login,
-    logout,
-    signUp,
     signIn,
-    signOut
-  } = useAuthActions(fetchUserProfile);
+    signUp,
+    signOut,
+    refreshUserProfile: refreshUserProfileHook
+  } = useAuth(fetchUserProfile);
+  
+  const refreshUserProfile = async () => {
+    await refreshUserProfileHook();
+  };
   
   const value: AuthContextType = {
     user,
@@ -56,10 +58,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isAuthenticated,
     isLoading,
     session,
-    login,
-    logout,
-    signUp,
     signIn,
+    signUp,
     signOut,
     refreshUserProfile
   };
