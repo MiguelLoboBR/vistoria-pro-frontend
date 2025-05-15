@@ -46,10 +46,10 @@ export const Landing = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button className="bg-white text-vistoria-blue hover:bg-gray-100 font-medium text-lg px-8 py-6">
-                Teste Grátis por 14 Dias
+                Teste Grátis por 05 Dias
               </Button>
               <Button variant="outline" className="border-white text-white hover:bg-white/10 font-medium text-lg px-8 py-6">
-                Agendar Demo
+                Agende Demonstração Online
               </Button>
             </div>
           </div>
@@ -236,7 +236,7 @@ export const Landing = () => {
             <div>
               <h3 className="text-white font-semibold mb-4">Contato</h3>
               <p className="mb-2">contato@vistoriapro.app.br</p>
-              <p>(11) 91234-5678</p>
+              <p>(24) 99228-9339</p>
             </div>
           </div>
           
