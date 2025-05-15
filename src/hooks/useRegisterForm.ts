@@ -1,18 +1,20 @@
-
+// src/hooks/useRegisterForm.ts
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { registerFormSchema, RegisterFormValues } from "@/components/auth/register/schema";
+import {
+  registerFormSchema,
+  RegisterFormValues,
+} from "@/components/auth/register/schema";
 import { USER_ROLES } from "@/services/authService/types";
 
 export const useRegisterForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  
   const navigate = useNavigate();
 
   const form = useForm<RegisterFormValues>({
@@ -21,15 +23,11 @@ export const useRegisterForm = () => {
       email: "",
       password: "",
       confirmPassword: "",
-      
-      // Company fields
       companyName: "",
       companyAddress: "",
       companyPhone: "",
       companyEmail: "",
       cnpj: "",
-      
-      // Admin fields
       adminName: "",
       adminCpf: "",
       adminPhone: "",
@@ -41,7 +39,6 @@ export const useRegisterForm = () => {
     const file = event.target.files?.[0];
     if (file) {
       setLogoFile(file);
-      // Create preview URL
       const reader = new FileReader();
       reader.onload = (e) => {
         setLogoPreview(e.target?.result as string);
@@ -52,104 +49,71 @@ export const useRegisterForm = () => {
 
   const onSubmit = async (values: RegisterFormValues) => {
     setIsSubmitting(true);
-    
     try {
-      // Use admin email for authentication
       const authEmail = values.adminEmail || values.email;
-      console.log("Starting registration with email:", authEmail);
-      
-      // IDs temporários para referência
-      const tempCompanyId = crypto.randomUUID();
-      let logoUrl = null;
-      
-      // Primeiro enviar a logo, se houver
-      if (logoFile) {
-        try {
-          // Usar o tempCompanyId para storage path
-          const filePath = `${tempCompanyId}/logo.png`;
-          
-          const { data: storageData, error: storageError } = await supabase.storage
-            .from('company_logos')
-            .upload(filePath, logoFile, {
-              cacheControl: '3600',
-              upsert: true
-            });
-              
-          if (storageError) {
-            console.error("Error uploading logo:", storageError);
-          } else if (storageData) {
-            logoUrl = supabase.storage.from('company_logos').getPublicUrl(storageData.path).data.publicUrl;
-            console.log("Logo uploaded successfully at:", logoUrl);
-          }
-        } catch (uploadError) {
-          console.error("Logo upload failed:", uploadError);
-        }
-      }
-      
-      // Criar a empresa usando a função RPC que criamos
-      const { data: companyData, error: companyError } = await supabase.rpc(
-        'create_company_register',
-        {
-          company_name: values.companyName,
-          company_cnpj: values.cnpj,
-          company_address: values.companyAddress || null,
-          company_phone: values.companyPhone || null,
-          company_email: values.companyEmail || values.email,
-          company_logo_url: logoUrl,
-          admin_name: values.adminName,
-          admin_cpf: values.adminCpf,
-          admin_phone: values.adminPhone,
-          admin_email: values.adminEmail || values.email
-        }
-      );
-      
-      if (companyError) {
-        console.error("Error creating company:", companyError);
-        throw companyError;
-      } 
-
-      console.log("Empresa criada com sucesso, ID:", companyData);
-      
-      // Cadastrar o usuário no Auth com o papel correto
-      // Usando o enum diretamente para evitar problemas de tipo
       const userRole = USER_ROLES.ADMIN_TENANT;
-      
-      const { data, error } = await supabase.auth.signUp({
+
+      // 1. Cadastra no Supabase Auth
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: authEmail,
         password: values.password,
         options: {
           data: {
             full_name: values.adminName,
             role: userRole,
-            company_id: companyData // Usar o ID retornado da criação da empresa
           },
-          emailRedirectTo: window.location.origin + '/login'
-        }
+          emailRedirectTo: `${window.location.origin}/login`,
+        },
       });
-      
-      if (error) {
-        console.error("Error during signup:", error);
-        throw error;
+
+      if (signUpError || !signUpData?.user?.id) {
+        throw signUpError || new Error("Erro ao criar conta no Auth.");
       }
-      
-      // Salvar detalhes para uso posterior (caso precise)
-      localStorage.setItem('pendingCompanySetup', JSON.stringify({
-        id: companyData,
-        name: values.companyName,
-        cnpj: values.cnpj,
-        logoUrl: logoUrl
-      }));
-      
-      toast.success("Cadastro enviado com sucesso!");
-      
-      navigate('/register/success', { 
-        state: { 
-          email: authEmail
-        } 
+
+      const newUserId = signUpData.user.id;
+      let logoUrl = null;
+
+      // 2. Envia a logo da empresa
+      if (logoFile) {
+        const filePath = `${newUserId}/logo.png`;
+        const { data: storageData, error: storageError } = await supabase.storage
+          .from("company_logos")
+          .upload(filePath, logoFile, {
+            cacheControl: "3600",
+            upsert: true,
+          });
+
+        if (storageError) {
+          console.warn("Erro ao subir logo:", storageError.message);
+        } else {
+          logoUrl = supabase.storage.from("company_logos").getPublicUrl(storageData.path).data.publicUrl;
+        }
+      }
+
+      // 3. Cria a empresa e o perfil do admin
+      const { error: companyError } = await supabase.rpc("create_company_register", {
+        new_user_id: newUserId,
+        company_name: values.companyName,
+        company_cnpj: values.cnpj,
+        company_address: values.companyAddress || null,
+        company_phone: values.companyPhone || null,
+        company_email: values.companyEmail || values.email,
+        company_logo_url: logoUrl,
+        admin_name: values.adminName,
+        admin_cpf: values.adminCpf,
+        admin_phone: values.adminPhone,
+        admin_email: authEmail,
       });
+
+      if (companyError) {
+        throw companyError;
+      }
+
+      toast.success("Cadastro realizado com sucesso!");
+      navigate("/register/success", { state: { email: authEmail } });
     } catch (error: any) {
-      console.error("Registration error:", error);
-      toast.error(error.message || "Ocorreu um erro durante o cadastro.");
+      console.error("Erro no cadastro:", error);
+      toast.error(error.message || "Erro ao cadastrar. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -160,6 +124,6 @@ export const useRegisterForm = () => {
     isSubmitting,
     logoPreview,
     handleLogoChange,
-    onSubmit
+    onSubmit,
   };
 };
