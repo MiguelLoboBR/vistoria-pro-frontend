@@ -1,3 +1,4 @@
+
 export const HowItWorksSection = () => {
   return (
     <section
