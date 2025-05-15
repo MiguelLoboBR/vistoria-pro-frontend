@@ -15,7 +15,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<any>;
   signOut: () => Promise<void>;
   refreshUserProfile: () => Promise<void>;
-  registerInspector: (email: string, password: string, fullName: string, companyId: string) => Promise<UserProfile | null>;
+  registerInspector: (email: string, password: string, fullName: string, companyId: string) => Promise<UserProfile | null>; // Add this line
 }
 
 // Create the context with undefined as default value
@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signUp,
       signOut,
       refreshUserProfile,
-      registerInspector
+      registerInspector // Add registerInspector to the context value
     };
     
     return (

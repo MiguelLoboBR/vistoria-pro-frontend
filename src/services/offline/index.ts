@@ -1,7 +1,7 @@
 
 import { openDB } from 'idb';
 import { syncQueue } from './syncQueue';
-import { inspectionDataService } from './inspectionDataService';
+import inspectionDataService from './inspectionDataService';
 
 // Initialize IndexedDB
 const initializeDB = async () => {
@@ -150,4 +150,3 @@ const offlineService = {
 
 export { offlineService, initializeDB, networkStatusService, inspectionDataService };
 export default offlineService;
-
