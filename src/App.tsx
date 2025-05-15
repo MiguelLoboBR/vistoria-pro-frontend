@@ -25,55 +25,52 @@ import InspectionList from "./pages/inspector/InspectionList";
 import InspectionExecute from "./pages/inspector/InspectionExecute";
 import InstallPWA from "./pages/InstallPWA";
 import { USER_ROLES } from "@/services/authService/types";
-import { AuthProvider } from "./contexts/AuthContext";
 
 function App() {
   return (
-    <AuthProvider>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/landing" element={<Landing />} />
-        <Route path="/install-pwa" element={<InstallPWA />} />
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/landing" element={<Landing />} />
+      <Route path="/install-pwa" element={<InstallPWA />} />
 
-        {/* Auth Routes - Fixed paths */}
-        <Route path="/login" element={<Login role={USER_ROLES.ADMIN_TENANT} />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/inspector/login" element={<InspectorLogin />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/register/success" element={<RegisterSuccess />} />
+      {/* Auth Routes - Fixed paths */}
+      <Route path="/login" element={<Login role={USER_ROLES.ADMIN_TENANT} />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/inspector/login" element={<InspectorLogin />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/register/success" element={<RegisterSuccess />} />
 
-        {/* Admin Routes */}
-        <Route path="/admin" element={<AuthGuard requiredRole="admin_tenant"><Outlet /></AuthGuard>}>
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="vistorias" element={<Vistorias />} />
-          <Route path="inspections" element={<Inspections />} />
-          <Route path="inspectors" element={<Inspectors />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="company-profile" element={<CompanyProfile />} />
-        </Route>
+      {/* Admin Routes */}
+      <Route path="/admin" element={<AuthGuard requiredRole="admin_tenant"><Outlet /></AuthGuard>}>
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="vistorias" element={<Vistorias />} />
+        <Route path="inspections" element={<Inspections />} />
+        <Route path="inspectors" element={<Inspectors />} />
+        <Route path="profile" element={<Profile />} />
+        <Route path="company-profile" element={<CompanyProfile />} />
+      </Route>
 
-        {/* Inspector Routes */}
-        <Route path="/inspector" element={<AuthGuard requiredRole="inspector"><Outlet /></AuthGuard>}>
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="inspection/:id" element={<Inspection />} />
-          <Route path="execute/:id" element={<InspectionExecute />} />
-          <Route path="inspections" element={<InspectionList />} />
-          <Route path="schedule" element={<Dashboard />} />
-          <Route path="history" element={<InspectionList />} />
-          <Route path="profile" element={<Profile />} />
-        </Route>
+      {/* Inspector Routes */}
+      <Route path="/inspector" element={<AuthGuard requiredRole="inspector"><Outlet /></AuthGuard>}>
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="inspection/:id" element={<Inspection />} />
+        <Route path="execute/:id" element={<InspectionExecute />} />
+        <Route path="inspections" element={<InspectionList />} />
+        <Route path="schedule" element={<Dashboard />} />
+        <Route path="history" element={<InspectionList />} />
+        <Route path="profile" element={<Profile />} />
+      </Route>
 
-        {/* Company Setup */}
-        <Route path="/setup/company" element={
-          <AuthGuard>
-            <CompanySetup />
-          </AuthGuard>
-        } />
+      {/* Company Setup */}
+      <Route path="/setup/company" element={
+        <AuthGuard>
+          <CompanySetup />
+        </AuthGuard>
+      } />
 
-        {/* 404 */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </AuthProvider>
+      {/* 404 */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 }
 

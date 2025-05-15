@@ -1,164 +1,82 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { authService } from "@/services/authService";
-import { USER_ROLES } from "@/services/authService/types";
+import { useAuth as useAuthContext } from "@/contexts/AuthContext";
 
-export function useAuthMethods() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
+export const useAuthMethods = () => {
+  const { session } = useAuthContext() || {};
 
-  /**
-   * Sign in a user with email and password
-   */
   const signIn = async (email: string, password: string) => {
     try {
-      setIsSubmitting(true);
-      console.log("Signing in user:", email);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      const data = await authService.signIn(email, password);
-      
-      return data;
-    } catch (error: any) {
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
       console.error("Error signing in:", error);
-      toast.error("Login failed: " + error.message);
-      throw error;
-    } finally {
-      setIsSubmitting(false);
+      return { data: null, error };
     }
   };
 
-  /**
-   * Sign up a new user with email, password and name
-   */
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      setIsSubmitting(true);
-      return await authService.signUp(email, password, fullName);
-    } catch (error: any) {
-      toast.error("Registration failed: " + error.message);
-      return { error };
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  /**
-   * Sign out the current user and redirect to login page
-   */
-  const signOut = async () => {
-    try {
-      setIsSubmitting(true);
-      await authService.signOut();
-      navigate("/login");
-    } catch (error: any) {
-      console.error("Error signing out:", error);
-      toast.error("Sign out failed: " + error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  /**
-   * Create a company with an admin user
-   */
-  const createCompanyWithAdmin = async (
-    name: string, 
-    cnpj: string,
-    address?: string,
-    phone?: string,
-    email?: string,
-    logoUrl?: string,
-    adminName?: string,
-    adminCpf?: string,
-    adminPhone?: string,
-    adminEmail?: string
-  ) => {
-    try {
-      setIsSubmitting(true);
-      const companyId = await authService.createCompanyWithAdmin(
-        name, 
-        cnpj,
-        address,
-        phone,
+      const { data, error } = await supabase.auth.signUp({
         email,
-        logoUrl,
-        adminName,
-        adminCpf,
-        adminPhone,
-        adminEmail
-      );
-      return companyId;
-    } catch (error: any) {
-      console.error("Error creating company:", error);
-      toast.error("Company creation failed: " + error.message);
-      throw error;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  /**
-   * Register a new admin user
-   */
-  const registerAdmin = async (email: string, password: string, fullName: string) => {
-    try {
-      setIsSubmitting(true);
-      return await authService.registerAdmin(email, password, fullName);
-    } catch (error: any) {
-      toast.error("Admin registration failed: " + error.message);
-      throw error;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  /**
-   * Register a new inspector user
-   */
-  const registerInspector = async (email: string, password: string, fullName: string, companyId: string) => {
-    try {
-      setIsSubmitting(true);
-      return await authService.registerInspector(email, password, fullName, companyId);
-    } catch (error: any) {
-      toast.error("Inspector registration failed: " + error.message);
-      throw error;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  /**
-   * Refresh the user profile
-   */
-  const refreshUserProfile = async () => {
-    try {
-      const { data } = await supabase.auth.getSession();
-      if (data.session?.user) {
-        // Profile fetching will be handled by the auth state change listener
-        console.log("User session refreshed");
-      }
+        password,
+        options: {
+          data: { full_name: fullName }
+        }
+      });
+      
+      if (error) throw error;
+      return { data, error: null };
     } catch (error) {
-      console.error("Error refreshing profile:", error);
+      console.error("Error signing up:", error);
+      return { data: null, error };
     }
   };
+
+  const signOut = useCallback(async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  }, []);
+  
+  const refreshUserProfile = useCallback(async () => {
+    try {
+      if (!session?.user?.id) {
+        console.warn("Cannot refresh profile: no user ID in session");
+        return;
+      }
+      
+      // Fetch updated profile data from database
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .single();
+        
+      if (error) throw error;
+      
+      return data;
+    } catch (error) {
+      console.error("Error refreshing user profile:", error);
+    }
+  }, [session?.user?.id]);
 
   return {
     signIn,
     signUp,
     signOut,
-    registerAdmin,
-    registerInspector,
-    createCompanyWithAdmin,
-    refreshUserProfile,
-    isSubmitting,
-    USER_ROLES
+    refreshUserProfile
   };
-}
+};
 
-// For backward compatibility
-export function useAuth() {
-  return useAuthMethods();
-}
+// Re-export for compatibility
+export const useAuth = useAuthContext;
