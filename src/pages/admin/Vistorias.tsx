@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import AdminLayout from "@/components/layouts/AdminLayout";
@@ -7,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { inspectionService } from "@/services/inspectionService";
 import { useVistorias } from "@/hooks/useVistorias";
-import { VistoriaActions } from "@/components/admin/inspections/VistoriaActions";
+import { InspectionActionButtons } from "@/components/admin/inspections/InspectionActionButtons";
 import { SearchHeader } from "@/components/admin/inspections/SearchHeader";
 import { InspectionList } from "@/components/admin/inspections/InspectionList";
 import { VistoriaDialog } from "@/components/admin/inspections/VistoriaDialog";
@@ -96,7 +95,10 @@ const Vistorias = () => {
             <h1 className="text-2xl font-bold">Vistorias</h1>
             <p className="text-gray-500">Gerencie as vistorias da sua empresa</p>
           </div>
-          <VistoriaActions onOpenDialog={() => setDialogOpen(true)} />
+          <InspectionActionButtons 
+            variant="calendar" 
+            onOpenDialog={() => setDialogOpen(true)} 
+          />
         </div>
 
         <Card>

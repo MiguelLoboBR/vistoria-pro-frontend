@@ -3,7 +3,7 @@ import { useState } from "react";
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { toast } from "sonner";
 import { InspectionFilters } from "@/components/admin/inspections/InspectionFilters";
-import { InspectionActions } from "@/components/admin/inspections/InspectionActions";
+import { InspectionActionButtons } from "@/components/admin/inspections/InspectionActionButtons";
 import { NewInspectionDialog } from "@/components/admin/inspections/NewInspectionDialog";
 import { InspectionTable } from "@/components/admin/inspections/InspectionTable";
 import { getStatusBadgeClass, getStatusLabel, MOCK_INSPECTIONS } from "@/components/admin/inspections/utils";
@@ -40,9 +40,10 @@ export const AdminInspections = () => {
             <p className="text-gray-500">Gerenciamento de todas as vistorias realizadas e agendadas.</p>
           </div>
           
-          <InspectionActions 
-            isAddDialogOpen={isAddDialogOpen}
-            setIsAddDialogOpen={setIsAddDialogOpen}
+          <InspectionActionButtons 
+            isDialogOpen={isAddDialogOpen}
+            setIsDialogOpen={setIsAddDialogOpen}
+            showExport={true}
           />
         </div>
         
