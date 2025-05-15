@@ -1,15 +1,9 @@
 
 import { useState, useEffect } from "react";
-import { inspectionService } from "@/services/inspectionService";
+import { inspectionService, InspectionStats } from "@/services/inspectionService";
 import { useAuth } from "@/contexts/AuthContext";
 
-export interface VistoriaStats {
-  total: number;
-  agendada: number;
-  atrasada: number;
-  emAndamento: number;
-  concluida: number;
-}
+export interface VistoriaStats extends InspectionStats {}
 
 export const useVistoriaStats = () => {
   const [stats, setStats] = useState<VistoriaStats | null>(null);
