@@ -1,3 +1,4 @@
+
 import { Inspection, InspectionRoom, InspectionItem, InspectionMedia, InspectionSignature } from '../inspectionService/types';
 import { getDB, STORES, initDatabase, addToStore, getFromStore, getAllFromStore } from './db';
 import { addToSyncQueue } from './syncQueue';
@@ -165,7 +166,7 @@ const getCompleteInspectionLocally = async (inspectionId: string): Promise<{
 };
 
 // Create the inspectionDataService object with all methods
-const inspectionDataService = {
+export const inspectionDataService = {
   getInspectionLocally,
   saveInspectionLocally,
   getRoomsLocallyByInspectionId,
@@ -183,6 +184,5 @@ const inspectionDataService = {
   }
 };
 
-// Export both named and default exports for maximum compatibility
-export { inspectionDataService };
+// Export as default as well for maximum compatibility
 export default inspectionDataService;
