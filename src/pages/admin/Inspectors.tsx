@@ -35,6 +35,7 @@ const Inspectors = () => {
   
   console.log("Inspectors page: User company_id:", user?.company_id);
   console.log("Inspectors page: Number of inspectors:", inspectors?.length || 0);
+  console.log("Inspectors page: Inspectors data:", inspectors);
   
   return (
     <AdminLayout>
