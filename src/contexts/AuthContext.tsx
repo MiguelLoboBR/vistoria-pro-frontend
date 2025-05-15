@@ -47,50 +47,45 @@ export const useAuth = () => {
   }
 };
 
-// AuthProvider is a valid React component, so hooks can be used within it
+// The provider component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  try {
-    const {
-      user,
-      company,
-      isAuthenticated,
-      isLoading,
-      session,
-      fetchUserProfile,
-      registerInspector
-    } = useAuthProvider();
-    
-    const {
-      signIn,
-      signUp,
-      signOut,
-      refreshUserProfile: refreshUserProfileHook
-    } = useAuthMethods();
-    
-    const refreshUserProfile = async () => {
-      await refreshUserProfileHook();
-    };
-    
-    const value: AuthContextType = {
-      user,
-      company,
-      isAuthenticated,
-      isLoading,
-      session,
-      signIn,
-      signUp,
-      signOut,
-      refreshUserProfile,
-      registerInspector
-    };
-    
-    return (
-      <AuthContext.Provider value={value}>
-        {children}
-      </AuthContext.Provider>
-    );
-  } catch (error) {
-    console.error("Error rendering AuthProvider:", error);
-    return <>{children}</>; // Fallback to render children without context
-  }
+  // Only use hooks from other files inside a component
+  const {
+    user,
+    company,
+    isAuthenticated,
+    isLoading,
+    session,
+    refreshUserProfile: handleRefreshUserProfile,
+    registerInspector
+  } = useAuthProvider();
+  
+  const {
+    signIn,
+    signUp,
+    signOut,
+  } = useAuthMethods();
+  
+  const refreshUserProfile = async () => {
+    await handleRefreshUserProfile();
+  };
+  
+  const value: AuthContextType = {
+    user,
+    company,
+    isAuthenticated,
+    isLoading,
+    session,
+    signIn,
+    signUp,
+    signOut,
+    refreshUserProfile,
+    registerInspector
+  };
+  
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

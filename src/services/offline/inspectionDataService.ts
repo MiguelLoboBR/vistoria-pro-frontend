@@ -1,4 +1,3 @@
-
 import { Inspection, InspectionRoom, InspectionItem, InspectionMedia, InspectionSignature } from '../inspectionService/types';
 import { getDB, STORES, initDatabase, addToStore, getFromStore, getAllFromStore } from './db';
 import { addToSyncQueue } from './syncQueue';
@@ -187,4 +186,3 @@ const inspectionDataService = {
 // Export both named and default exports for maximum compatibility
 export { inspectionDataService };
 export default inspectionDataService;
-
