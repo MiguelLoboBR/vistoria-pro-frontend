@@ -1,7 +1,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AdminLayout from "@/components/layouts/AdminLayout";
-import { CalendarDays, Users, CheckCircle2, Clock, AlertCircle, BarChart3 } from "lucide-react";
+import { VistoriaStats } from "@/components/admin/dashboard/VistoriaStats";
+import { BarChart3 } from "lucide-react";
 
 export const AdminDashboard = () => {
   return (
@@ -13,51 +14,7 @@ export const AdminDashboard = () => {
         </div>
         
         {/* Stats Overview */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Vistorias Totais</CardTitle>
-              <CalendarDays className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">142</div>
-              <p className="text-xs text-gray-500">+22% em relação ao mês anterior</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Vistoriadores Ativos</CardTitle>
-              <Users className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">8</div>
-              <p className="text-xs text-gray-500">+1 novo este mês</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Vistorias Concluídas</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">128</div>
-              <p className="text-xs text-gray-500">90% de taxa de conclusão</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Tempo Médio</CardTitle>
-              <Clock className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">42 min</div>
-              <p className="text-xs text-gray-500">-5 min em relação ao mês anterior</p>
-            </CardContent>
-          </Card>
-        </div>
+        <VistoriaStats />
         
         {/* Recent Inspections */}
         <div className="grid gap-6 md:grid-cols-7">
