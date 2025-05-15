@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -112,22 +113,50 @@ export const useCompanySetup = () => {
     }
   };
 
-  // Inside your createCompany function, update the storage path:
-  const uploadLogo = async (logoFile: File, companyId: string) => {
+  // Improved uploadLogo function with proper error handling and bucket creation check
+  const uploadLogo = async (logoFile: File, userId: string) => {
     try {
       if (logoFile) {
-        const filePath = `${companyId}/logo.png`;
+        // First check if bucket exists, create if not
+        try {
+          const { data: bucketData, error: bucketError } = await supabase.storage
+            .getBucket('company_logos');
+            
+          if (bucketError) {
+            console.log("Attempting to create company_logos bucket...");
+            const { error: createError } = await supabase.storage.createBucket('company_logos', {
+              public: true
+            });
+            
+            if (createError) {
+              console.error("Error creating bucket:", createError);
+            } else {
+              console.log("Bucket created successfully");
+            }
+          }
+        } catch (bucketError) {
+          console.error("Bucket operation failed:", bucketError);
+        }
+        
+        const filePath = `${userId}/logo.png`;
         const { data, error } = await supabase.storage
           .from('company_logos')
-          .upload(filePath, logoFile);
+          .upload(filePath, logoFile, {
+            cacheControl: '3600',
+            upsert: true
+          });
           
         if (error) {
+          console.error("Error uploading logo:", error);
           throw error;
         }
         
-        return supabase.storage
+        const publicUrl = supabase.storage
           .from('company_logos')
           .getPublicUrl(filePath).data.publicUrl;
+          
+        console.log("Logo uploaded successfully at:", publicUrl);
+        return publicUrl;
       }
       return null;
     } catch (error) {

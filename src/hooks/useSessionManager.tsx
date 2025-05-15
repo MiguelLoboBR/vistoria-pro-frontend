@@ -61,7 +61,7 @@ export function useSessionManager() {
   
   const handleProfileFetch = async (userId: string) => {
     try {
-      const { profile, company: fetchedCompany } = await fetchUserProfile(userId, session);
+      const { profile, company: fetchedCompany } = await fetchUserProfile(userId);
       if (profile) {
         setUser(profile);
         setCompany(fetchedCompany);

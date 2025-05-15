@@ -85,9 +85,6 @@ export const useRegisterForm = () => {
       
       console.log("User created successfully:", data.user.id);
       
-      let companyError = null;
-      let errorMessage = "";
-      
       // Save the company setup details for later use after email confirmation
       localStorage.setItem('pendingCompanySetup', JSON.stringify({
         id: tempCompanyId,
@@ -106,43 +103,51 @@ export const useRegisterForm = () => {
       }));
       
       // Try to upload logo if selected - after user is created
-      // Note: The trigger should have already created the profile
       if (logoFile && data.user) {
         try {
-          // We'll try to upload the logo after a slight delay
-          // to ensure the profile is created first
-          setTimeout(async () => {
-            try {
-              // Check if company_logos bucket exists
-              const { data: bucketData, error: bucketError } = await supabase.storage
-                .getBucket('company_logos');
-                
-              if (bucketError) {
-                console.log("Bucket does not exist or error fetching bucket:", bucketError);
-              }
+          // We'll try to upload the logo immediately
+          // First check if the bucket exists, create it if not
+          try {
+            const { data: bucketData, error: bucketError } = await supabase.storage
+              .getBucket('company_logos');
               
-              // Use the tempCompanyId for storage path
-              const filePath = `${tempCompanyId}/logo.png`;
+            if (bucketError) {
+              console.log("Attempting to create company_logos bucket...");
+              const { error: createError } = await supabase.storage.createBucket('company_logos', {
+                public: true
+              });
               
-              const { data: storageData, error: storageError } = await supabase.storage
-                .from('company_logos')
-                .upload(filePath, logoFile);
-                  
-              if (storageError) {
-                console.error("Error uploading logo:", storageError);
-              } else if (storageData) {
-                logoUrl = supabase.storage.from('company_logos').getPublicUrl(storageData.path).data.publicUrl;
-                console.log("Logo uploaded successfully at:", logoUrl);
-                
-                // Store logo URL for later
-                let pendingSetup = JSON.parse(localStorage.getItem('pendingCompanySetup') || '{}');
-                pendingSetup.logoUrl = logoUrl;
-                localStorage.setItem('pendingCompanySetup', JSON.stringify(pendingSetup));
+              if (createError) {
+                console.error("Error creating bucket:", createError);
+              } else {
+                console.log("Bucket created successfully");
               }
-            } catch (uploadError) {
-              console.error("Logo upload failed in delayed execution:", uploadError);
             }
-          }, 2000); // 2 seconds delay to ensure profile is created first
+          } catch (bucketError) {
+            console.error("Bucket operation failed:", bucketError);
+          }
+          
+          // Use the tempCompanyId for storage path
+          const filePath = `${tempCompanyId}/logo.png`;
+          
+          const { data: storageData, error: storageError } = await supabase.storage
+            .from('company_logos')
+            .upload(filePath, logoFile, {
+              cacheControl: '3600',
+              upsert: true
+            });
+              
+          if (storageError) {
+            console.error("Error uploading logo:", storageError);
+          } else if (storageData) {
+            logoUrl = supabase.storage.from('company_logos').getPublicUrl(storageData.path).data.publicUrl;
+            console.log("Logo uploaded successfully at:", logoUrl);
+            
+            // Store logo URL for later
+            let pendingSetup = JSON.parse(localStorage.getItem('pendingCompanySetup') || '{}');
+            pendingSetup.logoUrl = logoUrl;
+            localStorage.setItem('pendingCompanySetup', JSON.stringify(pendingSetup));
+          }
         } catch (uploadError) {
           console.error("Logo upload failed:", uploadError);
           // Continue with registration even if logo upload fails
@@ -153,9 +158,7 @@ export const useRegisterForm = () => {
       
       navigate('/register/success', { 
         state: { 
-          email: authEmail,
-          error: !!companyError,
-          errorMessage: errorMessage
+          email: authEmail
         } 
       });
     } catch (error: any) {

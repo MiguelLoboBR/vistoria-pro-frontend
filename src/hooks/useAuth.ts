@@ -134,8 +134,15 @@ export function useAuthMethods() {
    * Refresh the user profile
    */
   const refreshUserProfile = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    // Refresh profile logic here if needed
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.user) {
+        // Profile fetching will be handled by the auth state change listener
+        console.log("User session refreshed");
+      }
+    } catch (error) {
+      console.error("Error refreshing profile:", error);
+    }
   };
 
   return {
