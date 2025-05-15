@@ -165,7 +165,7 @@ const getCompleteInspectionLocally = async (inspectionId: string): Promise<{
   };
 };
 
-// Create and export the inspectionDataService object properly
+// Export the inspectionDataService as a named export
 export const inspectionDataService = {
   getInspectionLocally,
   saveInspectionLocally,
