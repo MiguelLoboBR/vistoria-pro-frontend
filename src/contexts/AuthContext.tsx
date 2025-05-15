@@ -3,7 +3,7 @@ import React, { createContext, useContext, ReactNode } from "react";
 import { Session } from "@supabase/supabase-js";
 import { Company, UserProfile } from "./types";
 import { useAuthProvider } from "@/hooks/useAuthProvider";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthMethods } from "@/hooks/useAuth";
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signUp,
     signOut,
     refreshUserProfile: refreshUserProfileHook
-  } = useAuth(fetchUserProfile);
+  } = useAuthMethods();
   
   const refreshUserProfile = async () => {
     await refreshUserProfileHook();

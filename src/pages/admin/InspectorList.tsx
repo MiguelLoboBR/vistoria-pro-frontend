@@ -9,7 +9,8 @@ import { Pencil, Plus, Search, Trash2, UserPlus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { authService, UserProfile } from "@/services/authService";
+import { authService } from "@/services/authService";
+import { Inspector } from "@/services/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -22,10 +23,6 @@ const formSchema = z.object({
   phone: z.string().min(10, "Telefone inválido"),
   password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
 });
-
-interface Inspector extends UserProfile {
-  inspections_count?: number;
-}
 
 export const InspectorList = () => {
   const [inspectors, setInspectors] = useState<Inspector[]>([]);

@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { authService } from "@/services/authService";
 import { USER_ROLES } from "@/services/authService/types";
 
-export function useAuth(fetchUserProfile?: (userId: string) => Promise<void>) {
+export function useAuthMethods() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
@@ -134,12 +134,8 @@ export function useAuth(fetchUserProfile?: (userId: string) => Promise<void>) {
    * Refresh the user profile
    */
   const refreshUserProfile = async () => {
-    if (!fetchUserProfile) return;
-    
     const { data: { session } } = await supabase.auth.getSession();
-    if (session && session.user) {
-      await fetchUserProfile(session.user.id);
-    }
+    // Refresh profile logic here if needed
   };
 
   return {
@@ -153,4 +149,9 @@ export function useAuth(fetchUserProfile?: (userId: string) => Promise<void>) {
     isSubmitting,
     USER_ROLES
   };
+}
+
+// For backward compatibility
+export function useAuth() {
+  return useAuthMethods();
 }

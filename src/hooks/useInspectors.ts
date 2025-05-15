@@ -2,8 +2,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { UserProfile } from '@/services/types';
-import { useAuth } from '@/hooks/useAuth';
+import { UserProfile, Inspector } from '@/services/types';
+import { useAuthMethods } from '@/hooks/useAuth';
 
 export type InspectorFormValues = {
   fullName: string;
@@ -12,10 +12,10 @@ export type InspectorFormValues = {
 };
 
 export function useInspectors(companyId: string | undefined) {
-  const [inspectors, setInspectors] = useState<UserProfile[]>([]);
+  const [inspectors, setInspectors] = useState<Inspector[]>([]);
   const [isLoadingInspectors, setIsLoadingInspectors] = useState(false);
   const [isCreatingInspector, setIsCreatingInspector] = useState(false);
-  const { registerInspector } = useAuth();
+  const { registerInspector } = useAuthMethods();
 
   const fetchInspectors = async () => {
     if (!companyId) return;
@@ -32,7 +32,14 @@ export function useInspectors(companyId: string | undefined) {
         throw error;
       }
       
-      setInspectors(data || []);
+      // Convert to Inspector type
+      const inspectorData = data?.map(profile => ({
+        ...profile,
+        role: profile.role as UserRole,
+        inspections_count: 0
+      })) || [];
+      
+      setInspectors(inspectorData);
     } catch (error: any) {
       toast.error('Failed to load inspectors: ' + error.message);
       console.error('Error fetching inspectors:', error);

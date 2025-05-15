@@ -27,4 +27,5 @@ export interface UserProfile {
 
 export interface Inspector extends UserProfile {
   // Inspectors are just user profiles with the role "inspector"
+  inspections_count?: number;
 }

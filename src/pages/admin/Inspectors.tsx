@@ -21,7 +21,11 @@ const Inspectors = () => {
   } = useInspectors(user?.company_id);
   
   const handleCreateInspector = (values: InspectorFormValues) => {
-    createInspector(values, {
+    createInspector({
+      email: values.email,
+      fullName: values.fullName,
+      password: values.password
+    }, {
       onSuccess: () => {
         setOpen(false);
       }
