@@ -165,7 +165,7 @@ const getCompleteInspectionLocally = async (inspectionId: string): Promise<{
   };
 };
 
-// Create the inspectionDataService object to export
+// Create the inspectionDataService object with all methods
 const inspectionDataService = {
   getInspectionLocally,
   saveInspectionLocally,
@@ -184,6 +184,6 @@ const inspectionDataService = {
   }
 };
 
-// Export as named export AND as default export to support both import styles
+// Export the service as both named export and default export
 export { inspectionDataService };
 export default inspectionDataService;
