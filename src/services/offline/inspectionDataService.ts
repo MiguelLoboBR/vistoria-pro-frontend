@@ -184,5 +184,5 @@ export const inspectionDataService = {
   }
 };
 
-// Export as default as well for maximum compatibility
+// Export default as well for maximum compatibility
 export default inspectionDataService;

@@ -1,7 +1,6 @@
 
 // Re-export from the new structure to maintain backward compatibility
-import { offlineService } from './offline';
-import { inspectionDataService } from './offline/inspectionDataService';
+import offlineService, { inspectionDataService } from './offline';
 
 // Export both named export and default export for maximum compatibility
 export { inspectionDataService };
