@@ -160,6 +160,7 @@ export function VideoUploader({ itemId, onClose }: VideoUploaderProps) {
           item_id: itemId,
           type: "video",
           url,
+          edited_url: null,
           latitude: geolocation.latitude,
           longitude: geolocation.longitude,
           timestamp: new Date().toISOString()

@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Camera, X, Save, Undo, Redo, Download } from "lucide-react";
+import { Camera, X, Save, Undo, Redo } from "lucide-react";
 import { toast } from "sonner";
 import { inspectionService } from "@/services/inspectionService";
 import { fabric } from "fabric";
@@ -164,6 +164,7 @@ export function PhotoUploader({ itemId, onClose }: PhotoUploaderProps) {
           item_id: itemId,
           type: "foto",
           url,
+          edited_url: null,
           latitude: geolocation.latitude,
           longitude: geolocation.longitude,
           timestamp: new Date().toISOString()
