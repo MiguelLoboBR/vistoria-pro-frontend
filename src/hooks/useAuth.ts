@@ -11,9 +11,6 @@ export const useAuth = () => {
 
 // Export auth methods for use in other components
 export const useAuthMethods = () => {
-  const auth = useAuth();
-  const refreshUserProfile = auth?.refreshUserProfile || (async () => {});
-  
   const signIn = async (email: string, password: string) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -66,7 +63,6 @@ export const useAuthMethods = () => {
   return {
     signIn,
     signUp,
-    signOut,
-    refreshUserProfile
+    signOut
   };
 };

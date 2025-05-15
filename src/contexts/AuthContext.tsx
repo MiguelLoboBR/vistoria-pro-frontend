@@ -34,11 +34,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     registerInspector
   } = useAuthProvider();
   
-  const {
-    signIn,
-    signUp,
-    signOut,
-  } = useAuthMethods();
+  // Use the hook to get auth methods
+  const authMethods = useAuthMethods();
   
   const refreshUserProfile = async () => {
     await handleRefreshUserProfile();
@@ -50,9 +47,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isAuthenticated,
     isLoading,
     session,
-    signIn,
-    signUp,
-    signOut,
+    signIn: authMethods.signIn,
+    signUp: authMethods.signUp,
+    signOut: authMethods.signOut,
     refreshUserProfile,
     registerInspector
   };
