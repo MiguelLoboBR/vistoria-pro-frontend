@@ -81,7 +81,7 @@ export const Landing = () => {
               <Button className="bg-white text-[#0E3A78] hover:bg-gray-100 font-medium text-lg px-8 py-6">
                 Teste Grátis por 05 Dias
               </Button>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button variant="outline" className="border-white text-white hover:bg-white/10 font-medium text-lg px-8 py-6">
                   Agende Demonstração Online
                 </Button>
@@ -114,9 +114,9 @@ export const Landing = () => {
           <div className="md:w-1/2 flex justify-center">
             <div className="bg-white rounded-lg shadow-xl p-3 transform rotate-2 max-w-md">
               <img 
-                src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" 
-                alt="Profissional realizando vistoria em tablet com o sistema VistoriaPro" 
-                className="rounded-lg w-full h-auto"
+                src="/lovable-uploads/e5709758-ff21-49ab-af3a-52d9a41e5479.png" 
+                alt="Profissional realizando vistoria em imóvel usando o sistema VistoriaPro" 
+                className="rounded-lg w-full h-auto object-cover"
               />
             </div>
           </div>
