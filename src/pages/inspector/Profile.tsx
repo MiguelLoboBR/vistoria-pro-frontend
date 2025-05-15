@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import { toast } from "sonner";
 import InspectorLayout from "@/components/layouts/InspectorLayout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,23 +7,26 @@ import { PasswordFormValues } from "@/components/inspector/profile/PasswordChang
 import UserInfoPanel from "@/components/inspector/profile/UserInfoPanel";
 import CompanyInfoPanel from "@/components/inspector/profile/CompanyInfoPanel";
 import PasswordChangeDialog from "@/components/inspector/profile/PasswordChangeDialog";
+import { useProfile } from "@/hooks/useProfile";
 
 export const InspectorProfile = () => {
   const { user, company } = useAuth();
+  const { updateProfile, changePassword, isUpdating, isChangingPassword } = useProfile();
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
 
-  const handleUpdateProfile = () => {
-    toast.success("Perfil atualizado com sucesso!");
+  const handleUpdateProfile = async () => {
+    // Implementar com o hook de perfil
+    await updateProfile({
+      full_name: user?.full_name,
+      phone: user?.phone
+    });
   };
 
-  const handleChangePassword = (values: PasswordFormValues) => {
-    // In a real implementation, we would verify the current password and update it
-    toast.success("Senha alterada com sucesso!");
-    setIsPasswordDialogOpen(false);
-  };
-
-  const handleUpdatePhoto = () => {
-    toast.info("Recurso de atualização de foto em desenvolvimento");
+  const handleChangePassword = async (values: PasswordFormValues) => {
+    const success = await changePassword(values.currentPassword, values.newPassword);
+    if (success) {
+      setIsPasswordDialogOpen(false);
+    }
   };
 
   return (
@@ -39,15 +41,15 @@ export const InspectorProfile = () => {
           {/* Left Column - User Info */}
           <UserInfoPanel 
             user={user} 
-            onUpdatePhoto={handleUpdatePhoto}
             onUpdateProfile={handleUpdateProfile}
           />
           <div className="md:col-span-8 flex justify-start">
             <Button 
               variant="outline" 
               onClick={() => setIsPasswordDialogOpen(true)}
+              disabled={isChangingPassword}
             >
-              Alterar Senha
+              {isChangingPassword ? "Alterando..." : "Alterar Senha"}
             </Button>
           </div>
 

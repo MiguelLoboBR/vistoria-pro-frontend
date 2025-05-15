@@ -7,15 +7,20 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Camera } from "lucide-react";
 import { UserProfile } from "@/contexts/types";
 import ProfileForm from "./ProfileForm";
+import { useProfile } from "@/hooks/useProfile";
+import { toast } from "sonner";
 
 interface UserInfoPanelProps {
   user: UserProfile | null;
-  onUpdatePhoto: () => void;
   onUpdateProfile: () => void;
 }
 
-export const UserInfoPanel = ({ user, onUpdatePhoto, onUpdateProfile }: UserInfoPanelProps) => {
-  const [isUpdating, setIsUpdating] = useState(false);
+export const UserInfoPanel = ({ user, onUpdateProfile }: UserInfoPanelProps) => {
+  const { updateProfilePhoto, isUploadingPhoto } = useProfile();
+  const [profileData, setProfileData] = useState({
+    full_name: user?.full_name || "",
+    phone: user?.phone || ""
+  });
   
   const getInitials = (name: string) => {
     return name
@@ -26,13 +31,23 @@ export const UserInfoPanel = ({ user, onUpdatePhoto, onUpdateProfile }: UserInfo
       .substring(0, 2);
   };
 
-  const handleUpdateProfile = () => {
-    setIsUpdating(true);
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
     
-    setTimeout(() => {
-      setIsUpdating(false);
-      onUpdateProfile();
-    }, 1500);
+    // Validar se é uma imagem
+    if (!file.type.match('image.*')) {
+      toast.error("Por favor, selecione apenas arquivos de imagem");
+      return;
+    }
+    
+    // Validar tamanho (máximo de 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 5MB");
+      return;
+    }
+    
+    await updateProfilePhoto(file);
   };
 
   return (
@@ -50,14 +65,33 @@ export const UserInfoPanel = ({ user, onUpdatePhoto, onUpdateProfile }: UserInfo
                 {user?.full_name ? getInitials(user.full_name) : "UN"}
               </AvatarFallback>
             </Avatar>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 bg-white"
-              onClick={onUpdatePhoto}
-            >
-              <Camera className="h-4 w-4" />
-            </Button>
+            <div className="absolute -bottom-2 -right-2">
+              <input
+                type="file"
+                id="photo-upload"
+                className="hidden"
+                accept="image/*"
+                onChange={handleFileChange}
+                disabled={isUploadingPhoto}
+              />
+              <label htmlFor="photo-upload">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="rounded-full h-8 w-8 bg-white cursor-pointer"
+                  disabled={isUploadingPhoto}
+                  asChild
+                >
+                  <div>
+                    {isUploadingPhoto ? (
+                      <div className="h-4 w-4 border-2 border-t-transparent border-vistoria-blue rounded-full animate-spin" />
+                    ) : (
+                      <Camera className="h-4 w-4" />
+                    )}
+                  </div>
+                </Button>
+              </label>
+            </div>
           </div>
           <div>
             <h3 className="text-lg font-medium">{user?.full_name}</h3>
@@ -67,14 +101,15 @@ export const UserInfoPanel = ({ user, onUpdatePhoto, onUpdateProfile }: UserInfo
 
         <Separator />
 
-        <ProfileForm user={user} />
+        <ProfileForm 
+          user={user} 
+          profileData={profileData} 
+          setProfileData={setProfileData}
+        />
       </CardContent>
       <CardFooter className="flex justify-end">
-        <Button 
-          onClick={handleUpdateProfile}
-          disabled={isUpdating}
-        >
-          {isUpdating ? "Salvando..." : "Salvar Alterações"}
+        <Button onClick={onUpdateProfile}>
+          Salvar Alterações
         </Button>
       </CardFooter>
     </Card>

@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { inspectionService, Inspection } from "@/services/inspectionService";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -10,14 +11,18 @@ export const useInspections = () => {
   
   useEffect(() => {
     const fetchInspections = async () => {
-      if (!user) return;
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
       
       setIsLoading(true);
       try {
         const data = await inspectionService.getInspectorInspections(user.id);
         setInspections(data);
       } catch (error) {
-        console.error("Error fetching inspections:", error);
+        console.error("Erro ao buscar vistorias:", error);
+        toast.error("Não foi possível carregar suas vistorias");
       } finally {
         setIsLoading(false);
       }
@@ -26,16 +31,32 @@ export const useInspections = () => {
     fetchInspections();
   }, [user]);
   
-  // Group inspections by status
+  // Agrupar vistorias por status
   const pendingInspections = inspections.filter(i => i.status === "agendada" || i.status === "atrasada");
   const inProgressInspections = inspections.filter(i => i.status === "em_andamento");
-  const completedInspections = inspections.filter(i => i.status === "concluida").slice(0, 3); // Only show 3 most recent completed
+  const completedInspections = inspections.filter(i => i.status === "concluida");
+  const recentCompletedInspections = completedInspections.slice(0, 3); // Apenas as 3 mais recentes concluídas
   
   return {
     inspections,
     pendingInspections,
     inProgressInspections,
     completedInspections,
-    isLoading
+    recentCompletedInspections,
+    isLoading,
+    refetch: () => {
+      if (user) {
+        setIsLoading(true);
+        inspectionService.getInspectorInspections(user.id)
+          .then(data => {
+            setInspections(data);
+            setIsLoading(false);
+          })
+          .catch(error => {
+            console.error("Erro ao atualizar vistorias:", error);
+            setIsLoading(false);
+          });
+      }
+    }
   };
 };

@@ -1,144 +1,112 @@
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { 
-  MapPin, 
-  CalendarClock, 
-  Calendar,
-  Hourglass,
-  AlertTriangle,
-  CheckCircle 
-} from "lucide-react";
-import { Link } from "react-router-dom";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { CalendarDays, Clock, MapPin, ChevronRight, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Inspection } from "@/services/inspectionService";
 
 interface InspectionCardProps {
   inspection: Inspection;
-  variant?: "pending" | "inProgress" | "completed";
+  variant: "pending" | "inProgress" | "completed";
 }
 
-export const InspectionCard = ({ inspection, variant = "pending" }: InspectionCardProps) => {
+export const InspectionCard = ({ inspection, variant }: InspectionCardProps) => {
+  const navigate = useNavigate();
   
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "agendada":
-        return <Calendar className="h-5 w-5 text-blue-500" />;
-      case "atrasada":
-        return <Hourglass className="h-5 w-5 text-amber-500" />;
-      case "em_andamento":
-        return <AlertTriangle className="h-5 w-5 text-blue-500" />;
-      case "concluida":
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      default:
+  const handleNavigate = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // Se estiver em andamento ou pendente, vai para a página de execução
+    if (variant === 'inProgress' || variant === 'pending') {
+      navigate(`/inspector/execute/${inspection.id}`);
+    } else {
+      // Se já estiver concluída, vai para a página de detalhes
+      navigate(`/inspector/inspection/${inspection.id}`);
+    }
+  };
+  
+  const getBorderColor = () => {
+    switch (variant) {
+      case 'inProgress': return 'border-blue-400';
+      case 'pending': return 'border-yellow-400';
+      case 'completed': return 'border-green-400';
+      default: return 'border-gray-200';
+    }
+  };
+  
+  const getStatusBadge = () => {
+    switch (inspection.status) {
+      case 'em_andamento': 
+        return <span className="text-xs py-1 px-2 rounded-full bg-blue-100 text-blue-800">Em andamento</span>;
+      case 'agendada': 
+        return <span className="text-xs py-1 px-2 rounded-full bg-yellow-100 text-yellow-800">Agendada</span>;
+      case 'atrasada': 
+        return <span className="text-xs py-1 px-2 rounded-full bg-red-100 text-red-800 flex items-center">
+          <AlertTriangle className="mr-1 h-3 w-3" />
+          Atrasada
+        </span>;
+      case 'concluida': 
+        return <span className="text-xs py-1 px-2 rounded-full bg-green-100 text-green-800">Concluída</span>;
+      default: 
         return null;
     }
   };
-
+  
   const formatDate = (dateStr: string) => {
     try {
-      const parts = dateStr.split('-');
-      if (parts.length === 3) {
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
-      }
-      return dateStr;
-    } catch(e) {
+      const [year, month, day] = dateStr.split('-');
+      return `${day}/${month}/${year}`;
+    } catch (e) {
       return dateStr;
     }
   };
   
-  if (variant === "inProgress") {
-    return (
-      <Link to={`/app/inspector/inspection/${inspection.id}`}>
-        <Card className="border-blue-200 bg-blue-50/50 hover:bg-blue-50">
-          <CardContent className="p-4">
-            <div className="flex justify-between items-start">
-              <div className="space-y-1">
-                <h3 className="font-medium">{inspection.type}</h3>
-                <div className="flex items-start space-x-2">
-                  <MapPin className="h-4 w-4 text-gray-500 mt-0.5" />
-                  <p className="text-sm">{inspection.address}</p>
-                </div>
-              </div>
-              <Button variant="outline" className="ml-2 shrink-0">
-                Continuar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </Link>
-    );
-  }
-  
-  if (variant === "completed") {
-    return (
-      <Card className="hover:bg-gray-50">
+  return (
+    <Link to={`/inspector/inspection/${inspection.id}`} onClick={handleNavigate}>
+      <Card className={cn("transition-all hover:shadow-md cursor-pointer", getBorderColor())}>
         <CardContent className="p-4">
-          <div className="flex justify-between items-start">
-            <div className="space-y-1">
-              <h3 className="font-medium">{inspection.type}</h3>
-              <div className="flex items-start space-x-2">
-                <MapPin className="h-4 w-4 text-gray-500 mt-0.5" />
-                <p className="text-sm">{inspection.address}</p>
-              </div>
-              <div className="flex items-center text-xs text-gray-500">
-                <CalendarClock className="h-3.5 w-3.5 mr-1" />
-                <span>
-                  Concluída em {formatDate(inspection.date)}
-                </span>
-              </div>
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-medium">
+                {inspection.type} - {inspection.id.substring(0, 8)}
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                <MapPin className="inline-block mr-1 h-3 w-3" />
+                {inspection.address}
+              </p>
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="ml-2 px-2"
-              asChild
-            >
-              <Link to={`/app/inspector/inspection/${inspection.id}/report`}>
-                Ver laudo
-              </Link>
-            </Button>
+            <div className="flex items-center">
+              {getStatusBadge()}
+            </div>
+          </div>
+          
+          <div className="mt-2 space-y-1">
+            <div className="flex items-center text-xs text-gray-500">
+              <CalendarDays className="mr-2 h-3 w-3" />
+              {formatDate(inspection.date)}
+            </div>
+            {inspection.time && (
+              <div className="flex items-center text-xs text-gray-500">
+                <Clock className="mr-2 h-3 w-3" />
+                {inspection.time}
+              </div>
+            )}
           </div>
         </CardContent>
-      </Card>
-    );
-  }
-  
-  // Default pending variant
-  return (
-    <Card className={`hover:bg-gray-50 ${inspection.status === "atrasada" ? "border-amber-200" : ""}`}>
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h3 className="font-medium">{inspection.type}</h3>
-              {inspection.status === "atrasada" && (
-                <span className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full">
-                  Atrasada
-                </span>
-              )}
-            </div>
-            <div className="flex items-start space-x-2">
-              <MapPin className="h-4 w-4 text-gray-500 mt-0.5" />
-              <p className="text-sm">{inspection.address}</p>
-            </div>
-            <div className="flex items-center text-xs text-gray-500">
-              <CalendarClock className="h-3.5 w-3.5 mr-1" />
-              <span>
-                {formatDate(inspection.date)} às {inspection.time}
-              </span>
-            </div>
-          </div>
+        
+        <CardFooter className="p-3 pt-0 flex justify-end border-t border-gray-100 mt-2">
           <Button 
-            variant="outline" 
-            className="ml-2 shrink-0"
-            asChild
+            variant="ghost" 
+            size="sm" 
+            className="text-vistoria-blue"
           >
-            <Link to={`/app/inspector/inspection/${inspection.id}`}>
-              Iniciar
-            </Link>
+            {variant === 'inProgress' ? 'Continuar' : 
+              variant === 'pending' ? 'Iniciar' : 'Ver detalhes'}
+            <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardFooter>
+      </Card>
+    </Link>
   );
 };
