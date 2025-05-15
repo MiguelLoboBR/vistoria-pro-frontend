@@ -1,3 +1,4 @@
+
 // src/services/loginFlow.ts
 import { supabase } from "@/integrations/supabase/client";
 
@@ -29,7 +30,8 @@ export async function loginAndRedirect(
   const role = profile.role;
 
   if (role === "admin_master") {
-    navigate("/master/dashboard", { replace });
+    // Redirecionando admin_master para o dashboard de admin, já que não existe rota específica para master
+    navigate("/admin/dashboard", { replace });
   } else if (role === "admin_tenant") {
     navigate("/admin/dashboard", { replace });
   } else if (role === "inspector") {
