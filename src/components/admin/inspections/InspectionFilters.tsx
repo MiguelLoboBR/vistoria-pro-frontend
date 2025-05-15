@@ -45,12 +45,12 @@ export const InspectionFilters = ({
           <span className="text-sm text-gray-500">Filtros:</span>
         </div>
         
-        <Select value={statusFilter || ""} onValueChange={(value) => setStatusFilter(value || null)}>
+        <Select value={statusFilter || "all"} onValueChange={(value) => setStatusFilter(value === "all" ? null : value)}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os Status</SelectItem>
+            <SelectItem value="all">Todos os Status</SelectItem>
             <SelectItem value="pending">Pendente</SelectItem>
             <SelectItem value="in_progress">Em Andamento</SelectItem>
             <SelectItem value="completed">Concluída</SelectItem>
@@ -58,12 +58,12 @@ export const InspectionFilters = ({
           </SelectContent>
         </Select>
         
-        <Select value={typeFilter || ""} onValueChange={(value) => setTypeFilter(value || null)}>
+        <Select value={typeFilter || "all"} onValueChange={(value) => setTypeFilter(value === "all" ? null : value)}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os Tipos</SelectItem>
+            <SelectItem value="all">Todos os Tipos</SelectItem>
             <SelectItem value="Entrada">Entrada</SelectItem>
             <SelectItem value="Saída">Saída</SelectItem>
             <SelectItem value="Periódica">Periódica</SelectItem>
