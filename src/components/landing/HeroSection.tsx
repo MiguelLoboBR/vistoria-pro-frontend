@@ -1,9 +1,8 @@
-
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
 import { Play, ArrowDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Link } from "react-router-dom";
 
 export const HeroSection = () => {
   return (
@@ -17,46 +16,53 @@ export const HeroSection = () => {
             O VistoriaPro transforma o processo de vistoria de imóveis, tornando-o mais eficiente, 
             preciso e profissional para empresas imobiliárias e seus vistoriadores.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Button className="bg-white text-[#0E3A78] hover:bg-gray-100 font-medium text-base md:text-lg px-6 py-5 md:px-8 md:py-6">
-              Teste Grátis por 05 Dias
-            </Button>
-            <div className="flex flex-wrap gap-2 mt-3 sm:mt-0">
-              <Button 
-                variant="outline" 
-                className="border-white text-white hover:bg-white/10 font-medium text-base md:text-lg px-6 py-5 md:px-8 md:py-6 w-full sm:w-auto"
-              >
-                Agende Demonstração
-              </Button>
 
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="border-white text-white hover:bg-white/10 font-medium text-base md:text-lg px-5 py-5 md:px-6 md:py-6 w-full sm:w-auto mt-3 sm:mt-0"
-                  >
-                    <Play className="h-4 w-4 mr-2" /> Ver Vídeo
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-lg md:max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Conheça o VistoriaPro</DialogTitle>
-                  </DialogHeader>
-                  <div className="w-full mt-2">
-                    <AspectRatio ratio={16 / 9}>
-                      <iframe
-                        src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                        title="Demonstração do VistoriaPro"
-                        allowFullScreen
-                        className="rounded-md w-full h-full"
-                      />
-                    </AspectRatio>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4">
+            <Link to="/register">
+              <Button
+                className="bg-white text-[#0E3A78] hover:bg-gray-100 font-semibold text-base md:text-lg px-6 py-5 md:px-8 md:py-6"
+              >
+                Teste Grátis por 05 Dias
+              </Button>
+            </Link>
+
+            <Link to="/login">
+              <Button
+                variant="outline"
+                className="border-white text-white hover:bg-white/10 font-medium text-base md:text-lg px-6 py-5 md:px-8 md:py-6"
+              >
+                Entrar na Plataforma
+              </Button>
+            </Link>
+
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="border-white text-white hover:bg-white/10 font-medium text-base md:text-lg px-6 py-5 md:px-8 md:py-6"
+                >
+                  <Play className="h-4 w-4 mr-2" /> Ver Vídeo
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-lg md:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Conheça o VistoriaPro</DialogTitle>
+                </DialogHeader>
+                <div className="w-full mt-2">
+                  <AspectRatio ratio={16 / 9}>
+                    <iframe
+                      src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                      title="Demonstração do VistoriaPro"
+                      allowFullScreen
+                      className="rounded-md w-full h-full"
+                    />
+                  </AspectRatio>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
+
         <div className="w-full md:w-1/2 flex justify-center">
           <div className="bg-white rounded-lg shadow-xl p-2 md:p-3 transform rotate-1 max-w-xs sm:max-w-md">
             <img 
@@ -67,6 +73,7 @@ export const HeroSection = () => {
           </div>
         </div>
       </div>
+
       <div className="container mx-auto text-center mt-10 md:mt-16">
         <a href="#recursos" className="inline-flex items-center text-white hover:text-gray-200">
           <span className="mr-2">Explore Nossos Recursos</span>
