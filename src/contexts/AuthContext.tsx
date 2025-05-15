@@ -1,9 +1,9 @@
-
 import React, { createContext, useContext, ReactNode } from "react";
 import { Session } from "@supabase/supabase-js";
 import { Company, UserProfile } from "./types";
 import { useAuthProvider } from "@/hooks/useAuthProvider";
 import { useAuthMethods } from "@/hooks/useAuth";
+import { useInRouterContext } from "react-router-dom";
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -15,15 +15,24 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<any>;
   signOut: () => Promise<void>;
   refreshUserProfile: () => Promise<void>;
-  registerInspector: (email: string, password: string, fullName: string, companyId: string) => Promise<UserProfile | null>;
+  registerInspector: (
+    email: string,
+    password: string,
+    fullName: string,
+    companyId: string
+  ) => Promise<UserProfile | null>;
 }
 
-// Create the context with undefined as default value
+// Cria o contexto com valor inicial undefined
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// The provider component
+// Provider do contexto
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  // Only use hooks from other files inside a component
+  const inRouter = useInRouterContext();
+
+  // Garante que o Router esteja disponível antes de usar hooks que dependem dele
+  if (!inRouter) return null; // ou um fallback visual, como <Loading />
+
   const {
     user,
     company,
@@ -31,16 +40,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoading,
     session,
     refreshUserProfile: handleRefreshUserProfile,
-    registerInspector
+    registerInspector,
   } = useAuthProvider();
-  
-  // Use the hook to get auth methods
+
   const authMethods = useAuthMethods();
-  
+
   const refreshUserProfile = async () => {
     await handleRefreshUserProfile();
   };
-  
+
   const value: AuthContextType = {
     user,
     company,
@@ -51,9 +59,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signUp: authMethods.signUp,
     signOut: authMethods.signOut,
     refreshUserProfile,
-    registerInspector
+    registerInspector,
   };
-  
+
   return (
     <AuthContext.Provider value={value}>
       {children}
@@ -61,7 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Export a consumer hook that uses the AuthContext value
+// Hook para consumir o contexto
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
