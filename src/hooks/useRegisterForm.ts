@@ -69,6 +69,7 @@ export const useRegisterForm = () => {
         options: {
           data: {
             full_name: values.adminName,
+            // Make sure we're using the USER_ROLES constant here
             role: USER_ROLES.ADMIN_TENANT
           }
         }

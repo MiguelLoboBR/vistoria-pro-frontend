@@ -11,7 +11,8 @@ export const signUp = async (email: string, password: string, fullName: string):
       options: {
         data: {
           full_name: fullName,
-          role: USER_ROLES.ADMIN_TENANT, // Default role is admin_tenant for direct sign ups
+          // Cast the role to the user_role enum type expected by the database
+          role: USER_ROLES.ADMIN_TENANT,
         },
       },
     });
