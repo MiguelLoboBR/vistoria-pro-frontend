@@ -169,6 +169,21 @@ export type Database = {
         Args: { inspector_id: string; company_id: string }
         Returns: undefined
       }
+      create_company_register: {
+        Args: {
+          company_name: string
+          company_cnpj: string
+          company_address?: string
+          company_phone?: string
+          company_email?: string
+          company_logo_url?: string
+          admin_name?: string
+          admin_cpf?: string
+          admin_phone?: string
+          admin_email?: string
+        }
+        Returns: string
+      }
       create_company_with_admin: {
         Args:
           | { company_name: string; company_cnpj: string; admin_id: string }

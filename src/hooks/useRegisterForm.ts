@@ -58,77 +58,14 @@ export const useRegisterForm = () => {
       const authEmail = values.adminEmail || values.email;
       console.log("Starting registration with email:", authEmail);
       
-      // We will handle logo upload after user is created successfully
-      let logoUrl = null;
+      // IDs temporários para referência
       let tempCompanyId = crypto.randomUUID();
+      let logoUrl = null;
       
-      // Sign up the user first
-      const { data, error } = await supabase.auth.signUp({
-        email: authEmail,
-        password: values.password,
-        options: {
-          data: {
-            full_name: values.adminName,
-            // Make sure we're using the USER_ROLES constant here
-            role: USER_ROLES.ADMIN_TENANT
-          }
-        }
-      });
-      
-      if (error) {
-        console.error("Error during signup:", error);
-        throw error;
-      }
-      
-      if (!data.user) {
-        throw new Error("User creation failed");
-      }
-      
-      console.log("User created successfully:", data.user.id);
-      
-      // Save the company setup details for later use after email confirmation
-      localStorage.setItem('pendingCompanySetup', JSON.stringify({
-        id: tempCompanyId,
-        type: 'company',
-        name: values.companyName,
-        cnpj: values.cnpj,
-        address: values.companyAddress,
-        phone: values.companyPhone,
-        email: values.companyEmail || values.email,
-        admin: {
-          name: values.adminName,
-          cpf: values.adminCpf,
-          phone: values.adminPhone,
-          email: values.adminEmail || values.email
-        }
-      }));
-      
-      // Try to upload logo if selected - after user is created
-      if (logoFile && data.user) {
+      // Primeiro enviar a logo, se houver
+      if (logoFile) {
         try {
-          // We'll try to upload the logo immediately
-          // First check if the bucket exists, create it if not
-          try {
-            const { data: bucketData, error: bucketError } = await supabase.storage
-              .getBucket('company_logos');
-              
-            if (bucketError) {
-              console.log("Attempting to create company_logos bucket...");
-              const { error: createError } = await supabase.storage.createBucket('company_logos', {
-                public: true
-              });
-              
-              if (createError) {
-                console.error("Error creating bucket:", createError);
-              } else {
-                console.log("Bucket created successfully");
-              }
-            }
-          } catch (bucketError) {
-            console.error("Bucket operation failed:", bucketError);
-          }
-          
-          // Use the tempCompanyId for storage path
+          // Usar o tempCompanyId para storage path
           const filePath = `${tempCompanyId}/logo.png`;
           
           const { data: storageData, error: storageError } = await supabase.storage
@@ -143,17 +80,68 @@ export const useRegisterForm = () => {
           } else if (storageData) {
             logoUrl = supabase.storage.from('company_logos').getPublicUrl(storageData.path).data.publicUrl;
             console.log("Logo uploaded successfully at:", logoUrl);
-            
-            // Store logo URL for later
-            let pendingSetup = JSON.parse(localStorage.getItem('pendingCompanySetup') || '{}');
-            pendingSetup.logoUrl = logoUrl;
-            localStorage.setItem('pendingCompanySetup', JSON.stringify(pendingSetup));
           }
         } catch (uploadError) {
           console.error("Logo upload failed:", uploadError);
-          // Continue with registration even if logo upload fails
         }
       }
+      
+      // Criar a empresa usando a função RPC que criamos
+      const { data: companyData, error: companyError } = await supabase.rpc(
+        'create_company_register',
+        {
+          company_name: values.companyName,
+          company_cnpj: values.cnpj,
+          company_address: values.companyAddress || null,
+          company_phone: values.companyPhone || null,
+          company_email: values.companyEmail || values.email,
+          company_logo_url: logoUrl,
+          admin_name: values.adminName,
+          admin_cpf: values.adminCpf,
+          admin_phone: values.adminPhone,
+          admin_email: values.adminEmail || values.email
+        }
+      );
+      
+      if (companyError) {
+        console.error("Error creating company:", companyError);
+      } else {
+        tempCompanyId = companyData;
+        console.log("Empresa criada com sucesso, ID:", tempCompanyId);
+      }
+      
+      // Cadastrar o usuário no Auth com o papel correto
+      const { data, error } = await supabase.auth.signUp({
+        email: authEmail,
+        password: values.password,
+        options: {
+          data: {
+            full_name: values.adminName,
+            role: USER_ROLES.ADMIN_TENANT, // Usar a constante para garantir tipo correto
+            company_id: tempCompanyId // Adicionar company_id aos metadados
+          },
+          emailRedirectTo: window.location.origin + '/login'
+        }
+      });
+      
+      if (error) {
+        console.error("Error during signup:", error);
+        throw error;
+      }
+      
+      if (!data.user) {
+        throw new Error("User creation failed");
+      }
+      
+      console.log("User created successfully:", data.user.id);
+      
+      // Salvar detalhes para uso posterior (caso precise)
+      localStorage.setItem('pendingCompanySetup', JSON.stringify({
+        id: tempCompanyId,
+        name: values.companyName,
+        cnpj: values.cnpj,
+        logoUrl: logoUrl
+      }));
       
       toast.success("Cadastro enviado com sucesso!");
       
