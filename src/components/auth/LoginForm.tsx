@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { ResendConfirmation } from "./ResendConfirmation";
 import { toast } from "sonner";
 import { useLoginForm } from "@/hooks/useLoginForm";
 import { UserRole } from "@/services/authService/types";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LoginFormProps {
   role: UserRole;
@@ -19,19 +19,43 @@ export const LoginForm = ({ role }: LoginFormProps) => {
   const [showResendUI, setShowResendUI] = useState(false);
   const [resendEmail, setResendEmail] = useState("");
   const [isResending, setIsResending] = useState(false);
-  
-  const { 
-    form, 
+
+  const {
+    form,
     isSubmitting,
     onSubmit
   } = useLoginForm({
     role,
-    onSuccess: () => {
-      // Redirect to appropriate dashboard
-      if (role === "admin_tenant" || role === "admin_master") {
-        navigate("/admin/dashboard", { replace: true });
-      } else {
-        navigate("/inspector/dashboard", { replace: true });
+    onSuccess: async () => {
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError || !userData.user) {
+          throw new Error("Erro ao obter usuário autenticado");
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", userData.user.id)
+          .single();
+
+        if (profileError || !profile?.role) {
+          throw new Error("Erro ao buscar perfil do usuário");
+        }
+
+        const role = profile.role;
+
+        if (role === "admin_tenant" || role === "admin_master") {
+          navigate("/admin/dashboard", { replace: true });
+        } else if (role === "inspector") {
+          navigate("/inspector/dashboard", { replace: true });
+        } else {
+          throw new Error(`Papel desconhecido: ${role}`);
+        }
+      } catch (err: any) {
+        toast.error("Erro ao redirecionar", {
+          description: err.message || "Não foi possível determinar o destino"
+        });
       }
     },
     onError: (error) => {
@@ -52,13 +76,13 @@ export const LoginForm = ({ role }: LoginFormProps) => {
   const handleResendConfirmation = async () => {
     setIsResending(true);
     try {
-      // Implement resend logic here
+      // Simulação de reenvio (substitua pela lógica real)
       await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success("Email enviado", { 
+      toast.success("Email enviado", {
         description: "Verifique sua caixa de entrada"
       });
     } catch (error) {
-      toast.error("Erro ao reenviar email", { 
+      toast.error("Erro ao reenviar email", {
         description: "Tente novamente mais tarde"
       });
     } finally {
@@ -72,9 +96,9 @@ export const LoginForm = ({ role }: LoginFormProps) => {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <EmailField control={form.control} />
           <PasswordField control={form.control} />
-          
-          <Button 
-            type="submit" 
+
+          <Button
+            type="submit"
             className="w-full bg-vistoria-blue hover:bg-vistoria-darkBlue"
             disabled={isSubmitting}
           >
@@ -82,11 +106,11 @@ export const LoginForm = ({ role }: LoginFormProps) => {
           </Button>
         </form>
       </Form>
-      
-      <ResendConfirmation 
-        show={showResendUI} 
-        email={resendEmail} 
-        isLoading={isResending} 
+
+      <ResendConfirmation
+        show={showResendUI}
+        email={resendEmail}
+        isLoading={isResending}
         onResend={handleResendConfirmation}
       />
     </div>
