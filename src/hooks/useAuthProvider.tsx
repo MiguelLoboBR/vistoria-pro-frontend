@@ -4,6 +4,7 @@ import { useSessionManager } from "./useSessionManager";
 import { useProfileFetcher } from "./useProfileFetcher";
 
 export function useAuthProvider() {
+  // This hook must be used within a Router context (BrowserRouter in main.tsx)
   const navigate = useNavigate();
   const { 
     user, 
