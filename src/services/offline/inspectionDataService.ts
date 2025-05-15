@@ -184,6 +184,6 @@ const inspectionDataService = {
   }
 };
 
-// Export as default AND as named export to support both import styles
+// Export as named export AND as default export to support both import styles
 export { inspectionDataService };
 export default inspectionDataService;
