@@ -1,4 +1,3 @@
-
 import { openDB } from 'idb';
 import { syncQueue } from './syncQueue';
 import { inspectionDataService } from './inspectionDataService';
