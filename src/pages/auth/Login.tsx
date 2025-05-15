@@ -17,39 +17,63 @@ const Login = ({ role = USER_ROLES.ADMIN_TENANT }: LoginProps) => {
   const [checkingSession, setCheckingSession] = useState(true);
   const isInspector = role === USER_ROLES.INSPECTOR;
 
-  useEffect(() => {
-    const checkAuthentication = async () => {
-      console.log("Login: Verificando autenticação...");
-      setCheckingSession(true);
-      
-      try {
-        // Check Supabase session directly
-        const { data } = await supabase.auth.getSession();
-        console.log("Login: Supabase session:", data.session ? "Exists" : "Does not exist");
-        
-        if (data.session) {
-          // If we have an active session, redirect to the appropriate dashboard
-          const redirectPath = isInspector ? "/inspector/dashboard" : "/admin/dashboard";
-          console.log(`Login: User authenticated, redirecting to ${redirectPath}`);
-          navigate(redirectPath, { replace: true });
+useEffect(() => {
+  const checkAuthentication = async () => {
+    console.log("Login: Verificando autenticação...");
+    setCheckingSession(true);
+
+    try {
+      const { data } = await supabase.auth.getSession();
+      const currentSession = data.session;
+
+      if (currentSession) {
+        console.log("Login: Supabase session exists");
+
+        // Busque o perfil real do usuário logado
+        const { data: profileData, error } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", currentSession.user.id)
+          .single();
+
+        if (error) {
+          console.error("Erro ao buscar perfil:", error);
           return;
         }
-        
-        // Use auth context as fallback
-        if (session && !isLoading) {
-          console.log("Login: User authenticated via context, redirecting...");
-          const redirectPath = isInspector ? "/inspector/dashboard" : "/admin/dashboard";
-          navigate(redirectPath, { replace: true });
+
+        const role = profileData?.role;
+
+        if (role === "admin_tenant") {
+          navigate("/admin/dashboard", { replace: true });
+        } else if (role === "inspector") {
+          navigate("/inspector/dashboard", { replace: true });
+        } else {
+          console.warn("Login: Role não reconhecida:", role);
         }
-      } catch (error) {
-        console.error("Login: Error checking authentication:", error);
-      } finally {
-        setCheckingSession(false);
+
+        return;
       }
-    };
-    
-    checkAuthentication();
-  }, [session, isLoading, navigate, isInspector]);
+
+      // Fallback: se tiver sessão no contexto, repita a lógica
+      if (session && !isLoading) {
+        const role = session.user?.user_metadata?.role;
+
+        if (role === "admin_tenant") {
+          navigate("/admin/dashboard", { replace: true });
+        } else if (role === "inspector") {
+          navigate("/inspector/dashboard", { replace: true });
+        }
+      }
+    } catch (error) {
+      console.error("Login: Erro ao verificar autenticação:", error);
+    } finally {
+      setCheckingSession(false);
+    }
+  };
+
+  checkAuthentication();
+}, [session, isLoading, navigate]);
+
 
   if (isLoading || checkingSession) {
     return (
