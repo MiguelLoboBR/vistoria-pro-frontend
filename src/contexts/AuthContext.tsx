@@ -47,6 +47,7 @@ export const useAuth = () => {
   }
 };
 
+// AuthProvider is a valid React component, so hooks can be used within it
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   try {
     const {

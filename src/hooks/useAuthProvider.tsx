@@ -52,6 +52,6 @@ export function useAuthProvider() {
     session,
     refreshUserProfile: handleRefreshUserProfile,
     fetchUserProfile: handleFetchUserProfile,
-    registerInspector: handleRegisterInspector, // Export the new function
+    registerInspector: handleRegisterInspector,
   };
 }

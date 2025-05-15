@@ -13,7 +13,7 @@ interface LoginProps {
 
 const Login = ({ role = USER_ROLES.ADMIN_TENANT }: LoginProps) => {
   const { session, isLoading } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Correctly used inside a component
   const [checkingSession, setCheckingSession] = useState(true);
   const isInspector = role === USER_ROLES.INSPECTOR;
 
