@@ -61,7 +61,11 @@ export const AdminInspections = () => {
           getStatusLabel={getStatusLabel}
         />
         
-        <NewInspectionDialog onSubmit={handleAddInspection} />
+        <NewInspectionDialog 
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          onSubmit={handleAddInspection} 
+        />
       </div>
     </AdminLayout>
   );
