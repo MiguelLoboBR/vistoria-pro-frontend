@@ -22,13 +22,17 @@ export const InspectionActionButtons = ({
   // Calendar variant (used in Vistorias.tsx)
   if (variant === "calendar") {
     return (
-      <div className="flex gap-2">
-        <Button variant="outline" className="flex gap-2 items-center">
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" className="flex gap-2 items-center w-full sm:w-auto mb-2 sm:mb-0">
           <Calendar className="h-4 w-4" />
-          <span className="hidden sm:inline">Ver Calendário</span>
+          <span className="sm:inline">Ver Calendário</span>
         </Button>
         
-        <Button className="flex gap-2 items-center" onClick={onOpenDialog}>
+        <Button 
+          className="flex gap-2 items-center w-full sm:w-auto" 
+          size="sm"
+          onClick={onOpenDialog}
+        >
           <Plus className="h-4 w-4" />
           <span>Nova Vistoria</span>
         </Button>
@@ -38,10 +42,10 @@ export const InspectionActionButtons = ({
   
   // Default variant (used in Inspections.tsx)
   return (
-    <div className="flex gap-3">
+    <div className="flex flex-wrap gap-3">
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
-          <Button>
+          <Button className="w-full sm:w-auto mb-2 sm:mb-0">
             <FilePlus className="mr-2 h-4 w-4" />
             Nova Vistoria
           </Button>
@@ -49,7 +53,7 @@ export const InspectionActionButtons = ({
       </Dialog>
       
       {showExport && (
-        <Button variant="outline">
+        <Button variant="outline" className="w-full sm:w-auto">
           <Download className="mr-2 h-4 w-4" />
           Exportar
         </Button>

@@ -35,6 +35,18 @@ export const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    // Close mobile menu when viewport changes to desktop
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setMobileMenuOpen(false);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const getLoginUrl = () => {
     if (!isAuthenticated) return "/login";
     
@@ -50,14 +62,14 @@ export const Header = () => {
       "fixed top-0 w-full z-50 transition-all duration-300",
       isScrolled ? "bg-white shadow-md py-2" : "bg-transparent py-4"
     )}>
-      <div className="container mx-auto px-4 flex items-center justify-between">
+      <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="text-2xl font-bold text-vistoria-blue">
+        <Link to="/" className="text-xl md:text-2xl font-bold text-vistoria-blue">
           VistoriaPro
         </Link>
         
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
+        <nav className="hidden md:flex items-center space-x-4 lg:space-x-8">
           <a href="#features" className="text-gray-700 hover:text-vistoria-blue transition-colors">Recursos</a>
           <a href="#como-funciona" className="text-gray-700 hover:text-vistoria-blue transition-colors">Como Funciona</a>
           <a href="#depoimentos" className="text-gray-700 hover:text-vistoria-blue transition-colors">Clientes</a>
@@ -75,7 +87,7 @@ export const Header = () => {
         
         {/* Mobile Menu Button */}
         <button 
-          className="md:hidden text-gray-700"
+          className="md:hidden text-gray-700 focus:outline-none"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
         >
@@ -91,24 +103,42 @@ export const Header = () => {
       {mobileMenuOpen && (
         <div className="md:hidden bg-white shadow-md pt-2 pb-4 absolute w-full animate-fade-in">
           <div className="container mx-auto px-4 flex flex-col space-y-4">
-            <a href="#features" className="text-gray-700 py-2" onClick={() => setMobileMenuOpen(false)}>Recursos</a>
-            <a href="#como-funciona" className="text-gray-700 py-2" onClick={() => setMobileMenuOpen(false)}>Como Funciona</a>
-            <a href="#depoimentos" className="text-gray-700 py-2" onClick={() => setMobileMenuOpen(false)}>Clientes</a>
+            <a 
+              href="#features" 
+              className="text-gray-700 py-3 border-b border-gray-100" 
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Recursos
+            </a>
+            <a 
+              href="#como-funciona" 
+              className="text-gray-700 py-3 border-b border-gray-100" 
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Como Funciona
+            </a>
+            <a 
+              href="#depoimentos" 
+              className="text-gray-700 py-3 border-b border-gray-100" 
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Clientes
+            </a>
             <Link 
               to={getLoginUrl()} 
-              className="text-vistoria-blue font-medium py-2"
+              className="text-vistoria-blue font-medium py-3 border-b border-gray-100"
               onClick={() => setMobileMenuOpen(false)}
             >
               {isAuthenticated ? "Ir para Dashboard" : "Entrar"}
             </Link>
             {!isAuthenticated && (
-              <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="py-2">
+              <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="py-3">
                 <Button className="w-full bg-vistoria-blue hover:bg-vistoria-darkBlue">
                   Cadastre-se
                 </Button>
               </Link>
             )}
-            <Link to="/install-pwa" onClick={() => setMobileMenuOpen(false)} className="py-2">
+            <Link to="/install-pwa" onClick={() => setMobileMenuOpen(false)} className="py-3">
               <Button variant="outline" className="w-full border-vistoria-blue text-vistoria-blue">
                 Instalar App
               </Button>

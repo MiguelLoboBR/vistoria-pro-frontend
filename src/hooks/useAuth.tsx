@@ -3,11 +3,8 @@ import { useContext } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-// Export the useAuth hook for use in other components
-export const useAuth = () => {
-  const authContext = useContext(AuthContext);
-  return authContext;
-};
+// Do not export useAuth from here to avoid circular dependency
+// We only export auth methods
 
 // Export auth methods for use in other components
 export const useAuthMethods = () => {

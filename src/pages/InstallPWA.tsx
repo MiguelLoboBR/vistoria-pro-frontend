@@ -67,48 +67,48 @@ const InstallPWA = () => {
       </div>
 
       <div className="flex-1 container mx-auto px-4 py-8 flex flex-col items-center justify-center">
-        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
-          <h1 className="text-2xl font-bold mb-6 text-center">Instale o VistoriaPro App</h1>
+        <div className="max-w-sm md:max-w-md w-full bg-white p-6 md:p-8 rounded-lg shadow-md">
+          <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-center">Instale o VistoriaPro App</h1>
           
           {isInstalled ? (
             <div className="text-center">
               <div className="flex justify-center mb-4">
-                <CheckCircle2 className="h-16 w-16 text-green-500" />
+                <CheckCircle2 className="h-12 w-12 md:h-16 md:w-16 text-green-500" />
               </div>
-              <p className="text-lg mb-4">O VistoriaPro já está instalado no seu dispositivo!</p>
+              <p className="text-base md:text-lg mb-4">O VistoriaPro já está instalado no seu dispositivo!</p>
               <Link to="/">
                 <Button className="w-full bg-vistoria-blue">Ir para o App</Button>
               </Link>
             </div>
           ) : isIos ? (
-            <div className="space-y-6">
-              <p className="text-gray-700">Para instalar o VistoriaPro no seu iPhone ou iPad:</p>
-              <ol className="list-decimal list-inside space-y-4 text-gray-700">
+            <div className="space-y-5 md:space-y-6">
+              <p className="text-gray-700 text-sm md:text-base">Para instalar o VistoriaPro no seu iPhone ou iPad:</p>
+              <ol className="list-decimal list-inside space-y-3 md:space-y-4 text-sm md:text-base text-gray-700">
                 <li>Toque no ícone de compartilhamento <span className="inline-block px-2 py-1 bg-gray-100 rounded">Compartilhar</span></li>
                 <li>Role para baixo e toque em <span className="font-medium">Adicionar à Tela de Início</span></li>
                 <li>Toque em <span className="font-medium">Adicionar</span> no canto superior direito</li>
               </ol>
               <div className="border-t border-gray-200 pt-4">
-                <p className="text-center text-gray-500 text-sm">
+                <p className="text-center text-gray-500 text-xs md:text-sm">
                   Após instalar, você poderá acessar o VistoriaPro diretamente da sua tela inicial.
                 </p>
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
-              <p className="text-gray-700">Instale o VistoriaPro para usar offline e receber notificações sobre suas vistorias.</p>
+            <div className="space-y-5 md:space-y-6">
+              <p className="text-gray-700 text-sm md:text-base">Instale o VistoriaPro para usar offline e receber notificações sobre suas vistorias.</p>
               <div className="flex justify-center">
                 <Button 
                   onClick={handleInstallClick} 
                   disabled={!deferredPrompt}
-                  className="bg-vistoria-blue hover:bg-vistoria-darkBlue px-8"
+                  className="bg-vistoria-blue hover:bg-vistoria-darkBlue px-6 md:px-8 py-2.5"
                 >
-                  <Download className="mr-2 h-5 w-5" />
+                  <Download className="mr-2 h-4 w-4 md:h-5 md:w-5" />
                   Instalar App
                 </Button>
               </div>
               {!deferredPrompt && (
-                <p className="text-sm text-center text-gray-500">
+                <p className="text-xs md:text-sm text-center text-gray-500">
                   Se o botão estiver desabilitado, você pode estar usando um navegador incompatível ou o aplicativo já está instalado.
                 </p>
               )}

@@ -23,6 +23,18 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     }
   }, [isMobile]);
   
+  // Close mobile menu on resize to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
   const handleLogout = async () => {
     try {
       await signOut();
@@ -49,10 +61,10 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col w-full">
         {/* Top Header */}
-        <Header onMobileMenuToggle={() => setIsMobileMenuOpen(true)} />
+        <Header onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
         
         {/* Main Content */}
-        <main className="flex-1 px-4 py-6 md:px-6 overflow-y-auto bg-gray-50">
+        <main className="flex-1 px-3 sm:px-4 md:px-6 py-4 md:py-6 overflow-y-auto bg-gray-50">
           {children}
         </main>
       </div>
