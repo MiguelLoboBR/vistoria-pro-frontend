@@ -1,5 +1,6 @@
 
 import Logo from "@/components/Logo";
+import ThemeToggle from "./ThemeToggle";
 
 export const FooterSection = () => {
   return (
@@ -70,13 +71,14 @@ export const FooterSection = () => {
           <p className="text-xs md:text-sm mb-4 md:mb-0">
             © {new Date().getFullYear()} VistoriaPro. Todos os direitos reservados.
           </p>
-          <div className="flex flex-wrap justify-center md:justify-end space-x-4">
+          <div className="flex flex-wrap justify-center md:justify-end space-x-4 items-center">
             <a href="#" className="text-gray-400 hover:text-white transition-colors text-xs md:text-sm">
               Termos de Uso
             </a>
             <a href="#" className="text-gray-400 hover:text-white transition-colors text-xs md:text-sm">
               Política de Privacidade
             </a>
+            <ThemeToggle />
           </div>
         </div>
       </div>

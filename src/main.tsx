@@ -8,6 +8,23 @@ import './index.css';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from './components/ui/sonner';
 
+// Inicializar o tema
+const initializeTheme = () => {
+  const savedTheme = localStorage.getItem("vistoria-theme");
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  
+  if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+  }
+};
+
+// Executar inicialização do tema
+if (typeof window !== "undefined") {
+  initializeTheme();
+}
+
 // Create a client for React Query
 const queryClient = new QueryClient({
   defaultOptions: {
