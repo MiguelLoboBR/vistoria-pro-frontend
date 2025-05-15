@@ -26,6 +26,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import AdminInspections from "./pages/admin/Inspections";
 import AdminProfile from "./pages/admin/Profile";
 import AdminInspectors from "./pages/admin/Inspectors";
+import InspectorList from "./pages/admin/InspectorList";
 import Vistorias from "./pages/admin/Vistorias";
 import UnderConstruction from "./pages/admin/UnderConstruction";
 
@@ -67,6 +68,11 @@ const AppRoutes = () => (
     <Route path="/admin/inspectors" element={
       <AuthGuard requiredRole="admin_tenant">
         <AdminInspectors />
+      </AuthGuard>
+    } />
+    <Route path="/admin/inspector-list" element={
+      <AuthGuard requiredRole="admin_tenant">
+        <InspectorList />
       </AuthGuard>
     } />
     <Route path="/admin/inspections" element={
