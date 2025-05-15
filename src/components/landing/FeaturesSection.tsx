@@ -1,3 +1,4 @@
+
 import { Calendar, Search, Shield, Users, Image, CheckCircle } from "lucide-react";
 
 export const FeaturesSection = () => {
