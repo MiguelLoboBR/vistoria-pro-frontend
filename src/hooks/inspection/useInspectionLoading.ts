@@ -4,29 +4,20 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { inspectionService } from "@/services/inspectionService";
 import { offlineService } from "@/services/offline";
-import { Inspection, InspectionRoom, InspectionItem } from "@/services/inspectionService/types";
+import { Inspection, InspectionRoom } from "@/services/inspectionService/types";
 
-export const useInspectionData = (id?: string) => {
+/**
+ * Hook for loading inspection data, either from server or local cache
+ */
+export const useInspectionLoading = (id?: string) => {
   const navigate = useNavigate();
-  
   const [inspection, setInspection] = useState<Inspection | null>(null);
   const [rooms, setRooms] = useState<InspectionRoom[]>([]);
   const [responsibleName, setResponsibleName] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
-  const [progress, setProgress] = useState(0);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  
-  // Signatures
-  const [inspectorSignature, setInspectorSignature] = useState<string | null>(null);
-  const [responsibleSignature, setResponsibleSignature] = useState<string | null>(null);
-  const [isInspectorSignatureOpen, setIsInspectorSignatureOpen] = useState(false);
-  const [isResponsibleSignatureOpen, setIsResponsibleSignatureOpen] = useState(false);
 
-  // QR code data
-  const [qrCodeData, setQrCodeData] = useState<string | null>(null);
-  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
-  
-  // Setup online/offline listeners
+  // Set up online/offline listeners
   useEffect(() => {
     offlineService.initOfflineService();
     
@@ -41,7 +32,7 @@ export const useInspectionData = (id?: string) => {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-  
+
   // Load inspection data
   useEffect(() => {
     const loadInspection = async () => {
@@ -110,7 +101,7 @@ export const useInspectionData = (id?: string) => {
     
     loadInspection();
   }, [id, navigate]);
-  
+
   // Load rooms and items
   const loadRooms = async (inspectionId: string) => {
     try {
@@ -135,15 +126,15 @@ export const useInspectionData = (id?: string) => {
             if (!room) return null;
             
             const defaultItems = [
-              { label: "Paredes", room_id: room.id, state: null, observation: null, transcription: null } as Partial<InspectionItem>,
-              { label: "Piso", room_id: room.id, state: null, observation: null, transcription: null } as Partial<InspectionItem>,
-              { label: "Teto", room_id: room.id, state: null, observation: null, transcription: null } as Partial<InspectionItem>,
-              { label: "Portas", room_id: room.id, state: null, observation: null, transcription: null } as Partial<InspectionItem>,
-              { label: "Janelas", room_id: room.id, state: null, observation: null, transcription: null } as Partial<InspectionItem>,
+              { label: "Paredes", room_id: room.id, state: null, observation: null, transcription: null },
+              { label: "Piso", room_id: room.id, state: null, observation: null, transcription: null },
+              { label: "Teto", room_id: room.id, state: null, observation: null, transcription: null },
+              { label: "Portas", room_id: room.id, state: null, observation: null, transcription: null },
+              { label: "Janelas", room_id: room.id, state: null, observation: null, transcription: null },
             ];
             
             await Promise.all(defaultItems.map(item => 
-              inspectionService.createItem(item as Omit<InspectionItem, "id" | "created_at">)
+              inspectionService.createItem(item as Omit<any, "id" | "created_at">)
             ));
           })
         );
@@ -192,6 +183,10 @@ export const useInspectionData = (id?: string) => {
       toast.error("Erro ao carregar ambientes");
     }
   };
+
+  // Signatures state is defined but used in the component later
+  const [inspectorSignature, setInspectorSignature] = useState<string | null>(null);
+  const [responsibleSignature, setResponsibleSignature] = useState<string | null>(null);
   
   // Load signatures
   const loadSignatures = async (inspectionId: string) => {
@@ -217,34 +212,6 @@ export const useInspectionData = (id?: string) => {
       console.error("Error loading signatures:", error);
     }
   };
-  
-  // Calculate progress
-  useEffect(() => {
-    if (rooms.length === 0) {
-      setProgress(0);
-      return;
-    }
-    
-    let totalItems = 0;
-    let completedItems = 0;
-    
-    rooms.forEach(room => {
-      if (room.items) {
-        totalItems += room.items.length;
-        room.items.forEach(item => {
-          if (item.state) {
-            completedItems++;
-          }
-        });
-      }
-    });
-    
-    const calculatedProgress = totalItems > 0 
-      ? Math.round((completedItems / totalItems) * 100)
-      : 0;
-      
-    setProgress(calculatedProgress);
-  }, [rooms]);
 
   return {
     inspection,
@@ -254,18 +221,9 @@ export const useInspectionData = (id?: string) => {
     setResponsibleName,
     isLoading,
     isOnline,
-    progress,
-    qrCodeData,
-    setQrCodeData,
-    isQrScannerOpen,
-    setIsQrScannerOpen,
     inspectorSignature,
     setInspectorSignature,
     responsibleSignature,
     setResponsibleSignature,
-    isInspectorSignatureOpen,
-    setIsInspectorSignatureOpen,
-    isResponsibleSignatureOpen,
-    setIsResponsibleSignatureOpen,
   };
 };

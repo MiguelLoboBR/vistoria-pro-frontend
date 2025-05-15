@@ -4,8 +4,8 @@ import { toast } from "sonner";
 import InspectorLayout from "@/components/layouts/InspectorLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Import hooks
-import { useInspectionData } from "@/hooks/useInspectionData";
+// Import hooks from our refactored structure
+import { useInspectionData } from "@/hooks/inspection";
 import { useInspectionActions } from "@/hooks/useInspectionActions";
 
 // Import custom components
