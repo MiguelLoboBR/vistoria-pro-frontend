@@ -43,7 +43,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <App />
-          <Toaster richColors position="top-right" />
+          <Toaster />
         </AuthProvider>
       </QueryClientProvider>
     </BrowserRouter>
