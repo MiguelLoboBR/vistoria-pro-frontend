@@ -7,13 +7,7 @@ const Toaster = () => {
       position="top-right"
       richColors
       toastOptions={{
-        style: {
-          borderRadius: '8px',
-          background: 'white',
-          color: '#0E3A78',
-          border: '1px solid #D1D5DB',
-          fontSize: '14px',
-        },
+        className: "bg-white text-[#0E3A78] border border-gray-300 dark:bg-gray-900 dark:text-white dark:border-gray-700",
       }}
     />
   );
