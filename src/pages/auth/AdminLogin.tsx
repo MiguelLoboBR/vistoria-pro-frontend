@@ -6,38 +6,31 @@ import LoginForm from "@/components/auth/LoginForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { USER_ROLES } from "@/services/authService/types";
+import { loginAndRedirect } from "@/services/loginFlow";
 
 export const AdminLogin = () => {
   const { session, isLoading, user } = useAuth();
   const navigate = useNavigate();
   const [checkingSession, setCheckingSession] = useState(true);
 
-  useEffect(() => {
-    const checkAuthentication = async () => {
-      console.log("AdminLogin: Verificando autenticação...");
-      setCheckingSession(true);
-      
-      try {
-        // Verificar diretamente a sessão do Supabase
-        const { data } = await supabase.auth.getSession();
-        console.log("AdminLogin: Sessão do Supabase:", data.session ? "Existe" : "Não existe");
-        
-        // Se temos uma sessão ativa, redirecionar para o dashboard apropriado
-        if (data.session) {
-          // Fetch user role from user context or metadata
-          const userRole = user?.role || data.session.user.user_metadata?.role;
-          
-          console.log("AdminLogin: Usuário autenticado com role:", userRole);
-          
-          if (userRole === 'admin_tenant' || userRole === 'admin_master') {
-            console.log("AdminLogin: Redirecionando admin para dashboard");
-            navigate("/admin/dashboard", { replace: true });
-          } else {
-            console.log("AdminLogin: Redirecionando inspetor para dashboard");
-            navigate("/inspector/dashboard", { replace: true });
-          }
-          return;
-        }
+useEffect(() => {
+  const checkSessionAndRedirect = async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        await loginAndRedirect((path, options) => navigate(path, options));
+      }
+    } catch (err: any) {
+      console.error("Erro na verificação de sessão:", err.message);
+    } finally {
+      setCheckingSession(false);
+    }
+  };
+
+  checkSessionAndRedirect();
+  
+}, [navigate]);
+
         
         // Usar o contexto de autenticação como fallback
         if (session && !isLoading) {
