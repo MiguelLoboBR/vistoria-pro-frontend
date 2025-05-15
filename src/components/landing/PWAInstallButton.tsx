@@ -1,7 +1,18 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// Define o tipo BeforeInstallPromptEvent que está faltando
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  readonly userChoice: Promise<{
+    outcome: "accepted" | "dismissed";
+    platform: string;
+  }>;
+  prompt(): Promise<void>;
+}
 
 interface PWAInstallButtonProps {
   className?: string;
