@@ -22,13 +22,11 @@ const queryClient = new QueryClient({
 // Ensure BrowserRouter is the outermost provider to fix useNavigate hooks
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <App />
-          <Toaster richColors position="top-right" />
-        </AuthProvider>
-      </QueryClientProvider>
-    </BrowserRouter>
-  </React.StrictMode>,
+  <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <App />
+      <Toaster richColors position="top-right" />
+    </QueryClientProvider>
+  </BrowserRouter>
+</React.StrictMode>
 );
