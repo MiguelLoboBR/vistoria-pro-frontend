@@ -1,9 +1,10 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { UserProfile, Inspector } from '@/services/types';
 import { useAuthMethods } from '@/hooks/useAuth';
+import { UserRole } from '@/services/authService/types';
 
 export type InspectorFormValues = {
   fullName: string;
@@ -94,12 +95,12 @@ export function useInspectors(companyId: string | undefined) {
     }
   };
 
-  // Load inspectors when companyId changes
-  useState(() => {
+  // Fixed: Changed from useState to useEffect for loading inspectors when companyId changes
+  useEffect(() => {
     if (companyId) {
       fetchInspectors();
     }
-  });
+  }, [companyId]);
 
   return {
     inspectors,
