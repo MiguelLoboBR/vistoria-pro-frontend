@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { UserProfile, Inspector } from '@/services/types';
-import { useAuthMethods } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/services/authService/types';
 
 export type InspectorFormValues = {
@@ -16,7 +16,7 @@ export function useInspectors(companyId: string | undefined) {
   const [inspectors, setInspectors] = useState<Inspector[]>([]);
   const [isLoadingInspectors, setIsLoadingInspectors] = useState(false);
   const [isCreatingInspector, setIsCreatingInspector] = useState(false);
-  const { registerInspector } = useAuthMethods();
+  const { registerInspector } = useAuth();
 
   const fetchInspectors = async () => {
     if (!companyId) {

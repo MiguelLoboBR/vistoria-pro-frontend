@@ -2,6 +2,7 @@
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth as useAuthContext } from "@/contexts/AuthContext";
+import { authService } from "@/services/authService";
 
 export const useAuthMethods = () => {
   const { session } = useAuthContext() || {};
@@ -70,11 +71,22 @@ export const useAuthMethods = () => {
     }
   }, [session?.user?.id]);
 
+  // Adding registerInspector function to be exported
+  const registerInspector = async (email: string, password: string, fullName: string, companyId: string) => {
+    try {
+      return await authService.registerInspector(email, password, fullName, companyId);
+    } catch (error) {
+      console.error("Error registering inspector:", error);
+      throw error;
+    }
+  };
+
   return {
     signIn,
     signUp,
     signOut,
-    refreshUserProfile
+    refreshUserProfile,
+    registerInspector
   };
 };
 

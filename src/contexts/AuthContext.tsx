@@ -15,6 +15,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<any>;
   signOut: () => Promise<void>;
   refreshUserProfile: () => Promise<void>;
+  registerInspector: (email: string, password: string, fullName: string, companyId: string) => Promise<UserProfile | null>; // Add this line
 }
 
 // Create the context with undefined as default value
@@ -35,7 +36,8 @@ export const useAuth = () => {
         signIn: async () => ({ error: new Error("Auth context not available") }),
         signUp: async () => ({ error: new Error("Auth context not available") }),
         signOut: async () => { console.warn("Auth context not available"); },
-        refreshUserProfile: async () => { console.warn("Auth context not available"); }
+        refreshUserProfile: async () => { console.warn("Auth context not available"); },
+        registerInspector: async () => { console.warn("Auth context not available"); return null; }
       } as AuthContextType;
     }
     return context;
@@ -53,7 +55,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isAuthenticated,
       isLoading,
       session,
-      fetchUserProfile
+      fetchUserProfile,
+      registerInspector
     } = useAuthProvider();
     
     const {
@@ -76,7 +79,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signIn,
       signUp,
       signOut,
-      refreshUserProfile
+      refreshUserProfile,
+      registerInspector // Add registerInspector to the context value
     };
     
     return (

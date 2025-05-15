@@ -1,6 +1,7 @@
 
 import { useSessionManager } from "./useSessionManager";
 import { useProfileFetcher } from "./useProfileFetcher";
+import { authService } from "@/services/authService";
 
 export function useAuthProvider() {
   const {
@@ -29,6 +30,17 @@ export function useAuthProvider() {
     if (fetchedCompany) setCompany(fetchedCompany);
   };
 
+  // Add registerInspector function
+  const handleRegisterInspector = async (email: string, password: string, fullName: string, companyId: string) => {
+    try {
+      const inspector = await authService.registerInspector(email, password, fullName, companyId);
+      return inspector;
+    } catch (error: any) {
+      console.error("Error registering inspector:", error.message);
+      throw error;
+    }
+  };
+
   return {
     user,
     setUser,
@@ -40,5 +52,6 @@ export function useAuthProvider() {
     session,
     refreshUserProfile: handleRefreshUserProfile,
     fetchUserProfile: handleFetchUserProfile,
+    registerInspector: handleRegisterInspector, // Export the new function
   };
 }
