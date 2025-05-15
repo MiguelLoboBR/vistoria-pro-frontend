@@ -1,23 +1,17 @@
 
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSessionManager } from "./useSessionManager";
 import { useProfileFetcher } from "./useProfileFetcher";
-import { useNavigate } from "react-router-dom";
 
 export function useAuthProvider() {
+  const navigateFromRouter = useNavigate(); // ✅ chamada correta de hook no topo
   const [navigate, setNavigate] = useState<(path: string) => void>(() => () => {});
 
   useEffect(() => {
-    try {
-      const nav = useNavigate();
-      setNavigate(() => nav);
-    } catch {
-      console.warn("❗ useNavigate() falhou: usando fallback para window.location");
-      setNavigate(() => (path: string) => {
-        if (path) window.location.href = path;
-      });
-    }
-  }, []);
+    // Agora já é seguro usar navigateFromRouter dentro do useEffect
+    setNavigate(() => navigateFromRouter);
+  }, [navigateFromRouter]);
 
   const {
     user,
