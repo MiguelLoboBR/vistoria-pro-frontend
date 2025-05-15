@@ -15,16 +15,8 @@ export const Header = () => {
   const isAuthenticated = auth?.isAuthenticated || false;
   const user = auth?.user || null;
   
-  // Create safe navigation function
-  let navigate;
-  try {
-    navigate = useNavigate();
-  } catch (error) {
-    console.warn("Header: Router context not available");
-    navigate = (path: string) => {
-      window.location.href = path;
-    };
-  }
+  // Cria uma função de navegação segura
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {

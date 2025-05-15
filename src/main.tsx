@@ -36,7 +36,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Ensure BrowserRouter is the outermost router provider
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <BrowserRouter>
