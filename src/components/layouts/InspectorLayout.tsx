@@ -1,156 +1,186 @@
 
-import { useState, ReactNode } from "react";
-import { Home, Calendar, FileText, Settings, LogOut, Menu, X } from "lucide-react";
-import { Link } from "react-router-dom";
-import Logo from "../Logo";
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  CalendarDays,
+  ClipboardList,
+  Clock,
+  LayoutDashboard,
+  Menu,
+  User,
+  LogOut,
+  X,
+  Settings,
+} from "lucide-react";
+import Logo from "@/components/Logo";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 interface InspectorLayoutProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
-interface NavItem {
-  title: string;
-  icon: ReactNode;
-  path: string;
-  active?: boolean;
-}
+const InspectorLayout: React.FC<InspectorLayoutProps> = ({ children }) => {
+  const location = useLocation();
+  const { signOut } = useAuth();
+  const [open, setOpen] = useState(false);
 
-export const InspectorLayout = ({ children }: InspectorLayoutProps) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, signOut } = useAuth();
-  
-  const navItems: NavItem[] = [
-    { title: "Início", icon: <Home size={20} />, path: "/inspector/dashboard", active: true },
-    { title: "Agenda", icon: <Calendar size={20} />, path: "/inspector/schedule" },
-    { title: "Histórico", icon: <FileText size={20} />, path: "/inspector/history" },
-    { title: "Perfil", icon: <Settings size={20} />, path: "/inspector/profile" },
+  const isActive = (path: string) => {
+    return location.pathname.includes(path);
+  };
+
+  const navigation = [
+    {
+      name: "Dashboard",
+      href: "/app/inspector/dashboard",
+      icon: LayoutDashboard,
+      current: isActive("/dashboard"),
+    },
+    {
+      name: "Vistorias",
+      href: "/app/inspector/inspections",
+      icon: ClipboardList,
+      current: isActive("/inspections"),
+    },
+    {
+      name: "Agenda",
+      href: "/app/inspector/schedule",
+      icon: CalendarDays,
+      current: isActive("/schedule"),
+    },
+    {
+      name: "Histórico",
+      href: "/app/inspector/history",
+      icon: Clock,
+      current: isActive("/history"),
+    },
+    {
+      name: "Perfil",
+      href: "/app/inspector/profile",
+      icon: User,
+      current: isActive("/profile"),
+    },
   ];
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      // signOut will handle the navigation
-    } catch (error) {
-      console.error("Error during logout:", error);
-    }
+  const handleSignOut = () => {
+    signOut();
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Top Header */}
-      <header className="h-16 bg-white border-b border-gray-200 flex items-center px-4 justify-between sticky top-0 z-10">
-        {/* Menu Button */}
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => setIsMobileMenuOpen(true)}
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
-        
-        {/* Logo */}
-        <Logo size="sm" />
-        
-        {/* User Avatar */}
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={user?.avatar_url || ""} />
-          <AvatarFallback className="bg-vistoria-blue text-white">
-            {user?.full_name?.charAt(0) || "V"}
-          </AvatarFallback>
-        </Avatar>
-      </header>
-      
-      {/* Mobile Menu (Off-canvas) */}
-      {isMobileMenuOpen && (
-        <>
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
-            onClick={() => setIsMobileMenuOpen(false)}
-          ></div>
-          <div className="fixed inset-y-0 left-0 w-64 bg-white z-50 shadow-lg animate-fade-in">
-            <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-              <Logo />
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setIsMobileMenuOpen(false)}
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar for desktop */}
+      <div className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 bg-white border-r">
+        <div className="flex-1 flex flex-col min-h-0 pt-5">
+          <div className="flex items-center justify-center h-16">
+            <Logo height={40} />
+          </div>
+          <nav className="flex-1 px-3 mt-6 space-y-1">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={cn(
+                  item.current
+                    ? "bg-gray-100 text-primary"
+                    : "text-gray-600 hover:bg-gray-50",
+                  "group flex items-center px-3 py-2.5 text-sm font-medium rounded-md"
+                )}
               >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-            
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={user?.avatar_url || ""} />
-                  <AvatarFallback className="bg-vistoria-blue text-white">
-                    {user?.full_name?.charAt(0) || "V"}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium">{user?.full_name || "Vistoriador"}</p>
-                  <p className="text-sm text-gray-500">{user?.role || "Vistoriador"}</p>
-                </div>
-              </div>
-            </div>
-            
-            <nav className="py-4">
-              {navItems.map((item, index) => (
-                <Link 
-                  to={item.path}
-                  key={index}
+                <item.icon
                   className={cn(
-                    "flex items-center py-3 px-4 text-gray-700 hover:bg-gray-100 hover:text-vistoria-blue",
-                    item.active ? "bg-gray-100 text-vistoria-blue font-medium" : ""
+                    item.current
+                      ? "text-primary"
+                      : "text-gray-400 group-hover:text-gray-500",
+                    "mr-3 flex-shrink-0 h-5 w-5"
                   )}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  aria-hidden="true"
+                />
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        <div className="flex-shrink-0 p-4 border-t">
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={handleSignOut}
+          >
+            <LogOut className="mr-3 h-5 w-5" />
+            Sair
+          </Button>
+        </div>
+      </div>
+
+      {/* Mobile header and menu */}
+      <div className="flex flex-col flex-1 md:pl-64">
+        <div className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 bg-white border-b md:hidden">
+          <div className="flex items-center">
+            <Logo height={30} />
+          </div>
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[240px] p-0">
+              <div className="flex items-center justify-between p-4 border-b">
+                <Logo height={30} />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setOpen(false)}
                 >
-                  <span className="mr-3">{item.icon}</span>
-                  <span>{item.title}</span>
-                </Link>
-              ))}
-              
-              <div className="px-4 pt-4 mt-4 border-t border-gray-200">
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 px-3"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="mr-3 h-5 w-5" />
-                  <span>Sair</span>
+                  <X className="h-5 w-5" />
                 </Button>
               </div>
-            </nav>
-          </div>
-        </>
-      )}
-      
-      {/* Main Content */}
-      <main className="flex-1 px-4 py-6 overflow-y-auto">
-        {children}
-      </main>
-      
-      {/* Bottom Navigation (Mobile) */}
-      <div className="md:hidden bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0 z-10">
-        <nav className="flex justify-around py-2">
-          {navItems.map((item, index) => (
-            <Link 
-              to={item.path}
-              key={index}
-              className={cn(
-                "flex flex-col items-center py-1 px-2 text-xs",
-                item.active ? "text-vistoria-blue" : "text-gray-500"
-              )}
-            >
-              {item.icon}
-              <span className="mt-1">{item.title}</span>
-            </Link>
-          ))}
-        </nav>
+              <nav className="flex-1 p-4 space-y-1">
+                {navigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      item.current
+                        ? "bg-gray-100 text-primary"
+                        : "text-gray-600 hover:bg-gray-50",
+                      "group flex items-center px-3 py-2.5 text-sm font-medium rounded-md"
+                    )}
+                  >
+                    <item.icon
+                      className={cn(
+                        item.current
+                          ? "text-primary"
+                          : "text-gray-400 group-hover:text-gray-500",
+                        "mr-3 flex-shrink-0 h-5 w-5"
+                      )}
+                      aria-hidden="true"
+                    />
+                    {item.name}
+                  </Link>
+                ))}
+                <div className="pt-4 mt-4 border-t">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="mr-3 h-5 w-5" />
+                    Sair
+                  </Button>
+                </div>
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        <main className="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6">
+          {children}
+        </main>
       </div>
     </div>
   );
