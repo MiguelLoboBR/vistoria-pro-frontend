@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UserProfile } from "@/services/types";
+import { InspectorFormValues } from "@/components/admin/inspectors/InspectorForm";
 
 export const useInspectors = (companyId?: string) => {
   const queryClient = useQueryClient();
@@ -33,7 +34,7 @@ export const useInspectors = (companyId?: string) => {
   
   // Mutation to create inspector
   const createInspectorMutation = useMutation({
-    mutationFn: async ({ fullName, email, password }: { fullName: string, email: string, password: string }) => {
+    mutationFn: async (values: InspectorFormValues) => {
       if (!companyId) {
         throw new Error("Company ID not found");
       }
@@ -41,9 +42,9 @@ export const useInspectors = (companyId?: string) => {
       const { data, error } = await supabase.functions.invoke('add_inspector_to_company', {
         body: {
           company_id: companyId,
-          email,
-          password,
-          full_name: fullName
+          email: values.email,
+          password: values.password,
+          full_name: values.fullName
         }
       });
       
