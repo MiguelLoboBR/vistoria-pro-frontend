@@ -65,13 +65,14 @@ const networkStatusService = {
   }
 };
 
-// Expose the methods directly on offlineService
+// Create the offlineService object with all methods directly accessible
 const offlineService = {
   db: null as any,
   networkStatus: networkStatusService.init(),
   syncQueue,
   inspectionDataService,
   
+  // Initialize the service
   async init() {
     try {
       this.db = await initializeDB();
@@ -79,7 +80,7 @@ const offlineService = {
       
       // Set up network change handlers
       this.networkStatus.onOnline(() => {
-        this.syncQueue.processSyncQueue();
+        this.processSyncQueue();
       });
       
       // Initialize sub-services
@@ -100,36 +101,32 @@ const offlineService = {
     });
   },
   
-  // Process sync queue
-  async processSyncQueue() {
-    return await syncQueue.processSyncQueue();
+  // Direct method access from root object
+  processSyncQueue() {
+    return this.syncQueue.processSyncQueue();
   },
   
-  // Save inspection locally
-  async saveInspectionLocally(inspection: any, isSynced = false) {
-    return await inspectionDataService.saveInspectionLocally(inspection, isSynced);
+  saveInspectionLocally(inspection: any, isSynced = false) {
+    return this.inspectionDataService.saveInspectionLocally(inspection, isSynced);
   },
   
-  // Get complete inspection locally
-  async getCompleteInspectionLocally(inspectionId: string) {
-    return await inspectionDataService.getCompleteInspectionLocally(inspectionId);
+  getCompleteInspectionLocally(inspectionId: string) {
+    return this.inspectionDataService.getCompleteInspectionLocally(inspectionId);
   },
   
-  // Save room locally
-  async saveRoomLocally(room: any, isSynced = false) {
-    return await inspectionDataService.saveRoomLocally(room, isSynced);
+  saveRoomLocally(room: any, isSynced = false) {
+    return this.inspectionDataService.saveRoomLocally(room, isSynced);
   },
   
-  // Save item locally
-  async saveItemLocally(item: any, isSynced = false) {
-    return await inspectionDataService.saveItemLocally(item, isSynced);
+  saveItemLocally(item: any, isSynced = false) {
+    return this.inspectionDataService.saveItemLocally(item, isSynced);
   },
   
-  // Save signature locally
-  async saveSignatureLocally(signature: any, isSynced = false) {
-    return await inspectionDataService.saveSignatureLocally(signature, isSynced);
+  saveSignatureLocally(signature: any, isSynced = false) {
+    return this.inspectionDataService.saveSignatureLocally(signature, isSynced);
   },
   
+  // Clear all data
   async clearAllData() {
     try {
       if (!this.db) {
@@ -151,6 +148,7 @@ const offlineService = {
     }
   },
   
+  // Check if online
   isOnline() {
     return this.networkStatus.isOnline();
   }

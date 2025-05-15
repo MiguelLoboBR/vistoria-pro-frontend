@@ -4,12 +4,12 @@ import { getDB, STORES, initDatabase, addToStore, getFromStore, getAllFromStore 
 import { addToSyncQueue } from './syncQueue';
 
 // Get an inspection from the local database
-export const getInspectionLocally = async (id: string): Promise<Inspection | null> => {
+const getInspectionLocally = async (id: string): Promise<Inspection | null> => {
   return await getFromStore<Inspection>(STORES.inspections, id);
 };
 
 // Save an inspection to the local database
-export const saveInspectionLocally = async (inspection: Inspection, isSynced = false): Promise<string> => {
+const saveInspectionLocally = async (inspection: Inspection, isSynced = false): Promise<string> => {
   const inspectionToSave = { 
     ...inspection,
     _isSynced: isSynced 
@@ -26,13 +26,13 @@ export const saveInspectionLocally = async (inspection: Inspection, isSynced = f
 };
 
 // Get rooms for an inspection from the local database
-export const getRoomsLocallyByInspectionId = async (inspectionId: string): Promise<InspectionRoom[]> => {
+const getRoomsLocallyByInspectionId = async (inspectionId: string): Promise<InspectionRoom[]> => {
   const allRooms = await getAllFromStore<InspectionRoom>(STORES.rooms);
   return allRooms.filter(room => room.inspection_id === inspectionId);
 };
 
 // Save a room to the local database
-export const saveRoomLocally = async (room: InspectionRoom, isSynced = false): Promise<string> => {
+const saveRoomLocally = async (room: InspectionRoom, isSynced = false): Promise<string> => {
   // Generate an ID if not present
   const roomToSave = { 
     ...room,
@@ -51,13 +51,13 @@ export const saveRoomLocally = async (room: InspectionRoom, isSynced = false): P
 };
 
 // Get items for a room from the local database
-export const getItemsLocallyByRoomId = async (roomId: string): Promise<InspectionItem[]> => {
+const getItemsLocallyByRoomId = async (roomId: string): Promise<InspectionItem[]> => {
   const allItems = await getAllFromStore<InspectionItem>(STORES.items);
   return allItems.filter(item => item.room_id === roomId);
 };
 
 // Save an item to the local database
-export const saveItemLocally = async (item: InspectionItem, isSynced = false): Promise<string> => {
+const saveItemLocally = async (item: InspectionItem, isSynced = false): Promise<string> => {
   // Generate an ID if not present
   const itemToSave = { 
     ...item,
@@ -76,13 +76,13 @@ export const saveItemLocally = async (item: InspectionItem, isSynced = false): P
 };
 
 // Get media files for an item from the local database
-export const getMediaLocallyByItemId = async (itemId: string): Promise<InspectionMedia[]> => {
+const getMediaLocallyByItemId = async (itemId: string): Promise<InspectionMedia[]> => {
   const allMedia = await getAllFromStore<InspectionMedia>(STORES.medias);
   return allMedia.filter(media => media.item_id === itemId);
 };
 
 // Save a media to the local database
-export const saveMediaLocally = async (media: InspectionMedia, isSynced = false): Promise<string> => {
+const saveMediaLocally = async (media: InspectionMedia, isSynced = false): Promise<string> => {
   // Generate an ID if not present
   const mediaToSave = { 
     ...media,
@@ -101,13 +101,13 @@ export const saveMediaLocally = async (media: InspectionMedia, isSynced = false)
 };
 
 // Get signatures for an inspection from the local database
-export const getSignaturesLocallyByInspectionId = async (inspectionId: string): Promise<InspectionSignature[]> => {
+const getSignaturesLocallyByInspectionId = async (inspectionId: string): Promise<InspectionSignature[]> => {
   const allSignatures = await getAllFromStore<InspectionSignature>(STORES.signatures);
   return allSignatures.filter(sig => sig.inspection_id === inspectionId);
 };
 
 // Save a signature to the local database
-export const saveSignatureLocally = async (signature: InspectionSignature, isSynced = false): Promise<string> => {
+const saveSignatureLocally = async (signature: InspectionSignature, isSynced = false): Promise<string> => {
   // Generate an ID if not present
   const sigToSave = { 
     ...signature,
@@ -126,7 +126,7 @@ export const saveSignatureLocally = async (signature: InspectionSignature, isSyn
 };
 
 // Get complete inspection data locally (inspection, rooms, items, and signatures)
-export const getCompleteInspectionLocally = async (inspectionId: string): Promise<{
+const getCompleteInspectionLocally = async (inspectionId: string): Promise<{
   inspection: Inspection | null;
   rooms: InspectionRoom[];
   signatures: InspectionSignature[];
@@ -165,7 +165,7 @@ export const getCompleteInspectionLocally = async (inspectionId: string): Promis
   };
 };
 
-// Create an inspectionDataService object and export it properly with a named export
+// Create and export the inspectionDataService object properly
 export const inspectionDataService = {
   getInspectionLocally,
   saveInspectionLocally,
