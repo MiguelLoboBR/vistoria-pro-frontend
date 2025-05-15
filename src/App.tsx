@@ -1,3 +1,4 @@
+
 import { Route, Routes, Outlet } from "react-router-dom";
 import AuthGuard from "./components/auth/AuthGuard";
 import Landing from "./pages/landing/Landing";
@@ -16,6 +17,7 @@ import Inspection from "./pages/inspector/Inspection";
 import InspectionList from "./pages/inspector/InspectionList";
 import InspectionExecute from "./pages/inspector/InspectionExecute";
 import InstallPWA from "./pages/InstallPWA";
+import UnderConstruction from "./pages/admin/UnderConstruction";
 
 function App() {
   return (
@@ -28,6 +30,11 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/register/success" element={<RegisterSuccess />} />
+
+      {/* Admin Master */}
+      <Route path="/master" element={<AuthGuard requiredRole="admin_master"><Outlet /></AuthGuard>}>
+        <Route path="dashboard" element={<UnderConstruction pageName="Painel do Administrador Master" />} />
+      </Route>
 
       {/* Admin Tenant */}
       <Route path="/admin" element={<AuthGuard requiredRole="admin_tenant"><Outlet /></AuthGuard>}>

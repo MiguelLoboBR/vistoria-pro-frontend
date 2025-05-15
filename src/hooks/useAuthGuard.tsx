@@ -31,7 +31,12 @@ export const useAuthGuard = (requiredRole?: UserRole) => {
           if (requiredRole === "admin_tenant" && 
               (user.role === "admin_tenant" || user.role === "admin_master")) {
             setHasRequiredRole(true);
-          } else {
+          } 
+          // Special case for admin_master role
+          else if (requiredRole === "admin_master" && user.role === "admin_master") {
+            setHasRequiredRole(true);
+          }
+          else {
             setHasRequiredRole(user.role === requiredRole);
           }
         } else {

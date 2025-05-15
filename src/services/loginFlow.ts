@@ -30,8 +30,7 @@ export async function loginAndRedirect(
   const role = profile.role;
 
   if (role === "admin_master") {
-    // Redirecionando admin_master para o dashboard de admin, já que não existe rota específica para master
-    navigate("/admin/dashboard", { replace });
+    navigate("/master/dashboard", { replace });
   } else if (role === "admin_tenant") {
     navigate("/admin/dashboard", { replace });
   } else if (role === "inspector") {
