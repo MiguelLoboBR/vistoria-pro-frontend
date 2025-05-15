@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "@/components/Logo";
-import { LoginForm } from "@/components/auth/LoginForm";
+import LoginForm from "@/components/auth/LoginForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { UserRole } from "@/services/authService/types"; // Import from services/authService/types
+import { USER_ROLES, UserRole } from "@/services/authService/types"; // Import from services/authService/types
 
 interface LoginProps {
   role: UserRole;
 }
 
-const Login = ({ role = "admin_tenant" }: LoginProps) => {
+const Login = ({ role = USER_ROLES.ADMIN_TENANT }: LoginProps) => {
   const { session, isLoading } = useAuth();
   const navigate = useNavigate();
   const [checkingSession, setCheckingSession] = useState(true);
-  const isInspector = role === "inspector";
+  const isInspector = role === USER_ROLES.INSPECTOR;
 
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -116,7 +116,7 @@ const Login = ({ role = "admin_tenant" }: LoginProps) => {
             <p className="text-gray-500 mt-2">Entre com suas credenciais para acessar</p>
           </div>
           
-          <LoginForm userType="inspector" />
+          <LoginForm role={USER_ROLES.INSPECTOR} />
           
           <div className="mt-8 text-center text-sm text-gray-500">
             <p>Problemas para acessar? Entre em contato com sua imobiliária.</p>
@@ -135,7 +135,7 @@ const Login = ({ role = "admin_tenant" }: LoginProps) => {
             <p className="text-gray-500 mt-2">Acesse o painel da sua empresa</p>
           </div>
           
-          <LoginForm userType="admin" />
+          <LoginForm role={USER_ROLES.ADMIN_TENANT} />
           
           <div className="mt-8 text-center text-gray-500 text-sm">
             <p>Não tem uma conta? <Link to="/register" className="text-vistoria-blue font-medium hover:underline">Entre em contato</Link></p>

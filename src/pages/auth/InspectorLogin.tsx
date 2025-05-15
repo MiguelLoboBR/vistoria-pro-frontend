@@ -2,9 +2,10 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "@/components/Logo";
-import { LoginForm } from "@/components/auth/LoginForm";
+import LoginForm from "@/components/auth/LoginForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { USER_ROLES } from "@/services/authService/types";
 
 export const InspectorLogin = () => {
   const { session, isLoading } = useAuth();
@@ -109,7 +110,7 @@ export const InspectorLogin = () => {
             <p className="text-gray-500 mt-2">Entre com suas credenciais para acessar</p>
           </div>
           
-          <LoginForm userType="inspector" />
+          <LoginForm role={USER_ROLES.INSPECTOR} />
           
           <div className="mt-8 text-center text-sm text-gray-500">
             <p>Problemas para acessar? Entre em contato com sua imobiliária.</p>

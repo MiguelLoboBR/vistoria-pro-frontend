@@ -6,11 +6,12 @@ import { Form } from "@/components/ui/form";
 import { EmailField } from "./EmailField";
 import { PasswordField } from "./PasswordField";
 import { ResendConfirmation } from "./ResendConfirmation";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { useLoginForm } from "@/hooks/useLoginForm";
+import { UserRole } from "@/services/authService/types";
 
 interface LoginFormProps {
-  role: "admin_tenant" | "inspector";
+  role: UserRole;
 }
 
 export const LoginForm = ({ role }: LoginFormProps) => {
@@ -37,14 +38,12 @@ export const LoginForm = ({ role }: LoginFormProps) => {
       if (error.message.includes("Email not confirmed")) {
         setResendEmail(form.getValues("email"));
         setShowResendUI(true);
-        toast("Email não confirmado", {
-          description: "Verifique seu email para confirmar sua conta",
-          type: "warning"
+        toast.warning("Email não confirmado", {
+          description: "Verifique seu email para confirmar sua conta"
         });
       } else {
-        toast("Erro ao fazer login", {
-          description: error.message || "Verifique suas credenciais",
-          type: "error"
+        toast.error("Erro ao fazer login", {
+          description: error.message || "Verifique suas credenciais"
         });
       }
     }
@@ -55,14 +54,12 @@ export const LoginForm = ({ role }: LoginFormProps) => {
     try {
       // Implement resend logic here
       await new Promise(resolve => setTimeout(resolve, 1000));
-      toast("Email enviado", { 
-        description: "Verifique sua caixa de entrada", 
-        type: "success" 
+      toast.success("Email enviado", { 
+        description: "Verifique sua caixa de entrada"
       });
     } catch (error) {
-      toast("Erro ao reenviar email", { 
-        description: "Tente novamente mais tarde", 
-        type: "error" 
+      toast.error("Erro ao reenviar email", { 
+        description: "Tente novamente mais tarde"
       });
     } finally {
       setIsResending(false);

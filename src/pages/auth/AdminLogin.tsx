@@ -2,9 +2,10 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "@/components/Logo";
-import { LoginForm } from "@/components/auth/LoginForm";
+import LoginForm from "@/components/auth/LoginForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { USER_ROLES } from "@/services/authService/types";
 
 export const AdminLogin = () => {
   const { session, isLoading } = useAuth();
@@ -65,7 +66,7 @@ export const AdminLogin = () => {
             <p className="text-gray-500 mt-2">Acesse o painel da sua empresa</p>
           </div>
           
-          <LoginForm userType="admin" />
+          <LoginForm role={USER_ROLES.ADMIN_TENANT} />
           
           <div className="mt-8 text-center text-gray-500 text-sm">
             <p>Não tem uma conta? <Link to="/register" className="text-vistoria-blue font-medium hover:underline">Entre em contato</Link></p>

@@ -1,8 +1,9 @@
 
 import * as React from "react";
 import { 
-  ToastT as SonnerToastType, 
-  toast as sonnerToast 
+  toast as sonnerToast,
+  type ToastT as SonnerToastType,
+  type ExternalToast
 } from "sonner";
 
 export type ToastProps = {
@@ -25,21 +26,25 @@ const useToast = () => {
   const toast = (props: ToastProps) => {
     const { title, description, variant, action, duration } = props;
     
-    // Map variant to Sonner's toast type
-    let toastFn = sonnerToast;
-    if (variant === "destructive" || variant === "warning") {
-      toastFn = sonnerToast.error;
-    } else if (variant === "success") {
-      toastFn = sonnerToast.success;
-    } else if (variant === "info") {
-      toastFn = sonnerToast.info;
-    }
-    
-    const id = toastFn(title || "", {
+    // Map variant to Sonner's toast type and call the appropriate function
+    let id: string;
+    const data: ExternalToast = {
       description,
       action,
       duration,
-    }).toString();
+    };
+
+    if (variant === "destructive") {
+      id = sonnerToast.error(title || "", data).toString();
+    } else if (variant === "success") {
+      id = sonnerToast.success(title || "", data).toString();
+    } else if (variant === "info") {
+      id = sonnerToast.info(title || "", data).toString();
+    } else if (variant === "warning") {
+      id = sonnerToast.warning(title || "", data).toString();
+    } else {
+      id = sonnerToast(title || "", data).toString();
+    }
 
     setToasts((prevToasts) => [
       ...prevToasts,

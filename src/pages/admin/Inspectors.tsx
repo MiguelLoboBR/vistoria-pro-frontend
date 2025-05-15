@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -90,14 +90,13 @@ const Inspectors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inspectors'] });
-      toast("Inspetor criado com sucesso!");
+      toast.success("Inspetor criado com sucesso!");
       setOpen(false);
       form.reset();
     },
     onError: (error: any) => {
-      toast("Erro ao criar inspetor", {
-        description: error.message,
-        type: "error"
+      toast.error("Erro ao criar inspetor", {
+        description: error.message
       });
     },
   });
@@ -112,13 +111,12 @@ const Inspectors = () => {
     
     const { error } = await supabase.from('profiles').delete().eq('id', inspectorId);
     if (error) {
-      toast("Erro ao excluir inspetor", {
-        description: error.message,
-        type: "error"
+      toast.error("Erro ao excluir inspetor", {
+        description: error.message
       });
     } else {
       queryClient.invalidateQueries({ queryKey: ['inspectors'] });
-      toast("Inspetor excluído com sucesso!");
+      toast.success("Inspetor excluído com sucesso!");
     }
   };
   
