@@ -3,7 +3,7 @@
 import { offlineService } from './offline';
 import { inspectionDataService } from './offline/inspectionDataService';
 
-// Export both default and named export for maximum compatibility
+// Export both named export and default export for maximum compatibility
 export { inspectionDataService };
 export * from './offline';
 export default offlineService;
