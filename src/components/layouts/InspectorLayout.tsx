@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, ReactNode, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,7 @@ import {
   SidebarFooter,
   SidebarHeader
 } from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface InspectorLayoutProps {
   children: React.ReactNode;
@@ -40,7 +41,7 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({
   pageTitle,
 }) => {
   const location = useLocation();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -99,7 +100,7 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({
       <div className="flex h-screen w-full bg-gray-50">
         {/* Desktop Sidebar */}
         <Sidebar className="hidden md:flex">
-          <SidebarHeader className="p-4 flex items-center justify-center border-b">
+          <SidebarHeader className="p-4 flex items-center justify-between border-b">
             <Logo />
           </SidebarHeader>
           
@@ -126,9 +127,21 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({
           </SidebarContent>
           
           <SidebarFooter className="mt-auto border-t p-4">
+            <div className="mb-4 flex items-center gap-3">
+              <Avatar className="h-9 w-9">
+                <AvatarImage src={user?.avatar_url} />
+                <AvatarFallback className="bg-blue-500 text-white">
+                  {user?.full_name?.split(" ").map(n => n[0]).join("").toUpperCase() || "IN"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="overflow-hidden">
+                <p className="truncate text-sm font-medium">{user?.full_name}</p>
+                <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+            </div>
             <Button
-              variant="ghost"
-              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+              variant="destructive"
+              className="w-full justify-start"
               onClick={handleSignOut}
             >
               <LogOut className="mr-3 h-5 w-5" />
@@ -181,7 +194,7 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({
                       className={cn(
                         "flex items-center py-3 px-3 text-sm font-medium rounded-md",
                         item.current
-                          ? "bg-gray-100 text-primary"
+                          ? "bg-blue-50 text-blue-600"
                           : "text-gray-600 hover:bg-gray-50"
                       )}
                     >
@@ -189,7 +202,7 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({
                         className={cn(
                           "mr-3 flex-shrink-0 h-5 w-5",
                           item.current
-                            ? "text-primary"
+                            ? "text-blue-600"
                             : "text-gray-400 group-hover:text-gray-500"
                         )}
                       />
@@ -197,9 +210,21 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({
                     </Link>
                   ))}
                   <div className="pt-4 mt-4 border-t border-gray-200">
+                    <div className="mb-4 flex items-center gap-3 px-3 py-2">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={user?.avatar_url} />
+                        <AvatarFallback className="bg-blue-500 text-white">
+                          {user?.full_name?.split(" ").map(n => n[0]).join("").toUpperCase() || "IN"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="overflow-hidden">
+                        <p className="truncate text-sm font-medium">{user?.full_name}</p>
+                        <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+                      </div>
+                    </div>
                     <Button
-                      variant="ghost"
-                      className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 px-3"
+                      variant="destructive"
+                      className="w-full justify-start px-3"
                       onClick={handleSignOut}
                     >
                       <LogOut className="mr-3 h-5 w-5" />
