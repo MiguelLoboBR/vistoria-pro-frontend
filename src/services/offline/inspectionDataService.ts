@@ -2,7 +2,7 @@
 import { IDBPDatabase } from 'idb';
 import { v4 as uuidv4 } from 'uuid';
 
-// Export as a named constant and also as default export for maximum compatibility
+// Export only as a named constant
 export const inspectionDataService = {
   db: null as IDBPDatabase | null,
 
@@ -116,6 +116,4 @@ export const inspectionDataService = {
   }
 };
 
-// Also export as default for compatibility
-export default inspectionDataService;
-
+// Remove the default export line
