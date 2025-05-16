@@ -22,10 +22,25 @@ export const loginAndRedirect = async (navigate: NavigateFunction | ((path: stri
       return;
     }
     
-    // Determine redirect based on user role
-    const role = userData.user.user_metadata?.role;
+    // Tente obter o papel primeiro dos metadados do usuário
+    let role = userData.user.user_metadata?.role;
+    
+    // Se não estiver nos metadados, tente obter da função RPC segura
+    if (!role) {
+      try {
+        const { data: roleData, error } = await supabase.rpc('get_current_user_role');
+        if (!error && roleData) {
+          role = roleData;
+          console.log("Role obtida da função RPC:", role);
+        }
+      } catch (rpcError) {
+        console.error("Erro ao chamar função RPC:", rpcError);
+      }
+    }
+    
     console.log("User role for redirect:", role);
     
+    // Determine redirect based on user role
     if (role === "admin_master") {
       navigate("/master/dashboard", { replace: true });
     } else if (role === "admin_tenant") {

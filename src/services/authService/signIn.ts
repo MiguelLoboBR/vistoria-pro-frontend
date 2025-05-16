@@ -12,12 +12,30 @@ export const signIn = async (email: string, password: string) => {
     if (error) throw error;
     console.log("Login bem-sucedido:", data.session ? "Session obtida" : "Sem session");
     
-    // Check user role from metadata and redirect accordingly
-    const role = data.user?.user_metadata?.role || "inspector";
+    // Check user role from metadata or database
+    let role = data.user?.user_metadata?.role;
+    
+    // Se o papel não estiver nos metadados, tente obtê-lo da tabela profiles
+    if (!role && data.user) {
+      try {
+        const { data: profileData } = await supabase
+          .rpc('get_current_user_role');
+        
+        if (profileData) {
+          role = profileData;
+          console.log("Role obtida do banco de dados:", role);
+        }
+      } catch (profileError) {
+        console.error("Erro ao obter o papel do usuário:", profileError);
+      }
+    }
     
     console.log("User role:", role);
     
-    if (role === "admin_tenant" || role === "admin_master") {
+    // Redirecionamento baseado no papel
+    if (role === "admin_master") {
+      window.location.href = "/master/dashboard";
+    } else if (role === "admin_tenant") {
       window.location.href = "/admin/dashboard";
     } else {
       window.location.href = "/inspector/dashboard";
