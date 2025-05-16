@@ -136,7 +136,7 @@ export const InspectorDashboard = () => {
                             <p className="font-medium">{inspection.address}</p>
                             <div className="flex items-center text-sm text-gray-500 mt-1">
                               <Clock className="h-4 w-4 mr-1" />
-                              {inspection.scheduled_date}
+                              {inspection.date}
                             </div>
                           </div>
                           <Button 
