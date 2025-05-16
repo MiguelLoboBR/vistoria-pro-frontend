@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode } from "react";
 import { Session } from "@supabase/supabase-js";
 import { Company, UserProfile } from "./types";
