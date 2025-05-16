@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -27,15 +28,15 @@ export const LoginForm = ({ role }: LoginFormProps) => {
     onSubmit
   } = useLoginForm({
     role,
- onSuccess: async () => {
-  try {
-    await loginAndRedirect((path, options) => navigate(path, options));
-  } catch (err: any) {
-    toast.error("Erro ao redirecionar", {
-      description: err.message || "Erro inesperado ao redirecionar Contate o Suporte"
-    });
-  }
-},
+    onSuccess: async () => {
+      try {
+        await loginAndRedirect((path, options) => navigate(path, options));
+      } catch (err: any) {
+        toast.error("Erro ao redirecionar", {
+          description: err.message || "Erro inesperado ao redirecionar Contate o Suporte"
+        });
+      }
+    },
     onError: (error) => {
       if (error.message.includes("Email not confirmed")) {
         setResendEmail(form.getValues("email"));
