@@ -5,6 +5,12 @@ import MobileSidebar from "../admin/MobileSidebar";
 import Header from "../admin/Header";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  SidebarProvider,
+  Sidebar as ShadcnSidebar,
+  SidebarContent,
+  SidebarInset
+} from "@/components/ui/sidebar";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -44,31 +50,37 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Desktop Sidebar */}
-      <Sidebar 
-        isCollapsed={isCollapsed}
-        setIsCollapsed={setIsCollapsed}
-      />
-      
-      {/* Mobile Sidebar (Off-canvas) */}
-      <MobileSidebar 
-        isOpen={isMobileMenuOpen}
-        onClose={() => setIsMobileMenuOpen(false)}
-        onLogout={handleLogout}
-      />
-      
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col w-full">
-        {/* Top Header */}
-        <Header onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+    <SidebarProvider defaultOpen={!isMobile}>
+      <div className="min-h-screen bg-gray-50 flex w-full">
+        {/* Desktop Sidebar */}
+        <ShadcnSidebar className="hidden md:flex">
+          <SidebarContent>
+            <Sidebar 
+              isCollapsed={isCollapsed}
+              setIsCollapsed={setIsCollapsed}
+            />
+          </SidebarContent>
+        </ShadcnSidebar>
+        
+        {/* Mobile Sidebar (Off-canvas) */}
+        <MobileSidebar 
+          isOpen={isMobileMenuOpen}
+          onClose={() => setIsMobileMenuOpen(false)}
+          onLogout={handleLogout}
+        />
         
         {/* Main Content */}
-        <main className="flex-1 px-3 sm:px-4 md:px-6 py-4 md:py-6 overflow-y-auto bg-gray-50">
-          {children}
-        </main>
+        <SidebarInset className="flex-1 flex flex-col w-full">
+          {/* Top Header */}
+          <Header onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+          
+          {/* Main Content */}
+          <main className="flex-1 px-3 sm:px-4 md:px-6 py-4 md:py-6 overflow-y-auto bg-gray-50">
+            {children}
+          </main>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
