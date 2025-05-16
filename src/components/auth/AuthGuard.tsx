@@ -1,6 +1,6 @@
 
 import { ReactNode } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { UserRole } from "@/services/authService/types";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { LoadingAuthentication } from "./LoadingAuthentication";
@@ -14,7 +14,6 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
   const {
     isAuthenticated,
     hasRequiredRole,
-    needsCompanySetup,
     isCheckingAuth,
     userRole
   } = useAuthGuard(requiredRole);
@@ -29,12 +28,6 @@ const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
   if (!isAuthenticated) {
     console.log("AuthGuard: User not authenticated, redirecting to login");
     return <Navigate to="/login" replace />;
-  }
-  
-  // If admin without company, redirect to company setup
-  if (needsCompanySetup) {
-    console.log("AuthGuard: Admin without company, redirecting to company setup");
-    return <Navigate to="/setup/company" replace />;
   }
   
   // If authenticated but doesn't have required role, redirect to appropriate dashboard

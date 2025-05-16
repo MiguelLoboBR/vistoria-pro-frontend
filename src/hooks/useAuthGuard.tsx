@@ -8,7 +8,6 @@ export const useAuthGuard = (requiredRole?: UserRole) => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [hasRequiredRole, setHasRequiredRole] = useState(false);
-  const [needsCompanySetup, setNeedsCompanySetup] = useState(false);
   const [userRole, setUserRole] = useState<UserRole | undefined>(undefined);
   
   useEffect(() => {
@@ -35,15 +34,6 @@ export const useAuthGuard = (requiredRole?: UserRole) => {
           setUserRole(role);
           console.log("useAuthGuard: User authenticated with role:", role);
           
-          // Check if admin user needs to set up company
-          const isAdmin = role === "admin_tenant" || role === "admin_master";
-          if (isAdmin && !user.company_id) {
-            console.log("useAuthGuard: Admin without company, needs setup");
-            setNeedsCompanySetup(true);
-          } else {
-            setNeedsCompanySetup(false);
-          }
-          
           // Check if user has required role
           if (requiredRole) {
             // Special case: if required role is admin_tenant, allow both admin_tenant and admin_master
@@ -66,7 +56,6 @@ export const useAuthGuard = (requiredRole?: UserRole) => {
           console.log("useAuthGuard: User not authenticated");
           setUserRole(undefined);
           setHasRequiredRole(false);
-          setNeedsCompanySetup(false);
         }
         setIsCheckingAuth(false);
       }
@@ -78,7 +67,6 @@ export const useAuthGuard = (requiredRole?: UserRole) => {
   return {
     isAuthenticated,
     hasRequiredRole,
-    needsCompanySetup,
     isCheckingAuth,
     userRole
   };
