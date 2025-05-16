@@ -28,6 +28,7 @@ export function useInspectors(companyId: string | undefined) {
     console.log("useInspectors: Fetching inspectors for company", companyId);
     
     try {
+      // Com as políticas RLS aplicadas, esta consulta já estará filtrada pela empresa do usuário logado
       const { data, error } = await supabase
         .from('profiles')
         .select('*')

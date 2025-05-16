@@ -20,6 +20,7 @@ export const AuthGuard = ({ children, requiredRole }: AuthGuardProps) => {
   
   // Check role if required
   if (requiredRole && user?.role !== requiredRole) {
+    // Com as novas políticas RLS, verificamos se o usuário tem o papel requerido
     return <Navigate to="/login" replace />;
   }
   
