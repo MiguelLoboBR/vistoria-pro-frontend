@@ -1,6 +1,6 @@
 
 import { ReactNode } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { UserRole } from "@/services/authService/types";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { LoadingAuthentication } from "./LoadingAuthentication";

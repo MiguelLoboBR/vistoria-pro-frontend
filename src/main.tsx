@@ -36,7 +36,7 @@ const queryClient = new QueryClient({
   },
 });
 
-// A ordem correta é: BrowserRouter > QueryClientProvider > AuthProvider
+// CRITICAL: BrowserRouter must wrap AuthProvider to provide routing context
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <BrowserRouter>

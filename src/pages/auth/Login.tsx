@@ -6,7 +6,6 @@ import LoginForm from "@/components/auth/LoginForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { USER_ROLES } from "@/services/authService/types";
-import { loginAndRedirect } from "@/services/loginFlow";
 
 const Login = () => {
   const { session, isLoading } = useAuth();
@@ -22,7 +21,26 @@ const Login = () => {
         const currentSession = data.session;
 
         if (currentSession || (session && !isLoading)) {
-          await loginAndRedirect((path, options) => navigate(path, options));
+          // Check user role
+          let role = currentSession?.user?.user_metadata?.role;
+          
+          if (!role && currentSession?.user) {
+            try {
+              const { data: roleData } = await supabase.rpc('get_current_user_role');
+              role = roleData;
+            } catch (error) {
+              console.error("Error fetching role:", error);
+            }
+          }
+          
+          // Direct navigation based on role
+          if (role === "admin_master") {
+            navigate("/master/dashboard", { replace: true });
+          } else if (role === "admin_tenant") {
+            navigate("/admin/dashboard", { replace: true });
+          } else {
+            navigate("/inspector/dashboard", { replace: true });
+          }
         }
       } catch (error: any) {
         console.error("Login: Erro ao verificar autenticação:", error.message);

@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { useLoginForm } from "@/hooks/useLoginForm";
 import { UserRole } from "@/services/authService/types";
 import { supabase } from "@/integrations/supabase/client";
-import { loginAndRedirect } from "@/services/loginFlow";
 
 interface LoginFormProps {
   role: UserRole;
@@ -30,7 +29,27 @@ export const LoginForm = ({ role }: LoginFormProps) => {
     role,
     onSuccess: async () => {
       try {
-        await loginAndRedirect((path, options) => navigate(path, options));
+        // Check user role
+        const { data } = await supabase.auth.getUser();
+        let role = data.user?.user_metadata?.role;
+        
+        if (!role && data.user) {
+          try {
+            const { data: roleData } = await supabase.rpc('get_current_user_role');
+            role = roleData;
+          } catch (error) {
+            console.error("Error fetching role:", error);
+          }
+        }
+        
+        // Redirect based on role
+        if (role === "admin_master") {
+          navigate("/master/dashboard", { replace: true });
+        } else if (role === "admin_tenant") {
+          navigate("/admin/dashboard", { replace: true });
+        } else {
+          navigate("/inspector/dashboard", { replace: true });
+        }
       } catch (err: any) {
         toast.error("Erro ao redirecionar", {
           description: err.message || "Erro inesperado ao redirecionar Contate o Suporte"

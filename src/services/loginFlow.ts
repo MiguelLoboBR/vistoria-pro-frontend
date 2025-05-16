@@ -22,19 +22,19 @@ export const loginAndRedirect = async (navigate: NavigateFunction | ((path: stri
       return;
     }
     
-    // Tente obter o papel primeiro dos metadados do usuário
+    // Try to get role first from user metadata
     let role = userData.user.user_metadata?.role;
     
-    // Se não estiver nos metadados, tente obter da função RPC segura
+    // If not in metadata, try to get from the safe RPC function
     if (!role) {
       try {
         const { data: roleData, error } = await supabase.rpc('get_current_user_role');
         if (!error && roleData) {
           role = roleData;
-          console.log("Role obtida da função RPC:", role);
+          console.log("Role obtained from RPC function:", role);
         }
       } catch (rpcError) {
-        console.error("Erro ao chamar função RPC:", rpcError);
+        console.error("Error calling RPC function:", rpcError);
       }
     }
     
