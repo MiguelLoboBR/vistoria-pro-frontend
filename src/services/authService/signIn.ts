@@ -32,15 +32,7 @@ export const signIn = async (email: string, password: string) => {
     
     console.log("User role:", role);
     
-    // Redirecionamento baseado no papel
-    if (role === "admin_master") {
-      window.location.href = "/master/dashboard";
-    } else if (role === "admin_tenant") {
-      window.location.href = "/admin/dashboard";
-    } else {
-      window.location.href = "/inspector/dashboard";
-    }
-    
+    // We return the data without redirection - redirection will be handled in the component
     return data;
   } catch (error) {
     console.error("Erro no login:", error);
