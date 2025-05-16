@@ -2,7 +2,7 @@
 import { Navigate } from 'react-router-dom';
 
 const Index = () => {
-  // Use Navigate component for immediate redirection without loading state
+  // Redirecionamento direto para a página de landing
   return <Navigate to="/landing" replace />;
 };
 
