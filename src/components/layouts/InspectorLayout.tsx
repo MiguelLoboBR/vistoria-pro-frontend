@@ -1,6 +1,6 @@
 
 import { useState, ReactNode, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   CalendarDays,
@@ -12,6 +12,7 @@ import {
   LogOut,
   X,
   ChevronLeft,
+  History,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({
   pageTitle,
 }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -60,7 +62,7 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({
       name: "Vistorias",
       href: "/inspector/inspections",
       icon: ClipboardList,
-      current: isActive("/inspections"),
+      current: isActive("/inspections") || isActive("/execute") || isActive("/inspection/"),
     },
     {
       name: "Agenda",
@@ -71,7 +73,7 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({
     {
       name: "Histórico",
       href: "/inspector/history",
-      icon: Clock,
+      icon: History,
       current: isActive("/history"),
     },
     {
@@ -93,7 +95,18 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({
     signOut();
   };
 
-  const currentPage = navigation.find((item) => item.current)?.name || pageTitle;
+  // Determine page title based on current route or provided title
+  const currentPage = () => {
+    const current = navigation.find((item) => item.current);
+    if (pageTitle) return pageTitle;
+    if (current) return current.name;
+    
+    // Special cases for nested routes
+    if (location.pathname.includes("/execute/")) return "Execução de Vistoria";
+    if (location.pathname.includes("/inspection/")) return "Detalhes da Vistoria";
+    
+    return "Dashboard";
+  };
 
   return (
     <SidebarProvider defaultOpen={!isMobile}>
@@ -159,13 +172,13 @@ const InspectorLayout: React.FC<InspectorLayoutProps> = ({
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  onClick={() => window.history.back()} 
+                  onClick={() => navigate(-1)} 
                   className="md:hidden"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
               )}
-              <span className="font-medium truncate max-w-[200px]">{currentPage}</span>
+              <span className="font-medium truncate max-w-[200px]">{currentPage()}</span>
             </div>
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
