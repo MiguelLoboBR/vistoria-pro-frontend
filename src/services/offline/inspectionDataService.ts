@@ -115,5 +115,3 @@ export const inspectionDataService = {
     }
   }
 };
-
-// Remove the default export line

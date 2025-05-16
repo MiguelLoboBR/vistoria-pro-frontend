@@ -59,7 +59,7 @@ const networkStatusService = {
   }
 };
 
-const offlineService = {
+export const offlineService = {
   db: null as any,
   networkStatus: networkStatusService.init(),
   syncQueue,
@@ -148,5 +148,4 @@ const offlineService = {
   }
 };
 
-export { offlineService, initializeDB, networkStatusService, inspectionDataService };
-export default offlineService;
+export { inspectionDataService, initializeDB, networkStatusService };
